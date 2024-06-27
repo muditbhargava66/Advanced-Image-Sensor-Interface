@@ -1,0 +1,45 @@
+# Advanced Image Sensor Interface Dependencies
+# Version: 1.0.0
+
+# Core dependencies
+numpy==1.21.5
+scipy==1.7.3
+matplotlib==3.5.1
+
+# Image processing
+opencv-python==4.5.5.64
+Pillow==9.0.1
+
+# Data analysis and scientific computing
+pandas==1.4.1
+scikit-learn==1.0.2
+colormath
+patch
+
+
+# Testing and development
+pytest==7.1.1
+pytest-cov==3.0.0
+mypy==0.942
+flake8==4.0.1
+black==22.3.0
+unittest2
+
+# Documentation
+Sphinx==4.5.0
+sphinx-rtd-theme==1.0.0
+
+# Performance profiling
+# line-profiler==3.4.0
+memory-profiler==0.60.0
+
+# Continuous Integration
+tox==3.24.5
+
+# Packaging and distribution
+build==0.7.0
+twine==4.0.0
+
+# Optional: Jupyter for interactive development and data exploration
+jupyter==1.0.0
+ipython==8.2.0

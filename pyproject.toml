@@ -1,0 +1,96 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "advanced_image_sensor_interface"
+version = "1.0.0"
+description = "A high-performance interface for next-generation camera modules"
+readme = "README.md"
+authors = [{ name = "Your Name", email = "your.email@example.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+keywords = ["image processing", "sensor interface", "camera", "MIPI"]
+dependencies = [
+    "numpy>=1.21.5",
+    "scipy>=1.7.3",
+    "matplotlib>=3.5.1",
+    "opencv-python>=4.5.5.64",
+    "Pillow>=9.0.1",
+    "pandas>=1.4.1",
+    "scikit-learn>=1.0.2",
+]
+requires-python = ">=3.8"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "mypy",
+    "flake8",
+    "black",
+    "tox",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/advanced_image_sensor_interface"
+Documentation = "https://advanced_image_sensor_interface.readthedocs.io/"
+Repository = "https://github.com/yourusername/advanced_image_sensor_interface.git"
+Issues = "https://github.com/yourusername/advanced_image_sensor_interface/issues"
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+
+[tool.mypy]
+mypy_path = "src"
+check_untyped_defs = true
+disallow_any_generics = true
+ignore_missing_imports = true
+no_implicit_optional = true
+show_error_codes = true
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+no_implicit_reexport = true
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 100

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="lens-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2C3E50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3498DB;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="aperture-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34495E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2980B9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1280" height="640" fill="#F5F5F7"/>
+  
+  <!-- Main circular shape representing a camera lens -->
+  <circle cx="640" cy="320" r="250" fill="url(#lens-gradient)" />
+  
+  <!-- Aperture blades -->
+  <g transform="translate(640 320)">
+    <path d="M0,-200 L173.2,-100 L173.2,100 L0,200 L-173.2,100 L-173.2,-100 Z" fill="url(#aperture-gradient)" />
+  </g>
+  
+  <!-- Inner circles representing sensor elements -->
+  <circle cx="640" cy="320" r="150" fill="none" stroke="#FFFFFF" stroke-width="4" opacity="0.7" />
+  <circle cx="640" cy="320" r="100" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.5" />
+  <circle cx="640" cy="320" r="50" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.3" />
+  
+  <!-- Digital circuit pattern -->
+  <g transform="translate(890, 270)">
+    <path d="M0,0 H360 M0,50 H360 M0,100 H360" stroke="#8E8E93" stroke-width="4" stroke-linecap="round" />
+    <path d="M40,-10 V110 M120,-10 V110 M200,-10 V110 M280,-10 V110" stroke="#8E8E93" stroke-width="4" stroke-linecap="round" />
+    <circle cx="40" cy="0" r="8" fill="#007AFF" />
+    <circle cx="120" cy="50" r="8" fill="#007AFF" />
+    <circle cx="200" cy="100" r="8" fill="#007AFF" />
+    <circle cx="280" cy="50" r="8" fill="#007AFF" />
+  </g>
+  
+  <!-- Project name -->
+  <text x="640" y="600" font-family="SF Pro Display, Arial, sans-serif" font-size="44" font-weight="300" fill="#1D1D1F" text-anchor="middle">Advanced Image Sensor Interface</text>
+</svg>

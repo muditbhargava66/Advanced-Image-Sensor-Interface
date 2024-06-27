@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#50E3C2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1280" height="640" fill="#f0f0f0" />
+  
+  <!-- Header Background -->
+  <rect x="0" y="0" width="1280" height="80" fill="url(#headerGradient)" />
+  
+  <!-- Header Text -->
+  <text x="640" y="35" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white" text-anchor="middle">Next-Generation Imaging: Advanced Sensor Interface System</text>
+  <text x="640" y="65" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle">High-Performance Architecture for Computational Photography and Machine Vision Applications</text>
+  
+  <!-- Image Sensor -->
+  <rect x="80" y="160" width="200" height="120" rx="10" ry="10" fill="#FFD700" stroke="#333" stroke-width="2" />
+  <text x="180" y="200" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Image Sensor</text>
+  <text x="180" y="230" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Raw Data Output</text>
+  <text x="180" y="255" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Up to 8K Resolution</text>
+  
+  <!-- MIPI Driver -->
+  <rect x="380" y="160" width="200" height="120" rx="10" ry="10" fill="#98FB98" stroke="#333" stroke-width="2" />
+  <text x="480" y="190" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">MIPI Driver</text>
+  <text x="480" y="215" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">High-Speed Transfer</text>
+  <text x="480" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Up to 4 Lanes</text>
+  <text x="480" y="265" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">2.5 Gbps per Lane</text>
+  
+  <!-- Signal Processor -->
+  <rect x="680" y="160" width="200" height="120" rx="10" ry="10" fill="#87CEFA" stroke="#333" stroke-width="2" />
+  <text x="780" y="190" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Signal Processor</text>
+  <text x="780" y="215" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Noise Reduction</text>
+  <text x="780" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Color Correction</text>
+  <text x="780" y="265" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Dynamic Range Expansion</text>
+  
+  <!-- Power Manager -->
+  <rect x="380" y="400" width="200" height="120" rx="10" ry="10" fill="#FFA07A" stroke="#333" stroke-width="2" />
+  <text x="480" y="440" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Power Manager</text>
+  <text x="480" y="465" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Voltage Regulation</text>
+  <text x="480" y="490" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Power Optimization</text>
+  
+  <!-- Performance Metrics -->
+  <rect x="680" y="400" width="200" height="120" rx="10" ry="10" fill="#DDA0DD" stroke="#333" stroke-width="2" />
+  <text x="780" y="440" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Performance</text>
+  <text x="780" y="465" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Metrics</text>
+  <text x="780" y="490" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">SNR, Dynamic Range</text>
+  <text x="780" y="515" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Color Accuracy</text>
+  
+  <!-- Output -->
+  <rect x="980" y="160" width="200" height="120" rx="10" ry="10" fill="#D3D3D3" stroke="#333" stroke-width="2" />
+  <text x="1080" y="200" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Processed</text>
+  <text x="1080" y="225" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Image Output</text>
+  <text x="1080" y="250" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Enhanced Quality</text>
+  <text x="1080" y="275" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Reduced Noise</text>
+  
+  <!-- Connections -->
+  <line x1="280" y1="220" x2="380" y2="220" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="330" y="210" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Raw Data</text>
+  
+  <line x1="580" y1="220" x2="680" y2="220" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="630" y="210" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Buffered Data</text>
+  
+  <line x1="880" y1="220" x2="980" y2="220" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="930" y="210" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Processed Data</text>
+  
+  <line x1="480" y1="280" x2="480" y2="400" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="530" y="340" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Power Control</text>
+  
+  <line x1="580" y1="460" x2="680" y2="460" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="630" y="450" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Performance Data</text>
+  
+  <path d="M 780 400 Q 780 360 740 320 Q 700 280 580 280" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="720" y="350" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Optimization Feedback</text>
+</svg>
