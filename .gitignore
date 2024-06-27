@@ -160,7 +160,7 @@ Thumbs.db
 *.npy
 *.npz
 *.jpg
-*.png
+# *.png
 *.tif
 *.tiff
 output/
