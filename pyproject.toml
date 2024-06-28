@@ -40,10 +40,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/muditbhargava66/advanced_image_sensor_interface"
-Documentation = "https://advanced_image_sensor_interface.readthedocs.io/"
-Repository = "https://github.com/muditbhargava66/advanced_image_sensor_interface.git"
-Issues = "https://github.com/muditbhargava66/advanced_image_sensor_interface/issues"
+Homepage = "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface"
+Documentation = "https://advanced-image-sensor-interface.readthedocs.io/"
+Repository = "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface.git"
+Issues = "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/issues"
 
 [tool.setuptools]
 packages = ["src"]

@@ -8,8 +8,8 @@
 ![Code Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)
 ![Documentation](https://img.shields.io/badge/docs-passing-brightgreen)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
-![Last Commit](https://img.shields.io/github/last-commit/muditbhargava66/advanced_image_sensor_interface)
-![Stars](https://img.shields.io/github/stars/muditbhargava66/advanced_image_sensor_interface?style=social)
+![Last Commit](https://img.shields.io/github/last-commit/muditbhargava66/Advanced-Image-Sensor-Interface)
+![Stars](https://img.shields.io/github/stars/muditbhargava66/Advanced-Image-Sensor-Interface?style=social)
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
