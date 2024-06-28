@@ -10,6 +10,10 @@ Welcome to Advanced Image Sensor Interface's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   design_specs.md
+   performance_analysis.md
+   api_documentation.md
+
 
 
 Indices and tables
