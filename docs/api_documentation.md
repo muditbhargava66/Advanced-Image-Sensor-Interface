@@ -1,4 +1,4 @@
-# Advanced Image Sensor Interface: API Documentation
+# API Documentation
 
 ## 1. Introduction
 

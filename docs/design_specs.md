@@ -1,4 +1,4 @@
-# Advanced Image Sensor Interface: Design Specifications
+# Design Specifications
 
 ## 1. Introduction
 

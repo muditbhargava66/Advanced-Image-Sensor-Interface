@@ -1,4 +1,4 @@
 sphinx>=5.0
-sphinxcontrib-applehelp
 sphinx_rtd_theme
 myst-parser
+sphinxcontrib-applehelp

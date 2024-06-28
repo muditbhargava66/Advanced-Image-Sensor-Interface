@@ -1,4 +1,4 @@
-# Advanced Image Sensor Interface: Performance Analysis
+# Performance Analysis
 
 ## 1. Introduction
 
