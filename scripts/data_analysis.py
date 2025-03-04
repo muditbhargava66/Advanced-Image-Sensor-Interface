@@ -13,21 +13,25 @@ Options:
     --compare                 Compare multiple input files
 
 Example:
+-------
     python data_analysis.py --plot --output analysis.json simulation_results.json test_data.json
+
 """
 
-import json
 import argparse
-import numpy as np
-import matplotlib.pyplot as plt
-from typing import List, Dict, Any
+import json
+from typing import Any
 
-def load_data(file_path: str) -> Dict[str, Any]:
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def load_data(file_path: str) -> dict[str, Any]:
     """Load data from a JSON file."""
-    with open(file_path, 'r') as f:
+    with open(file_path) as f:
         return json.load(f)
 
-def analyze_data(data: Dict[str, Any]) -> Dict[str, Any]:
+def analyze_data(data: dict[str, Any]) -> dict[str, Any]:
     """Perform statistical analysis on the input data."""
     analysis = {}
     for key, value in data.items():
@@ -57,7 +61,7 @@ def get_unit(metric: str) -> str:
     }
     return units.get(metric, '')
 
-def plot_data(data: Dict[str, Any], output_prefix: str):
+def plot_data(data: dict[str, Any], output_prefix: str):
     """Generate plots for the analyzed data."""
     for key, value in data.items():
         if isinstance(value, dict) and 'mean' in value:
@@ -68,7 +72,7 @@ def plot_data(data: Dict[str, Any], output_prefix: str):
             plt.savefig(f"{output_prefix}_{key}_analysis.png")
             plt.close()
 
-def compare_data(data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+def compare_data(data_list: list[dict[str, Any]]) -> dict[str, Any]:
     """Compare multiple datasets and compute relative improvements."""
     comparison = {}
     baseline = data_list[0]
@@ -93,15 +97,15 @@ def main():
     parser.add_argument('--plot', action='store_true', help='Generate plots for the analyzed data')
     parser.add_argument('--output', default='analysis_results.json', help='Output file for analysis results')
     parser.add_argument('--compare', action='store_true', help='Compare multiple input files')
-    
+
     args = parser.parse_args()
-    
+
     results = []
     for file_path in args.input_files:
         data = load_data(file_path)
         analysis = analyze_data(data)
         results.append(analysis)
-        
+
         print(f"Analysis for {file_path}:")
         for key, value in analysis.items():
             if isinstance(value, dict) and 'mean' in value:
@@ -109,12 +113,12 @@ def main():
             else:
                 print(f"{key}: {value['value']} {value['unit']}")
         print()
-    
+
     if args.plot:
         for i, analysis in enumerate(results):
             plot_data(analysis, f"plot_{i}")
         print("Plots generated.")
-    
+
     if args.compare and len(results) > 1:
         comparison = compare_data(results)
         print("Comparison Results:")
@@ -122,12 +126,12 @@ def main():
             print(f"\n{comp_key}:")
             for key, value in comp_data.items():
                 print(f"{key}: Improvement = {value['improvement']:.2f}% ({value['baseline']:.2f} -> {value['current']:.2f} {value['unit']})")
-        
+
         results.append({"comparison": comparison})
-    
+
     with open(args.output, 'w') as f:
         json.dump(results, f, indent=2)
-    
+
     print(f"Analysis results saved to {args.output}")
 
 if __name__ == "__main__":

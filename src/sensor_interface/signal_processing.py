@@ -11,11 +11,11 @@ Classes:
     AutomatedTestSuite: Class for running automated tests on the SignalProcessor.
 """
 
-import time
-import numpy as np
 import logging
-from typing import Dict, Any, List, Tuple
+import time
 from dataclasses import dataclass
+
+import numpy as np
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SignalConfig:
     """Configuration parameters for signal processing."""
+
     bit_depth: int
     noise_reduction_strength: float
     color_correction_matrix: np.ndarray
@@ -32,8 +33,10 @@ class SignalProcessor:
     """
     Processes and optimizes signals from image sensors.
 
-    Attributes:
+    Attributes
+    ----------
         config (SignalConfig): Configuration for signal processing.
+
     """
 
     def __init__(self, config: SignalConfig):
@@ -41,7 +44,9 @@ class SignalProcessor:
         Initialize the SignalProcessor with the given configuration.
 
         Args:
+        ----
             config (SignalConfig): Configuration for signal processing.
+
         """
         self.config = config
         self._processing_time = 0.1  # Initial processing time per frame in seconds
@@ -59,49 +64,66 @@ class SignalProcessor:
         Process a single frame of image data.
 
         Args:
+        ----
             frame (np.ndarray): Input frame data.
 
         Returns:
+        -------
             np.ndarray: Processed frame data.
+
         """
-        # try:
-        #     start_time = time.time()
-
-        #     # Apply processing steps
-        #     frame = self._apply_noise_reduction(frame)
-        #     frame = self._apply_dynamic_range_expansion(frame)
-        #     frame = self._apply_color_correction(frame)
-
-        #     # Simulate processing time
-        #     time.sleep(self._processing_time)
-            
-        #     end_time = time.time()
-        #     elapsed_time = end_time - start_time
-            
-        #     logger.debug(f"Processed frame with shape {frame.shape} in {elapsed_time:.3f} seconds")
-        #     return frame
-        # except Exception as e:
-        #     logger.error(f"Error processing frame: {str(e)}")
-        #     return frame  # Return original frame if processing fails
-        
         try:
             if not isinstance(frame, np.ndarray):
                 raise ValueError("Input frame must be a numpy array")
-            
+
             processed = frame.astype(float)  # Convert to float for processing
             processed = self._apply_noise_reduction(processed)
             processed = self._apply_dynamic_range_expansion(processed)
             processed = self._apply_color_correction(processed)
-            
+
             # Convert back to original dtype before returning
             return np.clip(processed, 0, np.iinfo(frame.dtype).max).astype(frame.dtype)
         except Exception as e:
-            logger.error(f"Error processing frame: {str(e)}")
+            logger.error(f"Error processing frame: {e!s}")
+            if isinstance(e, ValueError):
+                raise  # Re-raise ValueError for tests to catch
             return frame
 
     def _apply_noise_reduction(self, frame: np.ndarray) -> np.ndarray:
         """Apply noise reduction to the frame."""
-        return frame + np.random.normal(0, self.config.noise_reduction_strength, frame.shape)
+        # Use a bilateral-style filter instead of adding noise
+        # This ensures the standard deviation decreases
+        sigma = self.config.noise_reduction_strength * 10
+        kernel_size = int(sigma * 2) if sigma > 1 else 3
+
+        # Simple Gaussian blur for noise reduction
+        if frame.ndim == 2:
+            result = self._blur(frame, kernel_size, sigma)
+        else:
+            # Apply to each channel for multi-channel images
+            result = np.stack([self._blur(frame[..., i], kernel_size, sigma)
+                               for i in range(frame.shape[-1])], axis=-1)
+
+        return result
+
+    def _blur(self, image: np.ndarray, kernel_size: int, sigma: float) -> np.ndarray:
+        """Apply a simple Gaussian-like blur."""
+        # Create a simple kernel for blurring
+        x = np.linspace(-sigma, sigma, kernel_size)
+        kernel = np.exp(-0.5 * (x**2) / sigma**2)
+        kernel = kernel / np.sum(kernel)
+
+        # Apply along rows
+        result = np.zeros_like(image, dtype=float)
+        for i in range(image.shape[0]):
+            result[i, :] = np.convolve(image[i, :].astype(float), kernel, mode='same')
+
+        # Apply along columns
+        temp = np.zeros_like(result)
+        for j in range(image.shape[1]):
+            temp[:, j] = np.convolve(result[:, j], kernel, mode='same')
+
+        return temp
 
     def _apply_dynamic_range_expansion(self, frame: np.ndarray) -> np.ndarray:
         """Apply dynamic range expansion to the frame."""
@@ -109,8 +131,12 @@ class SignalProcessor:
 
     def _apply_color_correction(self, frame: np.ndarray) -> np.ndarray:
         """Apply color correction to the frame."""
-        # return np.dot(frame, self.config.color_correction_matrix)
-        return np.dot(frame.reshape(-1, 3), self.config.color_correction_matrix.T).reshape(frame.shape)
+        if frame.ndim == 3 and frame.shape[2] == 3:
+            # Handle 3-channel color images
+            return np.dot(frame.reshape(-1, 3), self.config.color_correction_matrix.T).reshape(frame.shape)
+        else:
+            # Return unchanged for grayscale or unexpected formats
+            return frame
 
     def optimize_performance(self) -> None:
         """Optimize signal processing performance."""
@@ -122,8 +148,10 @@ class AutomatedTestSuite:
     """
     Automated test suite for validating and measuring performance of the SignalProcessor.
 
-    Attributes:
+    Attributes
+    ----------
         signal_processor (SignalProcessor): The SignalProcessor instance to test.
+
     """
 
     def __init__(self, signal_processor: SignalProcessor):
@@ -131,26 +159,30 @@ class AutomatedTestSuite:
         Initialize the AutomatedTestSuite with a SignalProcessor instance.
 
         Args:
+        ----
             signal_processor (SignalProcessor): The SignalProcessor instance to test.
+
         """
         self.signal_processor = signal_processor
         self._test_cases = self._generate_test_cases()
         self._execution_time = 0.0
         self._coverage = 0.0
 
-    def _generate_test_cases(self) -> List[np.ndarray]:
+    def _generate_test_cases(self) -> list[np.ndarray]:
         """Generate a set of test cases for signal processing."""
         return [np.random.rand(1080, 1920, 3) for _ in range(100)]  # 100 random 1080p frames
 
-    def run_tests(self) -> Tuple[float, float]:
+    def run_tests(self) -> tuple[float, float]:
         """
         Run the automated test suite.
 
-        Returns:
+        Returns
+        -------
             Tuple[float, float]: Execution time and test coverage.
+
         """
         start_time = time.time()
-        
+
         passed_tests = 0
         for i, test_case in enumerate(self._test_cases):
             try:
@@ -158,12 +190,12 @@ class AutomatedTestSuite:
                 if self._validate_processed_frame(processed_frame):
                     passed_tests += 1
             except Exception as e:
-                logger.error(f"Test case {i} failed: {str(e)}")
-        
+                logger.error(f"Test case {i} failed: {e!s}")
+
         end_time = time.time()
         self._execution_time = end_time - start_time
         self._coverage = passed_tests / len(self._test_cases)
-        
+
         logger.info(f"Test suite completed in {self._execution_time:.2f} seconds with {self._coverage:.2%} coverage")
         return self._execution_time, self._coverage
 
@@ -175,8 +207,8 @@ class AutomatedTestSuite:
 # Example usage demonstrating performance improvements and automated testing
 if __name__ == "__main__":
     # Initialize SignalProcessor
-    config = SignalConfig(bit_depth=12, 
-                          noise_reduction_strength=0.1, 
+    config = SignalConfig(bit_depth=12,
+                          noise_reduction_strength=0.1,
                           color_correction_matrix=np.eye(3))  # Identity matrix for simplicity
     processor = SignalProcessor(config)
 
@@ -206,7 +238,7 @@ if __name__ == "__main__":
 
     # Demonstrate overall system performance improvement
     initial_frame = np.random.rand(1080, 1920, 3)
-    
+
     start_time = time.time()
     processor.process_frame(initial_frame)
     initial_processing_time = time.time() - start_time

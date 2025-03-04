@@ -15,6 +15,6 @@ from .pattern_generator import PatternGenerator, get_available_patterns
 
 __all__ = ['PatternGenerator', 'get_available_patterns']
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __author__ = 'Mudit Bhargava'
 __license__ = 'MIT'

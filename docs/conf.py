@@ -6,18 +6,21 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import datetime
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath('../src'))
 
 # -- Project information -----------------------------------------------------
 
 project = 'Advanced Image Sensor Interface'
-copyright = '2024, Mudit Bhargava'
+current_year = datetime.datetime.now().year
+copyright = f'{current_year}, Mudit Bhargava'
 author = 'Mudit Bhargava'
 
 # The full version, including alpha/beta/rc tags
-release = 'v1.0.0'
+release = 'v1.0.1'
 
 # -- General configuration ---------------------------------------------------
 

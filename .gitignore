@@ -182,3 +182,5 @@ results/
 # Sensitive or personal files
 config.ini
 secrets.yaml
+
+.ruff_cache/

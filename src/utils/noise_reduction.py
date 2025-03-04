@@ -13,10 +13,10 @@ Usage:
     denoised_image = reduce_noise(noisy_image)
 """
 
+import logging
+
 import numpy as np
 from scipy import ndimage
-from typing import Tuple
-import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -27,15 +27,19 @@ def reduce_noise(image: np.ndarray, sigma_spatial: float = 1.0, sigma_range: flo
     Apply noise reduction to an image using a bilateral filter.
 
     Args:
+    ----
         image (np.ndarray): Input image (2D or 3D numpy array).
         sigma_spatial (float): Standard deviation for spatial kernel. Default is 1.0.
         sigma_range (float): Standard deviation for range kernel. Default is 0.1.
 
     Returns:
+    -------
         np.ndarray: Denoised image.
 
     Raises:
+    ------
         ValueError: If the input image is not 2D or 3D.
+
     """
     if image.ndim not in (2, 3):
         raise ValueError("Input image must be 2D or 3D")
@@ -63,12 +67,15 @@ def _bilateral_filter(image: np.ndarray, sigma_spatial: float, sigma_range: floa
     Apply bilateral filter to a 2D image.
 
     Args:
+    ----
         image (np.ndarray): Input 2D image.
         sigma_spatial (float): Standard deviation for spatial kernel.
         sigma_range (float): Standard deviation for range kernel.
 
     Returns:
+    -------
         np.ndarray: Filtered image.
+
     """
     # Create spatial kernel
     kernel_size = int(4 * sigma_spatial + 1)
@@ -92,15 +99,19 @@ def adaptive_noise_reduction(image: np.ndarray, window_size: int = 5, k: float =
     Apply adaptive noise reduction based on local variance.
 
     Args:
+    ----
         image (np.ndarray): Input image (2D or 3D numpy array).
         window_size (int): Size of the local window for variance calculation. Default is 5.
         k (float): Adaptation parameter. Default is 0.1.
 
     Returns:
+    -------
         np.ndarray: Denoised image.
 
     Raises:
+    ------
         ValueError: If the input image is not 2D or 3D.
+
     """
     if image.ndim not in (2, 3):
         raise ValueError("Input image must be 2D or 3D")

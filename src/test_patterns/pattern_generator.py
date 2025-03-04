@@ -17,9 +17,10 @@ Usage:
     color_bars = generator.generate_pattern('color_bars')
 """
 
-import numpy as np
-from typing import Tuple, List, Dict, Any
 import logging
+from typing import Any
+
+import numpy as np
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,10 +30,12 @@ class PatternGenerator:
     """
     A class for generating various test patterns for image sensor testing.
 
-    Attributes:
+    Attributes
+    ----------
         width (int): Width of the generated patterns.
         height (int): Height of the generated patterns.
         bit_depth (int): Bit depth of the generated patterns.
+
     """
 
     def __init__(self, width: int = 1920, height: int = 1080, bit_depth: int = 8):
@@ -40,9 +43,11 @@ class PatternGenerator:
         Initialize the PatternGenerator with specified dimensions and bit depth.
 
         Args:
+        ----
             width (int): Width of the generated patterns. Default is 1920.
             height (int): Height of the generated patterns. Default is 1080.
             bit_depth (int): Bit depth of the generated patterns. Default is 8.
+
         """
         self.width = width
         self.height = height
@@ -55,14 +60,18 @@ class PatternGenerator:
         Generate a specified test pattern.
 
         Args:
+        ----
             pattern_name (str): Name of the pattern to generate.
             **kwargs: Additional arguments specific to each pattern.
 
         Returns:
+        -------
             np.ndarray: The generated test pattern.
 
         Raises:
+        ------
             ValueError: If the specified pattern name is not recognized.
+
         """
         pattern_functions = {
             'color_bars': self._generate_color_bars,
@@ -140,12 +149,14 @@ class PatternGenerator:
         noise = np.random.normal(mean, std_dev, (self.height, self.width))
         return np.clip(noise, 0, self.max_value).astype(np.uint8)
 
-def get_available_patterns() -> List[str]:
+def get_available_patterns() -> list[str]:
     """
     Get a list of available test pattern names.
 
-    Returns:
+    Returns
+    -------
         List[str]: A list of available pattern names.
+
     """
     return [
         'color_bars',
@@ -165,7 +176,7 @@ if __name__ == "__main__":
     for pattern_name in get_available_patterns():
         pattern = generator.generate_pattern(pattern_name)
         logger.info(f"Generated {pattern_name} pattern with shape {pattern.shape} and dtype {pattern.dtype}")
-        assert pattern.shape == (1080, 1920) or pattern.shape == (1080, 1920, 3), f"Unexpected shape for {pattern_name}"
+        assert pattern.shape in ((1080, 1920), (1080, 1920, 3)), f"Unexpected shape for {pattern_name}"
         assert pattern.dtype == np.uint8, f"Unexpected dtype for {pattern_name}"
         assert np.min(pattern) >= 0 and np.max(pattern) <= 255, f"Values out of range for {pattern_name}"
 
@@ -179,4 +190,4 @@ if __name__ == "__main__":
     try:
         generator.generate_pattern('non_existent_pattern')
     except ValueError as e:
-        logger.info(f"Successfully caught error: {str(e)}")
+        logger.info(f"Successfully caught error: {e!s}")

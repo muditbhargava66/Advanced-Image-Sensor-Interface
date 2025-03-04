@@ -1,0 +1,44 @@
+{
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/.*",
+    "tests",
+    "docs",
+    "build",
+    "dist"
+  ],
+  "ignore": [
+    "src/**/__init__.py"
+  ],
+  "defineConstant": {
+    "DEBUG": true
+  },
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "pythonVersion": "3.10",
+  "pythonPlatform": "All",
+  "typeCheckingMode": "basic",
+  "useLibraryCodeForTypes": true,
+  
+  "reportGeneralTypeIssues": "warning",
+  "reportOptionalSubscript": "warning",
+  "reportOptionalMemberAccess": "warning",
+  "reportOptionalCall": "warning",
+  "reportOptionalIterable": "warning",
+  "reportOptionalContextManager": "warning",
+  "reportOptionalOperand": "warning",
+  "reportTypedDictNotRequiredAccess": "warning",
+  "reportPrivateImportUsage": "information",
+  
+  // Disable or reduce severity for the specific errors in your output
+  "reportUnnecessaryIsInstance": "none",
+  "reportPrivateUsage": "warning",
+  "reportMissingTypeArgument": "none",
+  "reportUnknownParameterType": "none",
+  "reportUnknownVariableType": "none", 
+  "reportUnknownMemberType": "none",
+  "reportUnknownArgumentType": "none"
+}

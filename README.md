@@ -1,21 +1,23 @@
+<div align="center">
+
 # Advanced Image Sensor Interface
 
 ![Project Banner](assets/image-sensor-interface-logo.png)
 
-![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10-blue)
+[![Python Version](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/)
 ![License](https://img.shields.io/badge/license-MIT-green)
+[![CodeQL](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/actions/workflows/github-code-scanning/codeql)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![Code Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)
-![Documentation](https://img.shields.io/badge/docs-passing-brightgreen)
+[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Type Checking: Mypy & Pyright](https://img.shields.io/badge/types-mypy%20%7C%20pyright-%23eedc5b)](https://github.com/microsoft/pyright)
+[![Testing: pytest](https://img.shields.io/badge/testing-pytest-brightgreen)](https://docs.pytest.org/)
+[![Documentation Status](https://readthedocs.org/projects/advanced-image-sensor-interface/badge/?version=latest)](https://advanced-image-sensor-interface.readthedocs.io/en/latest/?badge=latest)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
 ![Last Commit](https://img.shields.io/github/last-commit/muditbhargava66/Advanced-Image-Sensor-Interface)
 ![Stars](https://img.shields.io/github/stars/muditbhargava66/Advanced-Image-Sensor-Interface?style=social)
-
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
-[![Type Checking: mypy](https://img.shields.io/badge/type%20checking-mypy-brightgreen)](http://mypy-lang.org/)
-[![Linting: flake8](https://img.shields.io/badge/linting-flake8-brightgreen)](https://flake8.pycqa.org/)
-[![Testing: pytest](https://img.shields.io/badge/testing-pytest-brightgreen)](https://docs.pytest.org/)
+</div>
 
 ## Overview
 
@@ -34,6 +36,7 @@ This diagram illustrates the key components and data flow of our Advanced Image 
 - **Efficient Power Management**: Reduces power consumption by 25% while maintaining high performance.
 - **Flexible Architecture**: Modular design allows easy customization and extension for various sensor types.
 - **Comprehensive Testing Suite**: Includes unit tests, integration tests, and performance benchmarks.
+- **Strict Type Checking**: Dual-layer type checking with both MyPy and Pyright.
 
 ## Technical Specifications
 
@@ -73,7 +76,8 @@ advanced_image_sensor_interface/
 ├── docs/
 │   ├── design_specs.md
 │   ├── performance_analysis.md
-│   └── api_documentation.md
+│   ├── api_documentation.md
+│   └── testing_guide.md
 ├── scripts/
 │   ├── simulation.py
 │   ├── data_analysis.py
@@ -81,8 +85,13 @@ advanced_image_sensor_interface/
 ├── assets/
 │   └── logo.svg
 ├── README.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
 ├── requirements.txt
 ├── pyproject.toml
+├── tox.ini
+├── mypy.ini
+├── pyrightconfig.json
 └── .gitignore
 ```
 
@@ -90,7 +99,7 @@ advanced_image_sensor_interface/
 
 1. Clone the repository:
    ```
-   git clone https://github.com/muditbhargava66/advanced_image_sensor_interface.git
+   git clone https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface.git
    cd advanced_image_sensor_interface
    ```
 
@@ -103,6 +112,11 @@ advanced_image_sensor_interface/
 3. Install the required dependencies:
    ```
    pip install -r requirements.txt
+   ```
+
+4. For development, install with the development and documentation dependencies:
+   ```
+   pip install -e ".[dev,docs]"
    ```
 
 ## Usage
@@ -146,11 +160,19 @@ python scripts/data_analysis.py --plot --output analysis_results.json simulation
 
 ### Running Tests
 
-To run the automated test suite:
+To run the complete test suite using tox:
 
 ```
-python scripts/automated_testing.py --unit-tests --integration-tests --benchmarks --output test_results.json
+tox
 ```
+
+To run just the unit tests:
+
+```
+pytest
+```
+
+For more information on testing, see the [Testing Guide](docs/testing_guide.md).
 
 ## Performance Benchmarks
 
@@ -168,6 +190,11 @@ Detailed documentation is available in the `docs/` directory:
 - [Design Specifications](docs/design_specs.md)
 - [API Documentation](docs/api_documentation.md)
 - [Performance Analysis](docs/performance_analysis.md)
+- [Testing Guide](docs/testing_guide.md)
+
+## Changelog
+
+For a detailed list of changes between versions, see the [CHANGELOG.md](CHANGELOG.md) file.
 
 ## Contributing
 
@@ -177,11 +204,25 @@ Contributions to the Advanced Image Sensor Interface project are welcome. Please
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contact
+<div align="center">
 
-For any questions or inquiries, please contact the project maintainer:
+## Star History
 
-- Name: Mudit Bhargava
-- GitHub: [@muditbhargava66](https://github.com/muditbhargava66)
+<a href="https://star-history.com/#muditbhargava66/Advanced-Image-Sensor-Interface&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=muditbhargava66/Advanced-Image-Sensor-Interface&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=muditbhargava66/Advanced-Image-Sensor-Interface&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=muditbhargava66/Advanced-Image-Sensor-Interface&type=Date" />
+ </picture>
+</a>
 
 ---
+
+⭐️ Star the repo and consider contributing!  
+  
+📫 **Contact**: [@muditbhargava66](https://github.com/muditbhargava66)
+🐛 **Report Issues**: [Issue Tracker](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/issues)
+  
+© 2025 Mudit Bhargava. [MIT License](LICENSE)  
+<!-- Copyright symbol using HTML entity for better compatibility -->
+</div>

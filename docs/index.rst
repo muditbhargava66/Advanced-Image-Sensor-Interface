@@ -13,6 +13,7 @@ Welcome to Advanced Image Sensor Interface's documentation!
    design_specs.md
    performance_analysis.md
    api_documentation.md
+   testing_guide.md
 
 
 

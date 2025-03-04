@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project. It covers the MIPI Driver, Signal Processing Pipeline, and Power Management System interfaces.
+This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project (v1.0.1). It covers the MIPI Driver, Signal Processing Pipeline, and Power Management System interfaces.
 
 ## 2. MIPI Driver API
 
@@ -15,6 +15,7 @@ MIPIDriver(config: MIPIConfig)
 ```
 
 - `config`: An instance of `MIPIConfig` containing the driver configuration.
+- Raises `ValueError` if any configuration parameter is invalid (e.g., lanes ≤ 0, data_rate ≤ 0, or channel < 0).
 
 #### Methods
 
@@ -28,6 +29,7 @@ Sends data over the MIPI interface.
 
 - `data`: Bytes to send.
 - Returns: `True` if successful, `False` otherwise.
+- Raises `ValueError` if `data` is not of type bytes.
 
 ##### receive_data
 
@@ -48,7 +50,14 @@ get_status() -> Dict[str, Any]
 
 Retrieves the current status of the MIPI driver.
 
-- Returns: A dictionary containing status information.
+- Returns: A dictionary containing status information:
+  - `lanes`: Number of MIPI lanes
+  - `data_rate`: Data rate in Gbps per lane
+  - `channel`: MIPI channel number
+  - `error_rate`: Current error rate
+  - `throughput`: Current throughput
+  - `total_data_sent`: Total bytes sent
+  - `total_time`: Total time spent sending data
 
 ##### optimize_performance
 
@@ -56,7 +65,7 @@ Retrieves the current status of the MIPI driver.
 optimize_performance() -> None
 ```
 
-Optimizes the driver performance for increased data transfer rates.
+Optimizes the driver performance for increased data transfer rates. This increases the data rate by 40% and reduces the error rate by 50%.
 
 ### 2.2 Class: MIPIConfig
 
@@ -94,6 +103,40 @@ Processes a single frame of image data.
 
 - `frame`: Input frame as a numpy array.
 - Returns: Processed frame as a numpy array.
+- Raises `ValueError` if `frame` is not a numpy array or has an invalid shape.
+
+##### _apply_noise_reduction
+
+```python
+_apply_noise_reduction(frame: np.ndarray) -> np.ndarray
+```
+
+Applies noise reduction to the frame using a Gaussian blur approach.
+
+- `frame`: Input frame as a numpy array.
+- Returns: Noise-reduced frame as a numpy array.
+
+##### _apply_dynamic_range_expansion
+
+```python
+_apply_dynamic_range_expansion(frame: np.ndarray) -> np.ndarray
+```
+
+Applies dynamic range expansion to the frame.
+
+- `frame`: Input frame as a numpy array.
+- Returns: Frame with expanded dynamic range.
+
+##### _apply_color_correction
+
+```python
+_apply_color_correction(frame: np.ndarray) -> np.ndarray
+```
+
+Applies color correction to the frame using the color correction matrix.
+
+- `frame`: Input frame as a numpy array.
+- Returns: Color-corrected frame as a numpy array.
 
 ##### optimize_performance
 
@@ -101,7 +144,7 @@ Processes a single frame of image data.
 optimize_performance() -> None
 ```
 
-Optimizes the signal processing pipeline for increased speed.
+Optimizes the signal processing pipeline for increased speed by reducing processing time by 20% and improving noise reduction by 10%.
 
 ### 3.2 Class: SignalConfig
 
@@ -126,6 +169,7 @@ PowerManager(config: PowerConfig)
 ```
 
 - `config`: An instance of `PowerConfig` containing the power management configuration.
+- Raises `ValueError` if any configuration parameter is invalid (e.g., voltage_main ≤ 0, voltage_io ≤ 0, or current_limit ≤ 0).
 
 #### Methods
 
@@ -140,6 +184,8 @@ Sets the voltage for a specific power rail.
 - `rail`: Power rail identifier ('main' or 'io').
 - `voltage`: Desired voltage in volts.
 - Returns: `True` if successful, `False` otherwise.
+- Raises `ValueError` if rail is not 'main' or 'io'.
+- Raises `Exception` if power consumption exceeds limits.
 
 ##### get_power_status
 
@@ -149,7 +195,14 @@ get_power_status() -> Dict[str, Any]
 
 Retrieves the current power status.
 
-- Returns: A dictionary containing power status information.
+- Returns: A dictionary containing power status information:
+  - `voltage_main`: Main voltage in volts
+  - `voltage_io`: I/O voltage in volts
+  - `current_main`: Main current in amperes
+  - `current_io`: I/O current in amperes
+  - `power_consumption`: Total power consumption in watts
+  - `temperature`: System temperature in degrees Celsius
+  - `noise_level`: Noise level in power delivery
 
 ##### optimize_noise_reduction
 
@@ -157,7 +210,7 @@ Retrieves the current power status.
 optimize_noise_reduction() -> None
 ```
 
-Optimizes power delivery for reduced signal noise.
+Optimizes power delivery for reduced signal noise. This reduces noise level by 30%.
 
 ### 4.2 Class: PowerConfig
 
@@ -186,6 +239,7 @@ Calculates the Signal-to-Noise Ratio.
 - `signal`: Clean signal or reference image.
 - `noise`: Noise component or difference between noisy and clean signal.
 - Returns: SNR in decibels.
+- Raises `ValueError` if the shapes of signal and noise do not match.
 
 #### calculate_dynamic_range
 
@@ -196,7 +250,7 @@ calculate_dynamic_range(image: np.ndarray) -> float
 Calculates the dynamic range of an image.
 
 - `image`: Input image.
-- Returns: Dynamic range in decibels.
+- Returns: Dynamic range in decibels. Returns 0 if minimum value is 0.
 
 #### calculate_color_accuracy
 
@@ -204,11 +258,12 @@ Calculates the dynamic range of an image.
 calculate_color_accuracy(reference_colors: np.ndarray, measured_colors: np.ndarray) -> Tuple[float, np.ndarray]
 ```
 
-Calculates color accuracy using Delta E (CIEDE2000).
+Calculates color accuracy using a simplified Delta E formula.
 
-- `reference_colors`: Array of reference sRGB colors.
-- `measured_colors`: Array of measured sRGB colors.
+- `reference_colors`: Array of reference RGB colors.
+- `measured_colors`: Array of measured RGB colors.
 - Returns: Tuple of mean Delta E value and array of Delta E values for each color.
+- Raises `ValueError` if the shapes of reference_colors and measured_colors do not match.
 
 ## 6. Example Usage
 
@@ -236,13 +291,12 @@ power_manager.optimize_noise_reduction()
 
 # Get system status
 mipi_status = mipi_driver.get_status()
-signal_status = signal_processor.process_frame(np.zeros((1080, 1920, 3), dtype=np.uint16))
 power_status = power_manager.get_power_status()
 
 # Calculate performance metrics
 snr = calculate_snr(processed_frame, raw_frame - processed_frame)
 dynamic_range = calculate_dynamic_range(processed_frame)
-color_accuracy, _ = calculate_color_accuracy(reference_colors, processed_frame)
+color_accuracy, delta_e_values = calculate_color_accuracy(reference_colors, processed_frame)
 
 print(f"MIPI Status: {mipi_status}")
 print(f"Power Status: {power_status}")
@@ -255,7 +309,8 @@ print(f"Color Accuracy (Mean Delta E): {color_accuracy}")
 
 All API functions use Python's built-in exception handling mechanism. Here are the common exceptions you might encounter:
 
-- `ValueError`: Raised when an invalid argument is passed to a function.
+- `ValueError`: Raised when an invalid argument is passed to a function, or for invalid configurations.
+- `Exception`: Raised for general errors, such as power limit exceeded.
 - `RuntimeError`: Raised when an operation fails due to an unexpected condition.
 - `IOError`: Raised when a hardware-related operation fails.
 
@@ -266,8 +321,8 @@ try:
     mipi_driver.send_data(frame_data)
 except ValueError as e:
     print(f"Invalid data format: {e}")
-except RuntimeError as e:
-    print(f"MIPI driver error: {e}")
+except Exception as e:
+    print(f"Error occurred during data transfer: {e}")
 ```
 
 ## 8. Best Practices
@@ -278,49 +333,10 @@ except RuntimeError as e:
 
 3. **Error Checking**: Always check the return values of methods like `send_data()` and `set_voltage()` to ensure operations were successful.
 
-4. **Resource Management**: Properly close and release resources when they're no longer needed, especially when dealing with hardware interfaces.
+4. **Resource Management**: Properly clean up resources when they're no longer needed.
 
-5. **Concurrent Access**: The API is not thread-safe by default. If you need to access the same object from multiple threads, implement your own synchronization mechanism.
+5. **Concurrent Access**: Implement proper synchronization mechanisms when accessing objects from multiple threads.
 
 ## 9. Version Compatibility
 
-This API documentation is for version 1.0.0 of the Advanced Image Sensor Interface project. Future versions will maintain backwards compatibility for major version numbers (e.g., 1.x.x). Minor version updates (e.g., 1.1.0) may introduce new features but will not break existing functionality.
-
-## 10. Performance Considerations
-
-- The MIPI Driver is optimized for high-speed data transfer. For best performance, send data in large chunks rather than small, frequent transfers.
-- The Signal Processor's performance can be affected by the complexity of the processing pipeline. Use the `optimize_performance()` method to adapt to the current workload.
-- The Power Manager's optimization can affect both power consumption and signal noise. Monitor system performance after calling `optimize_noise_reduction()` to ensure it meets your requirements.
-
-## 11. Extending the API
-
-The Advanced Image Sensor Interface project is designed to be extensible. Here are some guidelines for extending the API:
-
-1. **Custom Signal Processing**: Inherit from the `SignalProcessor` class and override the `process_frame()` method to implement custom processing algorithms.
-
-2. **New MIPI Features**: Extend the `MIPIDriver` class to add support for new MIPI specifications or custom protocols.
-
-3. **Advanced Power Management**: Subclass `PowerManager` to implement more sophisticated power management strategies, such as dynamic frequency scaling or multi-rail optimization.
-
-## 12. Troubleshooting
-
-Common issues and their solutions:
-
-1. **Low Transfer Rates**: Ensure you're using the maximum number of lanes and the highest supported data rate. Check for any USB or PCIe bottlenecks in your system.
-
-2. **High Noise Levels**: Verify that the noise reduction strength is set appropriately in the `SignalConfig`. Consider optimizing the power delivery by calling `optimize_noise_reduction()`.
-
-3. **Color Inaccuracy**: Double-check the color correction matrix in the `SignalConfig`. You may need to perform a color calibration specific to your sensor and lighting conditions.
-
-4. **System Instability**: Monitor the power status and ensure that voltage levels are stable. Verify that the current draw is within the specified limits.
-
-## 13. Support and Resources
-
-- For bug reports and feature requests, please use the project's GitHub issue tracker.
-- For general questions and discussions, join our community forum at [forum link].
-- For detailed implementation guidelines, refer to the project wiki at [wiki link].
-- For performance tuning tips, see our optimization guide at [guide link].
-
-By following this API documentation, you should be able to effectively integrate and utilize the Advanced Image Sensor Interface in your projects. Remember to check for updates regularly, as we continuously improve and expand the capabilities of this system.
-
----
+This API documentation is for version 1.0.1 of the Advanced Image Sensor Interface project. Future versions will maintain backwards compatibility for major version numbers (e.g., 1.x.x).

@@ -15,23 +15,34 @@ Usage:
     run_speed_benchmarks()
 """
 
-import time
-import json
-import numpy as np
-from typing import Dict, Any
-from src.sensor_interface.mipi_driver import MIPIDriver, MIPIConfig
-from src.sensor_interface.signal_processing import SignalProcessor, SignalConfig
-from src.sensor_interface.power_management import PowerManager, PowerConfig
+import os
+import sys
 
-def benchmark_mipi_driver(data_sizes: list[int] = [1024, 1024*1024, 10*1024*1024]) -> Dict[str, float]:
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+import json
+import time
+from typing import Any
+
+import numpy as np
+
+from src.sensor_interface.mipi_driver import MIPIConfig, MIPIDriver
+from src.sensor_interface.power_management import PowerConfig, PowerManager
+from src.sensor_interface.signal_processing import SignalConfig, SignalProcessor
+
+
+def benchmark_mipi_driver(data_sizes: list[int] = [1024, 1024*1024, 10*1024*1024]) -> dict[str, float]:
     """
     Benchmark MIPI driver data transfer speeds.
 
     Args:
+    ----
         data_sizes (list[int]): List of data sizes to test in bytes.
 
     Returns:
+    -------
         Dict[str, float]: Dictionary of data sizes and their corresponding transfer speeds in MB/s.
+
     """
     config = MIPIConfig(lanes=4, data_rate=2.5, channel=0)
     driver = MIPIDriver(config)
@@ -47,15 +58,18 @@ def benchmark_mipi_driver(data_sizes: list[int] = [1024, 1024*1024, 10*1024*1024
 
     return results
 
-def benchmark_signal_processing(image_sizes: list[tuple[int, int]] = [(1920, 1080), (3840, 2160), (7680, 4320)]) -> Dict[str, float]:
+def benchmark_signal_processing(image_sizes: list[tuple[int, int]] = [(1920, 1080), (3840, 2160), (7680, 4320)]) -> dict[str, float]:
     """
     Benchmark signal processing pipeline speed.
 
     Args:
+    ----
         image_sizes (list[tuple[int, int]]): List of image sizes to test.
 
     Returns:
+    -------
         Dict[str, float]: Dictionary of image sizes and their corresponding processing speeds in FPS.
+
     """
     config = SignalConfig(bit_depth=12, noise_reduction_strength=0.1, color_correction_matrix=np.eye(3))
     processor = SignalProcessor(config)
@@ -72,15 +86,18 @@ def benchmark_signal_processing(image_sizes: list[tuple[int, int]] = [(1920, 108
 
     return results
 
-def benchmark_power_management(num_operations: int = 1000) -> Dict[str, float]:
+def benchmark_power_management(num_operations: int = 1000) -> dict[str, float]:
     """
     Benchmark power management operations speed.
 
     Args:
+    ----
         num_operations (int): Number of power management operations to perform.
 
     Returns:
+    -------
         Dict[str, float]: Dictionary of operation types and their corresponding speeds in operations/second.
+
     """
     config = PowerConfig(voltage_main=1.8, voltage_io=3.3, current_limit=1.0)
     power_manager = PowerManager(config)
@@ -102,12 +119,14 @@ def benchmark_power_management(num_operations: int = 1000) -> Dict[str, float]:
 
     return results
 
-def run_speed_benchmarks() -> Dict[str, Any]:
+def run_speed_benchmarks() -> dict[str, Any]:
     """
     Run all speed benchmarks and compile results.
 
-    Returns:
+    Returns
+    -------
         Dict[str, Any]: Dictionary containing all benchmark results.
+
     """
     results = {}
     results['mipi_driver'] = benchmark_mipi_driver()

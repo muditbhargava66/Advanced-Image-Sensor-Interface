@@ -12,8 +12,8 @@ Usage:
     from utils import reduce_noise, calculate_snr
 """
 
-from .noise_reduction import reduce_noise, adaptive_noise_reduction
-from .performance_metrics import calculate_snr, calculate_dynamic_range, calculate_color_accuracy
+from .noise_reduction import adaptive_noise_reduction, reduce_noise
+from .performance_metrics import calculate_color_accuracy, calculate_dynamic_range, calculate_snr
 
 __all__ = [
     'reduce_noise',
@@ -23,6 +23,6 @@ __all__ = [
     'calculate_color_accuracy'
 ]
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __author__ = 'Mudit Bhargava'
 __license__ = 'MIT'

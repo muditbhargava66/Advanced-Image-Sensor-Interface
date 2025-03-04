@@ -12,12 +12,12 @@ Modules:
 For detailed usage instructions, please refer to the documentation.
 """
 
-from .mipi_driver import MIPIDriver
-from .power_management import PowerManager
-from .signal_processing import SignalProcessor
+from .mipi_driver import MIPIConfig, MIPIDriver
+from .power_management import PowerConfig, PowerManager
+from .signal_processing import AutomatedTestSuite, SignalConfig, SignalProcessor
 
-__all__ = ['MIPIDriver', 'PowerManager', 'SignalProcessor']
+__all__ = ['MIPIConfig', 'MIPIDriver', 'PowerConfig', 'PowerManager', 'SignalConfig', 'SignalProcessor', 'AutomatedTestSuite']
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __author__ = 'Mudit Bhargava'
 __license__ = 'MIT'
