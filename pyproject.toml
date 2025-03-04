@@ -108,6 +108,7 @@ ignore = [
     "B006", # Mutable defaults (enable later)
     "E501", # Line length (handled by formatter)
     "UP038",
+    "UP007",
     "E712"
 ]
 

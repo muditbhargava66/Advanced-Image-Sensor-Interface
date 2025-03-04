@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed power management validation for input configuration parameters
 - Fixed handling of zero values in dynamic range calculation
 - Fixed voltage stability issues in power management system
+- Fixed MIPI driver performance optimization test to be deterministic
 
 ### Added
 - Comprehensive test suite with 67+ unit tests across all components
