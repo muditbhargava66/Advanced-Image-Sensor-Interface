@@ -32,9 +32,9 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from src.sensor_interface.mipi_driver import MIPIConfig, MIPIDriver
-from src.sensor_interface.power_management import PowerConfig, PowerManager
-from src.sensor_interface.signal_processing import SignalConfig, SignalProcessor
+from advanced_image_sensor_interface.sensor_interface.mipi_driver import MIPIConfig, MIPIDriver
+from advanced_image_sensor_interface.sensor_interface.power_management import PowerConfig, PowerManager
+from advanced_image_sensor_interface.sensor_interface.signal_processing import SignalConfig, SignalProcessor
 
 
 class TestMIPIDriver(unittest.TestCase):

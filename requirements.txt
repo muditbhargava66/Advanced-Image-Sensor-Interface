@@ -1,43 +1,25 @@
-# Advanced Image Sensor Interface Dependencies
-# Python requirement: >=3.9, <3.13
+# Advanced Image Sensor Interface - Core Dependencies
+# Version: 1.1.0
+# Python requirement: >=3.10
 
-# Core dependencies
-numpy>=1.22.0
-scipy>=1.11.0  # LTS version with Python 3.9 support
-matplotlib>=3.5.1
+# Core scientific computing
+numpy>=1.23.5,<2.0.0
+scipy>=1.10.0,<2.0.0
+matplotlib>=3.7.0,<4.0.0
 
 # Image processing
-opencv-python>=4.11.0  # Security patched version
-Pillow>=10.0.1
+opencv-python>=4.8.1,<5.0.0
+Pillow>=10.0.0,<12.0.0
+scikit-image>=0.20.0,<1.0.0
 
-# Data analysis
-pandas>=1.4.1
-scikit-learn>=1.5.0
-colormath>=3.0.0
+# Data analysis and machine learning
+pandas>=2.1.0,<3.0.0
+scikit-learn>=1.3.0,<2.0.0
 
-# Testing and development
-pytest>=7.1.1
-pytest-cov>=3.0.0
-mypy>=0.942
-flake8>=4.0.1
-black>=24.3.0
+# Utilities
+tqdm>=4.66.0,<5.0.0
+psutil>=5.9.0,<6.0.0
 
-# Documentation
-Sphinx>=4.5.0
-sphinx-rtd-theme>=1.0.0
-myst-parser>=2.0.0
-sphinxcontrib-applehelp>=1.0.4
-
-# Performance profiling
-memory-profiler>=0.60.0
-
-# CI/CD
-tox>=3.24.5
-
-# Packaging
-build>=0.7.0
-twine>=4.0.0
-
-# Optional: Jupyter ecosystem
-jupyter>=1.0.0
-ipython>=8.10.0
+# Development dependencies (optional)
+# Install with: pip install -r requirements.txt -r requirements-dev.txt
+# Or use: pip install -e ".[dev]" for development setup

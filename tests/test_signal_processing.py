@@ -21,7 +21,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from src.sensor_interface.signal_processing import SignalConfig, SignalProcessor
+from advanced_image_sensor_interface.sensor_interface.signal_processing import SignalConfig, SignalProcessor
 
 
 @pytest.fixture
@@ -29,6 +29,7 @@ def signal_processor():
     """Fixture to create a SignalProcessor instance for testing."""
     config = SignalConfig(bit_depth=12, noise_reduction_strength=0.1, color_correction_matrix=np.eye(3))
     return SignalProcessor(config)
+
 
 class TestSignalProcessor:
     """Test cases for the SignalProcessor class."""
@@ -74,9 +75,10 @@ class TestSignalProcessor:
 
     def test_optimize_performance(self, signal_processor):
         """Test performance optimization."""
-        initial_processing_time = signal_processor._processing_time
+        initial_processing_time = signal_processor._timing_strategy.get_processing_time()
         signal_processor.optimize_performance()
-        assert signal_processor._processing_time < initial_processing_time
+        optimized_processing_time = signal_processor._timing_strategy.get_processing_time()
+        assert optimized_processing_time < initial_processing_time
 
     @pytest.mark.parametrize("bit_depth", [8, 10, 12, 14, 16])
     def test_different_bit_depths(self, bit_depth):
@@ -89,9 +91,7 @@ class TestSignalProcessor:
 
     def test_color_correction_matrix(self):
         """Test with a non-identity color correction matrix."""
-        ccm = np.array([[1.2, -0.1, -0.1],
-                        [-0.1, 1.2, -0.1],
-                        [-0.1, -0.1, 1.2]])
+        ccm = np.array([[1.2, -0.1, -0.1], [-0.1, 1.2, -0.1], [-0.1, -0.1, 1.2]])
         config = SignalConfig(bit_depth=12, noise_reduction_strength=0.1, color_correction_matrix=ccm)
         processor = SignalProcessor(config)
         test_frame = np.random.randint(0, 4096, size=(1080, 1920, 3), dtype=np.uint16)
@@ -103,9 +103,9 @@ class TestSignalProcessor:
         test_frame = np.random.randint(0, 4096, size=(1080, 1920, 3), dtype=np.uint16)
 
         # Create individual mocks for each method
-        with patch.object(signal_processor, '_apply_noise_reduction', return_value=test_frame) as mock_noise:
-            with patch.object(signal_processor, '_apply_dynamic_range_expansion', return_value=test_frame) as mock_dre:
-                with patch.object(signal_processor, '_apply_color_correction', return_value=test_frame) as mock_color:
+        with patch.object(signal_processor, "_apply_noise_reduction", return_value=test_frame) as mock_noise:
+            with patch.object(signal_processor, "_apply_dynamic_range_expansion", return_value=test_frame) as mock_dre:
+                with patch.object(signal_processor, "_apply_color_correction", return_value=test_frame) as mock_color:
 
                     signal_processor.process_frame(test_frame)
 
@@ -137,22 +137,26 @@ class TestSignalProcessor:
 
     def test_performance_improvement(self, signal_processor):
         """Test that performance optimization leads to faster processing times."""
+        from advanced_image_sensor_interface.sensor_interface.signal_processing import TestTimingStrategy
+
         # Use a much smaller frame size to ensure the test runs quickly
         test_frame = np.random.randint(0, 4096, size=(10, 10, 3), dtype=np.uint16)
 
-        # Store the original processing time and then manually set it to a higher value
-        original_time = signal_processor._processing_time
-        signal_processor._processing_time = 1.0  # Set to a large value
+        # Set up test timing strategy
+        test_strategy = TestTimingStrategy(1.0)  # Start with 1.0 second
+        signal_processor.set_timing_strategy_for_test(test_strategy)
 
-        try:
-            # Optimize performance
-            signal_processor.optimize_performance()
+        # Get initial time
+        initial_time = signal_processor._timing_strategy.get_processing_time()
+        assert initial_time == 1.0
 
-            # Verify processing time was reduced
-            assert signal_processor._processing_time < 1.0
-        finally:
-            # Restore the original processing time to avoid affecting other tests
-            signal_processor._processing_time = original_time
+        # Optimize performance
+        signal_processor.optimize_performance()
+
+        # Verify processing time was reduced
+        optimized_time = signal_processor._timing_strategy.get_processing_time()
+        assert optimized_time < initial_time
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

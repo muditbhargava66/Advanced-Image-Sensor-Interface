@@ -22,6 +22,7 @@ import numpy as np
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def calculate_snr(signal: np.ndarray, noise: np.ndarray) -> float:
     """
     Calculate the Signal-to-Noise Ratio (SNR) in decibels.
@@ -47,11 +48,12 @@ def calculate_snr(signal: np.ndarray, noise: np.ndarray) -> float:
     noise_power = np.mean(noise**2)
 
     if noise_power == 0:
-        return float('inf')
+        return float("inf")
 
     snr = 10 * np.log10(signal_power / noise_power)
     logger.info(f"Calculated SNR: {snr:.2f} dB")
     return snr
+
 
 def calculate_dynamic_range(image: np.ndarray) -> float:
     """
@@ -79,6 +81,7 @@ def calculate_dynamic_range(image: np.ndarray) -> float:
     dynamic_range = 20 * np.log10(max_val / min_val)
     logger.info(f"Calculated Dynamic Range: {dynamic_range:.2f} dB")
     return dynamic_range
+
 
 def calculate_color_accuracy(reference_colors: np.ndarray, measured_colors: np.ndarray) -> tuple[float, np.ndarray]:
     """
@@ -113,7 +116,7 @@ def calculate_color_accuracy(reference_colors: np.ndarray, measured_colors: np.n
         meas_norm = meas_norm / 255.0
 
     # Calculate Euclidean distance for each color
-    delta_e_values = np.sqrt(np.sum((ref_norm.reshape(-1, 3) - meas_norm.reshape(-1, 3))**2, axis=1))
+    delta_e_values = np.sqrt(np.sum((ref_norm.reshape(-1, 3) - meas_norm.reshape(-1, 3)) ** 2, axis=1))
 
     # Scale to make values more comparable to standard Delta E
     delta_e_values = delta_e_values * 30.0
@@ -126,6 +129,7 @@ def calculate_color_accuracy(reference_colors: np.ndarray, measured_colors: np.n
 
     logger.info(f"Mean Color Accuracy (Delta E): {mean_delta_e:.2f}")
     return float(mean_delta_e), delta_e_values.astype(float)
+
 
 # Example usage and testing
 if __name__ == "__main__":

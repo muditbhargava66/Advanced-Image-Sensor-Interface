@@ -169,6 +169,16 @@ data/processed/
 models/
 results/
 
+# Benchmark and test outputs
+benchmark_results.json
+*_results.json
+test_sim.json
+final_test.json
+
+# Keep requirements files (don't ignore)
+!requirements.txt
+!requirements-dev.txt
+
 # Temporary files
 *.swp
 *.swo
@@ -184,3 +194,5 @@ config.ini
 secrets.yaml
 
 .ruff_cache/
+.idea/
+.vscode/

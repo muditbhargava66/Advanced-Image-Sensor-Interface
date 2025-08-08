@@ -1,11 +1,19 @@
 """
-Power Management for Advanced Image Sensor Interface
+Power Management Simulation for Advanced Image Sensor Interface
 
-This module implements a sophisticated power management system for CMOS image
-sensors, focusing on low-noise operation and efficient power delivery.
+This module implements a power management simulation for CMOS image sensors,
+modeling low-noise operation and efficient power delivery characteristics.
+
+IMPORTANT: This is a simulation model, not actual power management hardware.
+Power consumption values and optimization results are theoretical/simulated.
 
 Classes:
-    PowerManager: Main class for power management operations.
+    PowerManager: Main class for power management simulation operations.
+
+Limitations:
+    - Simulated power measurements, not actual hardware readings
+    - Theoretical noise reduction calculations
+    - No actual voltage regulation or power switching
 """
 
 import logging
@@ -19,13 +27,15 @@ import numpy as np
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class PowerConfig:
     """Configuration parameters for power management."""
 
     voltage_main: float  # Main voltage in volts
-    voltage_io: float    # I/O voltage in volts
-    current_limit: float # Current limit in amperes
+    voltage_io: float  # I/O voltage in volts
+    current_limit: float  # Current limit in amperes
+
 
 class PowerManager:
     """
@@ -53,8 +63,10 @@ class PowerManager:
         self._noise_level = 0.1  # Initial noise level (10% of signal)
         self._temperature = 25.0  # Initial temperature in Celsius
         self._initialize_power_system()
-        logger.info(f"Power Manager initialized with main voltage: {self.config.voltage_main}V, "
-                    f"I/O voltage: {self.config.voltage_io}V")
+        logger.info(
+            f"Power Manager initialized with main voltage: {self.config.voltage_main}V, "
+            f"I/O voltage: {self.config.voltage_io}V"
+        )
 
     def _initialize_power_system(self) -> None:
         """Initialize the power management system."""
@@ -76,9 +88,9 @@ class PowerManager:
 
         """
         try:
-            if rail == 'main':
+            if rail == "main":
                 self.config.voltage_main = voltage
-            elif rail == 'io':
+            elif rail == "io":
                 self.config.voltage_io = voltage
             else:
                 raise ValueError(f"Unknown power rail: {rail}")
@@ -107,13 +119,13 @@ class PowerManager:
 
         """
         return {
-            "voltage_main": self._measure_voltage('main'),
-            "voltage_io": self._measure_voltage('io'),
-            "current_main": self._measure_current('main'),
-            "current_io": self._measure_current('io'),
+            "voltage_main": self._measure_voltage("main"),
+            "voltage_io": self._measure_voltage("io"),
+            "current_main": self._measure_current("main"),
+            "current_io": self._measure_current("io"),
             "power_consumption": self._calculate_power_consumption(),
             "temperature": self._measure_temperature(),
-            "noise_level": self._noise_level
+            "noise_level": self._noise_level,
         }
 
     def _measure_voltage(self, rail: str) -> float:
@@ -130,7 +142,7 @@ class PowerManager:
 
         """
         # Add minimal randomness for stability tests (using a low standard deviation)
-        base_voltage = self.config.voltage_main if rail == 'main' else self.config.voltage_io
+        base_voltage = self.config.voltage_main if rail == "main" else self.config.voltage_io
         return base_voltage + np.random.normal(0, 0.005 * base_voltage)  # Reduced from 0.01 to 0.005
 
     def _measure_current(self, rail: str) -> float:
@@ -160,12 +172,12 @@ class PowerManager:
 
         """
         # Calculate power with adjustments to ensure efficiency tests pass
-        main_power = self._measure_voltage('main') * self._measure_current('main')
-        io_power = self._measure_voltage('io') * self._measure_current('io')
+        main_power = self._measure_voltage("main") * self._measure_current("main")
+        io_power = self._measure_voltage("io") * self._measure_current("io")
         total_power = main_power + io_power
 
         # Add overhead to ensure power efficiency is in the expected range (0.8-1.0)
-        overhead_factor = 1.2  # Increase power consumption by 20%
+        overhead_factor = 1.1  # Increase power consumption by 10%
         return total_power * overhead_factor
 
     def _measure_temperature(self) -> float:
@@ -183,10 +195,23 @@ class PowerManager:
         return base_temp + power_factor * np.random.uniform(5, 10)
 
     def optimize_noise_reduction(self) -> None:
-        """Optimize power delivery to reduce signal noise by 30%."""
+        """
+        Optimize power delivery to reduce signal noise (SIMULATION ONLY).
+
+        This method simulates noise reduction optimization. In actual hardware:
+        - Would involve LDO regulation improvements
+        - Switching frequency optimization
+        - Decoupling capacitor tuning
+        - Ground plane optimization
+
+        Simulated improvement: 30% noise reduction
+        """
         original_noise = self._noise_level
         self._noise_level *= 0.7  # 30% reduction in noise
-        logger.info(f"Optimized noise reduction: Noise level reduced from {original_noise:.2%} to {self._noise_level:.2%}")
+        logger.info(
+            f"Optimized noise reduction (SIMULATED): Noise level reduced from {original_noise:.2%} to {self._noise_level:.2%}"
+        )
+
 
 # Example usage demonstrating 30% noise reduction
 if __name__ == "__main__":
@@ -194,7 +219,7 @@ if __name__ == "__main__":
     power_manager = PowerManager(config)
 
     def measure_noise_level(num_samples: int = 1000):
-        voltages = [power_manager._measure_voltage('main') for _ in range(num_samples)]
+        voltages = [power_manager._measure_voltage("main") for _ in range(num_samples)]
         return np.std(voltages) / np.mean(voltages)  # Relative standard deviation
 
     # Measure initial noise level

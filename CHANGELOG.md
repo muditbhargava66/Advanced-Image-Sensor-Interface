@@ -5,7 +5,37 @@ All notable changes to the Advanced Image Sensor Interface project will be docum
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.1] - 2024-03-04
+## [1.1.0] - 2025-08-08
+
+### Added
+- Production-ready CI/CD pipeline with comprehensive quality checks
+- Enhanced documentation with updated API references and design specs
+- Professional output formatting throughout codebase
+- Comprehensive security framework with input validation and buffer protection
+- Advanced image processing with multiple denoising algorithms
+- Performance benchmarking suite with realistic measurements
+- MIPI CSI-2 protocol implementation with ECC/CRC validation
+- Pluggable power management backends (simulation and hardware-ready)
+- Image validation with bit-depth safety and format checking
+- Complete test suite with 122 passing tests
+
+### Changed
+- Updated Python version requirements to 3.10-3.13
+- Professional output formatting (removed excessive emojis)
+- Enhanced package structure with proper __init__.py files
+- Improved error handling and robustness throughout
+- Updated documentation to reflect current simulation framework capabilities
+- Streamlined project structure and removed redundant files
+
+### Fixed
+- All critical security and validation issues
+- Package import consistency across all modules
+- Documentation clarity and accuracy
+- Test fragility and private attribute access
+- Professional presentation standards
+- Buffer overflow protection and memory safety
+
+## [1.0.1] - 2025-03-04
 
 ### Fixed
 - Fixed MIPI driver performance optimization test to be deterministic
@@ -13,7 +43,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed power management validation for input configuration parameters
 - Fixed handling of zero values in dynamic range calculation
 - Fixed voltage stability issues in power management system
-- Fixed MIPI driver performance optimization test to be deterministic
 
 ### Added
 - Comprehensive test suite with 67+ unit tests across all components
@@ -39,5 +68,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance Metrics utilities and benchmarking tools
 - Comprehensive documentation including API docs, design specs, and performance analysis
 
+[1.1.0]: https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/releases/tag/v1.0.0

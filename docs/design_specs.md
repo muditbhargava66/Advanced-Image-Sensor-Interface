@@ -2,18 +2,20 @@
 
 ## 1. Introduction
 
-This document outlines the design specifications for the Advanced Image Sensor Interface project, a high-performance system designed for next-generation camera modules. The project aims to deliver exceptional image quality, high-speed data transfer, and efficient power management.
+This document outlines the design specifications for the Advanced Image Sensor Interface project (v1.1.0), a high-performance Python simulation and modeling framework designed for next-generation camera modules. The project aims to deliver exceptional image quality simulation, high-speed data transfer modeling, and efficient power management simulation.
 
 ## 2. System Architecture
 
 ### 2.1 High-Level Overview
 
-The system consists of four main components:
+The system consists of six main components:
 
-1. MIPI Driver
-2. Signal Processing Pipeline
-3. Power Management System
-4. Performance Metrics and Analysis Tools
+1. MIPI Driver with Protocol Simulation
+2. Signal Processing Pipeline with Advanced Algorithms
+3. Power Management System with Pluggable Backends
+4. Security Framework with Input Validation
+5. Performance Metrics and Analysis Tools
+6. AI-Based Calibration System
 
 ```mermaid
 graph TD
@@ -105,12 +107,15 @@ The project includes a thorough testing framework:
 
 ### 5.1 Software Requirements
 
-- Python 3.9 or higher
-- NumPy >= 1.22.0
-- SciPy >= 1.7.3
-- Matplotlib >= 3.5.1 (for visualization)
-- OpenCV >= 4.8.1.78 (for advanced image processing)
-- Pytest >= 7.1.1 (for testing)
+- Python 3.10 or higher (3.10-3.13 supported)
+- NumPy >= 1.23.5, < 2.0.0
+- SciPy >= 1.10.0, < 2.0.0
+- Matplotlib >= 3.7.0, < 4.0.0 (for visualization)
+- OpenCV >= 4.8.1, < 5.0.0 (for advanced image processing)
+- scikit-image >= 0.20.0, < 1.0.0 (for image processing)
+- Pytest >= 8.0.2 (for testing)
+- Ruff >= 0.4.0 (for linting)
+- Black >= 23.10.0 (for code formatting)
 
 ### 5.2 Hardware Compatibility
 

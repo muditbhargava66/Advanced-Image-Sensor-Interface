@@ -22,6 +22,7 @@ from scipy import ndimage
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def reduce_noise(image: np.ndarray, sigma_spatial: float = 1.0, sigma_range: float = 0.1) -> np.ndarray:
     """
     Apply noise reduction to an image using a bilateral filter.
@@ -53,14 +54,14 @@ def reduce_noise(image: np.ndarray, sigma_spatial: float = 1.0, sigma_range: flo
     if image.ndim == 2:
         denoised = _bilateral_filter(image_norm, sigma_spatial, sigma_range)
     else:
-        denoised = np.dstack([_bilateral_filter(image_norm[..., i], sigma_spatial, sigma_range)
-                              for i in range(image.shape[2])])
+        denoised = np.dstack([_bilateral_filter(image_norm[..., i], sigma_spatial, sigma_range) for i in range(image.shape[2])])
 
     # Rescale back to original range
     denoised = (denoised * np.max(image)).astype(image.dtype)
 
     logger.info("Noise reduction completed successfully")
     return denoised
+
 
 def _bilateral_filter(image: np.ndarray, sigma_spatial: float, sigma_range: float) -> np.ndarray:
     """
@@ -79,20 +80,23 @@ def _bilateral_filter(image: np.ndarray, sigma_spatial: float, sigma_range: floa
     """
     # Create spatial kernel
     kernel_size = int(4 * sigma_spatial + 1)
-    x, y = np.mgrid[-kernel_size:kernel_size+1, -kernel_size:kernel_size+1]
+    x, y = np.mgrid[-kernel_size : kernel_size + 1, -kernel_size : kernel_size + 1]
     spatial_kernel = np.exp(-(x**2 + y**2) / (2 * sigma_spatial**2))
 
     # Apply filter
     output = np.zeros_like(image)
     for i in range(image.shape[0]):
         for j in range(image.shape[1]):
-            window = image[max(i-kernel_size,0):min(i+kernel_size+1, image.shape[0]),
-                           max(j-kernel_size,0):min(j+kernel_size+1, image.shape[1])]
-            range_kernel = np.exp(-((window - image[i, j])**2) / (2 * sigma_range**2))
-            kernel = spatial_kernel[:window.shape[0], :window.shape[1]] * range_kernel
+            window = image[
+                max(i - kernel_size, 0) : min(i + kernel_size + 1, image.shape[0]),
+                max(j - kernel_size, 0) : min(j + kernel_size + 1, image.shape[1]),
+            ]
+            range_kernel = np.exp(-((window - image[i, j]) ** 2) / (2 * sigma_range**2))
+            kernel = spatial_kernel[: window.shape[0], : window.shape[1]] * range_kernel
             output[i, j] = np.sum(window * kernel) / np.sum(kernel)
 
     return output
+
 
 def adaptive_noise_reduction(image: np.ndarray, window_size: int = 5, k: float = 0.1) -> np.ndarray:
     """
@@ -129,7 +133,7 @@ def adaptive_noise_reduction(image: np.ndarray, window_size: int = 5, k: float =
     noise_var = np.mean(local_var)
 
     # Calculate adaptive factor
-    adaptive_factor = (local_var - noise_var) / (local_var + k*noise_var)
+    adaptive_factor = (local_var - noise_var) / (local_var + k * noise_var)
     adaptive_factor = np.clip(adaptive_factor, 0, 1)
 
     # Apply adaptive filtering
@@ -140,6 +144,7 @@ def adaptive_noise_reduction(image: np.ndarray, window_size: int = 5, k: float =
 
     logger.info("Adaptive noise reduction completed successfully")
     return denoised
+
 
 # Example usage and testing
 if __name__ == "__main__":
@@ -153,8 +158,8 @@ if __name__ == "__main__":
     adaptive_denoised_image = adaptive_noise_reduction(noisy_image)
 
     # Calculate and print MSE for both methods
-    mse_bilateral = np.mean((test_image - denoised_image)**2)
-    mse_adaptive = np.mean((test_image - adaptive_denoised_image)**2)
+    mse_bilateral = np.mean((test_image - denoised_image) ** 2)
+    mse_adaptive = np.mean((test_image - adaptive_denoised_image) ** 2)
     logger.info(f"Mean Squared Error (Bilateral): {mse_bilateral:.6f}")
     logger.info(f"Mean Squared Error (Adaptive): {mse_adaptive:.6f}")
 

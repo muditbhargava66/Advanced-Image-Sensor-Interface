@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document presents a comprehensive performance analysis of the Advanced Image Sensor Interface project (v1.0.1). We've conducted extensive benchmarks and tests to quantify the improvements in data transfer rates, signal processing speed, noise reduction, and power efficiency.
+This document presents a comprehensive performance analysis of the Advanced Image Sensor Interface project (v1.1.0). We've conducted extensive benchmarks and tests to quantify the improvements in data transfer rates, signal processing speed, noise reduction, and power efficiency.
 
 ## 2. MIPI Driver Performance
 

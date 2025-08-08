@@ -18,8 +18,9 @@ build:
 # Define the steps required to install the project's dependencies
 python:
   install:
-    - requirements: requirements.txt  # Install project dependencies
     - requirements: docs/requirements.txt  # Install documentation dependencies
+    - method: pip
+      path: .
 
 # Optionally, define additional formats to build (e.g., PDF, ePub)
 formats:
@@ -37,9 +38,4 @@ formats:
 #     post_sphinx:
 #       - sphinx-apidoc -o docs/source/ my_package
 
-# Optionally declare the Python requirements required to build your docs
-python:
-   install:
-   - requirements: docs/requirements.txt
-   - method: pip
-     path: .
+

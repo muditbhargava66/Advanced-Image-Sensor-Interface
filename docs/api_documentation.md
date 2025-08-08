@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project (v1.0.1). It covers the MIPI Driver, Signal Processing Pipeline, and Power Management System interfaces.
+This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project (v1.1.0). It covers the MIPI Driver, Signal Processing Pipeline, and Power Management System interfaces.
 
 ## 2. MIPI Driver API
 
@@ -339,4 +339,4 @@ except Exception as e:
 
 ## 9. Version Compatibility
 
-This API documentation is for version 1.0.1 of the Advanced Image Sensor Interface project. Future versions will maintain backwards compatibility for major version numbers (e.g., 1.x.x).
+This API documentation is for version 1.1.0 of the Advanced Image Sensor Interface project. Future versions will maintain backwards compatibility for major version numbers (e.g., 1.x.x).

@@ -26,6 +26,7 @@ import numpy as np
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class PatternGenerator:
     """
     A class for generating various test patterns for image sensor testing.
@@ -74,13 +75,13 @@ class PatternGenerator:
 
         """
         pattern_functions = {
-            'color_bars': self._generate_color_bars,
-            'grayscale_ramp': self._generate_grayscale_ramp,
-            'checkerboard': self._generate_checkerboard,
-            'slanted_edge': self._generate_slanted_edge,
-            'siemens_star': self._generate_siemens_star,
-            'zone_plate': self._generate_zone_plate,
-            'noise': self._generate_noise
+            "color_bars": self._generate_color_bars,
+            "grayscale_ramp": self._generate_grayscale_ramp,
+            "checkerboard": self._generate_checkerboard,
+            "slanted_edge": self._generate_slanted_edge,
+            "siemens_star": self._generate_siemens_star,
+            "zone_plate": self._generate_zone_plate,
+            "noise": self._generate_noise,
         }
 
         if pattern_name not in pattern_functions:
@@ -95,16 +96,16 @@ class PatternGenerator:
         bar_width = self.width // num_bars
         colors = [
             (255, 255, 255),  # White
-            (255, 255, 0),    # Yellow
-            (0, 255, 255),    # Cyan
-            (0, 255, 0),      # Green
-            (255, 0, 255),    # Magenta
-            (255, 0, 0),      # Red
-            (0, 0, 255),      # Blue
-            (0, 0, 0)         # Black
+            (255, 255, 0),  # Yellow
+            (0, 255, 255),  # Cyan
+            (0, 255, 0),  # Green
+            (255, 0, 255),  # Magenta
+            (255, 0, 0),  # Red
+            (0, 0, 255),  # Blue
+            (0, 0, 0),  # Black
         ]
         for i, color in enumerate(colors[:num_bars]):
-            pattern[:, i*bar_width:(i+1)*bar_width] = color
+            pattern[:, i * bar_width : (i + 1) * bar_width] = color
         return pattern
 
     def _generate_grayscale_ramp(self) -> np.ndarray:
@@ -149,6 +150,7 @@ class PatternGenerator:
         noise = np.random.normal(mean, std_dev, (self.height, self.width))
         return np.clip(noise, 0, self.max_value).astype(np.uint8)
 
+
 def get_available_patterns() -> list[str]:
     """
     Get a list of available test pattern names.
@@ -158,15 +160,8 @@ def get_available_patterns() -> list[str]:
         List[str]: A list of available pattern names.
 
     """
-    return [
-        'color_bars',
-        'grayscale_ramp',
-        'checkerboard',
-        'slanted_edge',
-        'siemens_star',
-        'zone_plate',
-        'noise'
-    ]
+    return ["color_bars", "grayscale_ramp", "checkerboard", "slanted_edge", "siemens_star", "zone_plate", "noise"]
+
 
 # Example usage and testing
 if __name__ == "__main__":
@@ -183,11 +178,11 @@ if __name__ == "__main__":
     logger.info("All patterns generated and validated successfully")
 
     # Example of generating a specific pattern with custom parameters
-    custom_color_bars = generator.generate_pattern('color_bars', num_bars=10)
+    custom_color_bars = generator.generate_pattern("color_bars", num_bars=10)
     logger.info(f"Generated custom color bars pattern with shape {custom_color_bars.shape}")
 
     # Test error handling
     try:
-        generator.generate_pattern('non_existent_pattern')
+        generator.generate_pattern("non_existent_pattern")
     except ValueError as e:
         logger.info(f"Successfully caught error: {e!s}")

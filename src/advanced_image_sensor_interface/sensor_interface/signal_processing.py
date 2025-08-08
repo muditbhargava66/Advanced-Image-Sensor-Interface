@@ -14,12 +14,78 @@ Classes:
 import logging
 import time
 from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
 
 import numpy as np
+
+from .image_validation import ImageFormat, ImageValidator, SafeImageProcessor, SupportedDType
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class TimingStrategy(Protocol):
+    """Protocol for timing strategies in signal processing."""
+
+    def get_processing_time(self) -> float:
+        """Get the current processing time per frame."""
+        ...
+
+    def set_processing_time(self, time: float) -> None:
+        """Set the processing time per frame."""
+        ...
+
+    def optimize_timing(self) -> None:
+        """Optimize timing parameters."""
+        ...
+
+
+class DefaultTimingStrategy:
+    """Default timing strategy for production use."""
+
+    def __init__(self, initial_time: float = 0.1):
+        """Initialize with default processing time."""
+        self._processing_time = initial_time
+
+    def get_processing_time(self) -> float:
+        """Get the current processing time per frame."""
+        return self._processing_time
+
+    def set_processing_time(self, time: float) -> None:
+        """Set the processing time per frame."""
+        if time < 0:
+            raise ValueError("Processing time must be non-negative")
+        self._processing_time = time
+
+    def optimize_timing(self) -> None:
+        """Optimize timing parameters."""
+        self._processing_time *= 0.8  # 20% improvement
+
+
+class TestTimingStrategy:
+    """Testing timing strategy that allows direct control."""
+
+    def __init__(self, initial_time: float = 0.1):
+        """Initialize with test processing time."""
+        self._processing_time = initial_time
+        self._test_mode = True
+
+    def get_processing_time(self) -> float:
+        """Get the current processing time per frame."""
+        return self._processing_time
+
+    def set_processing_time(self, time: float) -> None:
+        """Set the processing time per frame (test mode)."""
+        if time < 0:
+            raise ValueError("Processing time must be non-negative")
+        self._processing_time = time
+
+    def optimize_timing(self) -> None:
+        """Optimize timing parameters (test mode)."""
+        self._processing_time *= 0.5  # More aggressive for testing
+
 
 @dataclass
 class SignalConfig:
@@ -28,6 +94,7 @@ class SignalConfig:
     bit_depth: int
     noise_reduction_strength: float
     color_correction_matrix: np.ndarray
+
 
 class SignalProcessor:
     """
@@ -39,17 +106,29 @@ class SignalProcessor:
 
     """
 
-    def __init__(self, config: SignalConfig):
+    def __init__(self, config: SignalConfig, timing_strategy: TimingStrategy = None):
         """
         Initialize the SignalProcessor with the given configuration.
 
         Args:
         ----
             config (SignalConfig): Configuration for signal processing.
+            timing_strategy (TimingStrategy, optional): Strategy for timing control.
 
         """
         self.config = config
-        self._processing_time = 0.1  # Initial processing time per frame in seconds
+        self._timing_strategy = timing_strategy or DefaultTimingStrategy()
+        self._validator = ImageValidator()
+
+        # Create target format for processing
+        self._target_format = ImageFormat(
+            height=1080,  # Default, will be updated per image
+            width=1920,  # Default, will be updated per image
+            channels=3,  # Assume RGB processing
+            bit_depth=config.bit_depth,
+            dtype=self._get_dtype_for_bit_depth(config.bit_depth),
+        )
+
         self._initialize_processing_pipeline()
         logger.info(f"Signal Processor initialized with {self.config.bit_depth}-bit depth")
 
@@ -59,9 +138,24 @@ class SignalProcessor:
         time.sleep(0.1)
         logger.info("Processing pipeline initialized successfully")
 
+    def _get_dtype_for_bit_depth(self, bit_depth: int) -> SupportedDType:
+        """Get appropriate dtype for bit depth."""
+        if bit_depth == 8:
+            return SupportedDType.UINT8
+        elif bit_depth == 10:
+            return SupportedDType.UINT10_IN_UINT16
+        elif bit_depth == 12:
+            return SupportedDType.UINT12_IN_UINT16
+        elif bit_depth == 14:
+            return SupportedDType.UINT14_IN_UINT16
+        elif bit_depth == 16:
+            return SupportedDType.UINT16
+        else:
+            raise ValueError(f"Unsupported bit depth: {bit_depth}")
+
     def process_frame(self, frame: np.ndarray) -> np.ndarray:
         """
-        Process a single frame of image data.
+        Process a single frame of image data with comprehensive validation.
 
         Args:
         ----
@@ -69,20 +163,31 @@ class SignalProcessor:
 
         Returns:
         -------
-            np.ndarray: Processed frame data.
+            np.ndarray: Processed frame data in original format.
 
         """
         try:
-            if not isinstance(frame, np.ndarray):
-                raise ValueError("Input frame must be a numpy array")
+            # Validate input frame
+            original_format = self._validator.validate_image(frame)
 
-            processed = frame.astype(float)  # Convert to float for processing
-            processed = self._apply_noise_reduction(processed)
-            processed = self._apply_dynamic_range_expansion(processed)
-            processed = self._apply_color_correction(processed)
+            # Update target format to match input dimensions
+            self._target_format.height = original_format.height
+            self._target_format.width = original_format.width
+            self._target_format.channels = original_format.channels
 
-            # Convert back to original dtype before returning
-            return np.clip(processed, 0, np.iinfo(frame.dtype).max).astype(frame.dtype)
+            # Create safe processor for this frame
+            processor = SafeImageProcessor(self._target_format)
+
+            # Define processing pipeline
+            def processing_pipeline(float_frame: np.ndarray) -> np.ndarray:
+                processed = self._apply_noise_reduction(float_frame)
+                processed = self._apply_dynamic_range_expansion(processed)
+                processed = self._apply_color_correction(processed)
+                return processed
+
+            # Process safely
+            return processor.safe_process(frame, processing_pipeline)
+
         except Exception as e:
             logger.error(f"Error processing frame: {e!s}")
             if isinstance(e, ValueError):
@@ -101,8 +206,7 @@ class SignalProcessor:
             result = self._blur(frame, kernel_size, sigma)
         else:
             # Apply to each channel for multi-channel images
-            result = np.stack([self._blur(frame[..., i], kernel_size, sigma)
-                               for i in range(frame.shape[-1])], axis=-1)
+            result = np.stack([self._blur(frame[..., i], kernel_size, sigma) for i in range(frame.shape[-1])], axis=-1)
 
         return result
 
@@ -116,12 +220,12 @@ class SignalProcessor:
         # Apply along rows
         result = np.zeros_like(image, dtype=float)
         for i in range(image.shape[0]):
-            result[i, :] = np.convolve(image[i, :].astype(float), kernel, mode='same')
+            result[i, :] = np.convolve(image[i, :].astype(float), kernel, mode="same")
 
         # Apply along columns
         temp = np.zeros_like(result)
         for j in range(image.shape[1]):
-            temp[:, j] = np.convolve(result[:, j], kernel, mode='same')
+            temp[:, j] = np.convolve(result[:, j], kernel, mode="same")
 
         return temp
 
@@ -140,9 +244,15 @@ class SignalProcessor:
 
     def optimize_performance(self) -> None:
         """Optimize signal processing performance."""
-        self._processing_time *= 0.8  # 20% reduction in processing time
+        self._timing_strategy.optimize_timing()
         self.config.noise_reduction_strength *= 0.9  # 10% improvement in noise reduction
-        logger.info(f"Optimized performance: Processing time reduced to {self._processing_time:.3f} seconds per frame")
+        processing_time = self._timing_strategy.get_processing_time()
+        logger.info(f"Optimized performance: Processing time reduced to {processing_time:.3f} seconds per frame")
+
+    def set_timing_strategy_for_test(self, strategy: TimingStrategy) -> None:
+        """Set timing strategy for testing purposes."""
+        self._timing_strategy = strategy
+
 
 class AutomatedTestSuite:
     """
@@ -204,12 +314,13 @@ class AutomatedTestSuite:
         # Implement various checks here. For simplicity, we'll just check if the frame is not empty
         return frame.size > 0 and not np.isnan(frame).any()
 
+
 # Example usage demonstrating performance improvements and automated testing
 if __name__ == "__main__":
     # Initialize SignalProcessor
-    config = SignalConfig(bit_depth=12,
-                          noise_reduction_strength=0.1,
-                          color_correction_matrix=np.eye(3))  # Identity matrix for simplicity
+    config = SignalConfig(
+        bit_depth=12, noise_reduction_strength=0.1, color_correction_matrix=np.eye(3)
+    )  # Identity matrix for simplicity
     processor = SignalProcessor(config)
 
     # Create and run initial automated test suite

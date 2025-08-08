@@ -22,7 +22,11 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from src.utils.performance_metrics import calculate_color_accuracy, calculate_dynamic_range, calculate_snr
+from advanced_image_sensor_interface.utils.performance_metrics import (
+    calculate_color_accuracy,
+    calculate_dynamic_range,
+    calculate_snr,
+)
 
 
 class TestPerformanceMetrics:
@@ -79,21 +83,27 @@ class TestPerformanceMetrics:
         with pytest.raises(ValueError):
             calculate_color_accuracy(reference_colors, measured_colors)
 
-    @pytest.mark.parametrize("signal,noise,expected_snr", [
-        (np.ones((10, 10)) * 100, np.ones((10, 10)) * 10, 20),
-        (np.ones((10, 10)) * 100, np.ones((10, 10)) * 1, 40),
-        (np.ones((10, 10)) * 10, np.ones((10, 10)) * 1, 20)
-    ])
+    @pytest.mark.parametrize(
+        "signal,noise,expected_snr",
+        [
+            (np.ones((10, 10)) * 100, np.ones((10, 10)) * 10, 20),
+            (np.ones((10, 10)) * 100, np.ones((10, 10)) * 1, 40),
+            (np.ones((10, 10)) * 10, np.ones((10, 10)) * 1, 20),
+        ],
+    )
     def test_snr_parametrized(self, signal, noise, expected_snr):
         """Parametrized test for SNR calculation with different signal and noise levels."""
         calculated_snr = calculate_snr(signal, noise)
         assert np.isclose(calculated_snr, expected_snr, atol=0.1)
 
-    @pytest.mark.parametrize("image,expected_dr", [
-        (np.array([1, 10, 100, 1000], dtype=np.uint16), 60),
-        (np.array([10, 100, 1000], dtype=np.uint16), 40),
-        (np.array([1, 2, 4, 8, 16], dtype=np.uint16), 24)
-    ])
+    @pytest.mark.parametrize(
+        "image,expected_dr",
+        [
+            (np.array([1, 10, 100, 1000], dtype=np.uint16), 60),
+            (np.array([10, 100, 1000], dtype=np.uint16), 40),
+            (np.array([1, 2, 4, 8, 16], dtype=np.uint16), 24),
+        ],
+    )
     def test_dynamic_range_parametrized(self, image, expected_dr):
         """Parametrized test for dynamic range calculation with different image data."""
         calculated_dr = calculate_dynamic_range(image)
@@ -148,6 +158,7 @@ class TestPerformanceMetrics:
         assert 2 <= snr <= 50
         assert 5 <= dr <= 80  # Lower bound to 5 instead of 20
         assert 0 <= mean_delta_e <= 20
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
