@@ -21,7 +21,7 @@ Example:
 
 from .sensor_interface import MIPIConfig, MIPIDriver, PowerConfig, PowerManager, SignalConfig, SignalProcessor, AutomatedTestSuite
 
-__version__ = "1.1.0"
+__version__ = "2.0.0"
 __author__ = "Mudit Bhargava"
 __license__ = "MIT"
 

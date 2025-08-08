@@ -5,7 +5,25 @@ All notable changes to the Advanced Image Sensor Interface project will be docum
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2025-08-08
+## [Unreleased - v2.0.0]
+
+### Planned Features
+- Enhanced sensor interface support (up to 8K resolution)
+- HDR image processing pipeline
+- RAW image format support
+- Multi-sensor synchronization capabilities
+- GPU acceleration support for heavy computations
+- Advanced power states management
+- Real-world scenario simulations
+- Extended test pattern generation
+
+### Breaking Changes (Planned)
+- Redesigned configuration API for better flexibility
+- Updated signal processing pipeline interface
+- Modified power management class structure
+- Revised error handling mechanism
+
+## [1.1.0] - 2025-01-08
 
 ### Added
 - Production-ready CI/CD pipeline with comprehensive quality checks
