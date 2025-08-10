@@ -18,6 +18,7 @@ Limitations:
 
 import logging
 import time
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
@@ -26,6 +27,121 @@ import numpy as np
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class PowerBackend(ABC):
+    """Abstract base class for power management backends."""
+
+    @abstractmethod
+    def read_voltage(self, rail: str) -> float:
+        """Read voltage from specified power rail."""
+        pass
+
+    @abstractmethod
+    def read_current(self, rail: str) -> float:
+        """Read current from specified power rail."""
+        pass
+
+    @abstractmethod
+    def set_voltage(self, rail: str, voltage: float) -> bool:
+        """Set voltage for specified power rail."""
+        pass
+
+    @abstractmethod
+    def get_temperature(self) -> float:
+        """Get system temperature."""
+        pass
+
+
+class SimulationBackend(PowerBackend):
+    """Simulation backend for power management (default)."""
+
+    def __init__(self):
+        self.voltages = {"main": 1.8, "io": 3.3}
+        self.base_temperature = 25.0
+
+    def read_voltage(self, rail: str) -> float:
+        """Return simulated voltage with small variations."""
+        base_voltage = self.voltages.get(rail, 1.8)
+        # Add small random variation (±2%)
+        variation = np.random.normal(0, 0.02)
+        return base_voltage * (1 + variation)
+
+    def read_current(self, rail: str) -> float:
+        """Return simulated current based on voltage."""
+        voltage = self.read_voltage(rail)
+        # Simulate current based on voltage (simplified model)
+        base_current = 0.5 if rail == "main" else 0.3
+        return base_current * (voltage / self.voltages.get(rail, 1.8))
+
+    def set_voltage(self, rail: str, voltage: float) -> bool:
+        """Set simulated voltage."""
+        if rail in self.voltages:
+            self.voltages[rail] = voltage
+            return True
+        return False
+
+    def get_temperature(self) -> float:
+        """Return simulated temperature."""
+        # Simulate temperature based on power consumption
+        total_power = sum(self.read_voltage(rail) * self.read_current(rail) for rail in self.voltages)
+        return self.base_temperature + total_power * 10  # 10°C per Watt
+
+
+class HardwareBackend(PowerBackend):
+    """Hardware backend for real power management."""
+
+    def __init__(self, i2c_bus: int = 1):
+        """Initialize hardware backend."""
+        self.i2c_bus = i2c_bus
+        self._init_hardware()
+
+    def _init_hardware(self):
+        """Initialize hardware interfaces."""
+        try:
+            import smbus
+
+            self.bus = smbus.SMBus(self.i2c_bus)
+            logger.info(f"Hardware power backend initialized on I2C bus {self.i2c_bus}")
+        except ImportError:
+            logger.warning("smbus not available, falling back to simulation")
+            self._fallback_to_simulation()
+        except Exception as e:
+            logger.error(f"Hardware initialization failed: {e}")
+            self._fallback_to_simulation()
+
+    def _fallback_to_simulation(self):
+        """Fallback to simulation backend."""
+        self._simulation = SimulationBackend()
+        self._use_simulation = True
+
+    def read_voltage(self, rail: str) -> float:
+        """Read voltage from hardware or simulation."""
+        if hasattr(self, "_use_simulation"):
+            return self._simulation.read_voltage(rail)
+        # Hardware implementation would go here
+        return 1.8  # Placeholder
+
+    def read_current(self, rail: str) -> float:
+        """Read current from hardware or simulation."""
+        if hasattr(self, "_use_simulation"):
+            return self._simulation.read_current(rail)
+        # Hardware implementation would go here
+        return 0.5  # Placeholder
+
+    def set_voltage(self, rail: str, voltage: float) -> bool:
+        """Set voltage via hardware or simulation."""
+        if hasattr(self, "_use_simulation"):
+            return self._simulation.set_voltage(rail, voltage)
+        # Hardware implementation would go here
+        return True  # Placeholder
+
+    def get_temperature(self) -> float:
+        """Get temperature from hardware or simulation."""
+        if hasattr(self, "_use_simulation"):
+            return self._simulation.get_temperature()
+        # Hardware implementation would go here
+        return 25.0  # Placeholder
 
 
 @dataclass
@@ -47,25 +163,27 @@ class PowerManager:
 
     """
 
-    def __init__(self, config: PowerConfig):
+    def __init__(self, config: PowerConfig, backend: PowerBackend = None):
         """
         Initialize the PowerManager with the given configuration.
 
         Args:
         ----
             config (PowerConfig): Configuration for power management.
+            backend (PowerBackend): Power backend (defaults to simulation).
 
         """
         if config.voltage_main <= 0 or config.voltage_io <= 0 or config.current_limit <= 0:
             raise ValueError("Invalid power configuration")
 
         self.config = config
+        self.backend = backend or SimulationBackend()
         self._noise_level = 0.1  # Initial noise level (10% of signal)
         self._temperature = 25.0  # Initial temperature in Celsius
         self._initialize_power_system()
         logger.info(
             f"Power Manager initialized with main voltage: {self.config.voltage_main}V, "
-            f"I/O voltage: {self.config.voltage_io}V"
+            f"I/O voltage: {self.config.voltage_io}V, backend: {type(self.backend).__name__}"
         )
 
     def _initialize_power_system(self) -> None:

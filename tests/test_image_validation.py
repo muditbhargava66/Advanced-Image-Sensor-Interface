@@ -14,14 +14,8 @@ Usage:
     $ pytest tests/test_image_validation.py
 """
 
-import os
-import sys
-
 import numpy as np
 import pytest
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 from advanced_image_sensor_interface.sensor_interface.image_validation import (
     BitDepthConverter,
     ImageFormat,

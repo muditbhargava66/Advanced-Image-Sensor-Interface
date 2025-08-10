@@ -1,0 +1,103 @@
+# Include the README and other documentation files
+include README.md
+include CHANGELOG.md
+include LICENSE
+include CI_CD_SUMMARY.md
+include COMPLETION_SUMMARY.md
+
+# Include configuration files
+include pyproject.toml
+include .ruff.toml
+
+# Include documentation
+recursive-include docs *.md *.rst *.txt *.py
+recursive-include docs/_static *
+recursive-include docs/_templates *
+
+# Include examples
+recursive-include examples *.py *.md *.txt *.json *.yaml *.yml
+
+# Include benchmarks
+recursive-include benchmarks *.py *.md *.txt *.json
+
+# Include test data and fixtures
+recursive-include tests *.py *.json *.yaml *.yml *.txt
+recursive-include tests/fixtures *
+recursive-include tests/data *
+
+# Include stubs for type checking
+recursive-include stubs *.pyi
+
+# Include assets and images
+recursive-include assets *.png *.jpg *.jpeg *.svg *.gif
+recursive-include assets *.ico *.pdf
+
+# Include scripts
+recursive-include scripts *.py *.sh *.bat *.ps1
+
+# Include hardware specifications and documentation
+recursive-include hardware_specs *.md *.txt *.json *.yaml *.yml
+
+# Include calibration data templates
+recursive-include calibration_templates *.json *.yaml *.yml
+
+# Exclude development and build artifacts
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude __pycache__
+global-exclude .git*
+global-exclude .DS_Store
+global-exclude *.so
+global-exclude .pytest_cache
+global-exclude .mypy_cache
+global-exclude .ruff_cache
+global-exclude htmlcov
+global-exclude .coverage
+global-exclude .tox
+global-exclude .nox
+global-exclude build
+global-exclude dist
+global-exclude *.egg-info
+
+# Exclude IDE files
+global-exclude .vscode
+global-exclude .idea
+global-exclude *.swp
+global-exclude *.swo
+global-exclude *~
+
+# Exclude temporary and log files
+global-exclude *.log
+global-exclude *.tmp
+global-exclude *.temp
+global-exclude temp_*
+global-exclude *_temp
+
+# Exclude large data files that shouldn't be in the package
+global-exclude *.hdf5
+global-exclude *.h5
+global-exclude *.pkl
+global-exclude *.pickle
+global-exclude *.npy
+global-exclude *.npz
+global-exclude *.zip
+global-exclude *.tar.gz
+global-exclude *.rar
+global-exclude *.7z
+
+# Exclude raw image files
+global-exclude *.raw
+global-exclude *.dng
+global-exclude *.cr2
+global-exclude *.nef
+global-exclude *.arw
+global-exclude *.tif
+global-exclude *.tiff
+
+# Exclude environment and configuration files
+global-exclude .env
+global-exclude .env.*
+global-exclude config.ini
+global-exclude secrets.yaml
+global-exclude api_keys.txt

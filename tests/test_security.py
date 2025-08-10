@@ -14,15 +14,10 @@ Usage:
     $ pytest tests/test_security.py
 """
 
-import os
-import sys
 import time
 
 import numpy as np
 import pytest
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 from advanced_image_sensor_interface.sensor_interface.security import BufferGuard, InputValidator, SecurityLimits, SecurityManager
 
 

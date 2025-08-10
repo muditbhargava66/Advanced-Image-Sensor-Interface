@@ -26,6 +26,10 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Modern Python packaging
+*.whl
+pip-wheel-metadata/
+
 # PyInstaller
 *.manifest
 *.spec
@@ -152,7 +156,7 @@ cython_debug/
 # Windows
 Thumbs.db
 
-# Project specific
+# Project specific - Advanced Image Sensor Interface
 *.log
 *.sqlite
 *.hdf5
@@ -163,36 +167,102 @@ Thumbs.db
 # *.png
 *.tif
 *.tiff
+*.raw
+*.dng
+*.cr2
+*.nef
+*.arw
 output/
 data/raw/
 data/processed/
 models/
 results/
+calibration_data/
+sensor_configs/
+temp_images/
 
 # Benchmark and test outputs
 benchmark_results.json
 *_results.json
 test_sim.json
 final_test.json
+performance_*.json
+profiling_*.json
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+*.cover
 
 # Keep requirements files (don't ignore)
 !requirements.txt
 !requirements-dev.txt
+!requirements-full.txt
 
 # Temporary files
 *.swp
 *.swo
 *~
+*.tmp
+*.temp
 
 # Large files (customize as needed)
 *.zip
 *.tar.gz
 *.rar
+*.7z
 
 # Sensitive or personal files
 config.ini
 secrets.yaml
+.env.local
+.env.production
+api_keys.txt
 
+# Development tools cache
 .ruff_cache/
+.mypy_cache/
+.pytest_cache/
 .idea/
 .vscode/
+.vim/
+.emacs.d/
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Documentation build
+docs/_build/
+docs/build/
+site/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# GPU/CUDA related
+*.ptx
+*.cubin
+*.fatbin
+
+# Hardware simulation files
+*.vcd
+*.ghw
+*.fst
+
+# Version 2.0.0 specific
+v2_migration_backup/
+legacy_configs/
+deprecated/
+
+# CI/CD artifacts
+.github/workflows/artifacts/
+ci_logs/
+deployment_logs/

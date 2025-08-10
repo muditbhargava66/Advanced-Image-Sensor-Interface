@@ -23,6 +23,7 @@ from typing import Optional
 
 import numpy as np
 import psutil
+
 from advanced_image_sensor_interface.sensor_interface.mipi_driver import MIPIConfig, MIPIDriver
 from advanced_image_sensor_interface.sensor_interface.power_management import PowerConfig, PowerManager
 from advanced_image_sensor_interface.sensor_interface.signal_processing import SignalConfig, SignalProcessor
@@ -33,6 +34,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SystemInfo:
     """System information for benchmark context."""
+
     cpu_model: str
     cpu_cores: int
     cpu_threads: int
@@ -45,6 +47,7 @@ class SystemInfo:
 @dataclass
 class BenchmarkResult:
     """Result of a performance benchmark."""
+
     test_name: str
     frames_per_second: float
     processing_time_ms: float
@@ -58,7 +61,7 @@ class BenchmarkResult:
 class PerformanceProfiler:
     """
     Performance profiler for simulation components.
-    
+
     IMPORTANT: All measurements are simulation performance in Python,
     not hardware throughput. Real hardware would have different characteristics.
     """
@@ -79,28 +82,25 @@ class PerformanceProfiler:
             memory_gb=psutil.virtual_memory().total / (1024**3),
             python_version=platform.python_version(),
             numpy_version=numpy.__version__,
-            platform=platform.platform()
+            platform=platform.platform(),
         )
 
-    def benchmark_mipi_simulation(self,
-                                 config: MIPIConfig,
-                                 data_sizes: list[int],
-                                 iterations: int = 100) -> BenchmarkResult:
+    def benchmark_mipi_simulation(self, config: MIPIConfig, data_sizes: list[int], iterations: int = 100) -> BenchmarkResult:
         """
         Benchmark MIPI protocol simulation performance.
-        
+
         Args:
             config: MIPI configuration
             data_sizes: List of data sizes to test (bytes)
             iterations: Number of iterations per test
-            
+
         Returns:
             BenchmarkResult with simulation performance metrics
         """
         driver = MIPIDriver(config)
 
         # Warm up
-        test_data = b'0' * 1024
+        test_data = b"0" * 1024
         for _ in range(10):
             driver.send_data(test_data)
 
@@ -112,7 +112,7 @@ class PerformanceProfiler:
         start_time = time.perf_counter()
 
         for data_size in data_sizes:
-            test_data = b'0' * data_size
+            test_data = b"0" * data_size
             for _ in range(iterations):
                 driver.send_data(test_data)
                 total_bytes += data_size
@@ -140,26 +140,25 @@ class PerformanceProfiler:
                 "channel": config.channel,
                 "data_sizes": data_sizes,
                 "iterations": iterations,
-                "throughput_mbps_simulated": throughput_mbps
+                "throughput_mbps_simulated": throughput_mbps,
             },
-            notes="Simulation performance in Python, not hardware throughput"
+            notes="Simulation performance in Python, not hardware throughput",
         )
 
         self.results.append(result)
         return result
 
-    def benchmark_signal_processing(self,
-                                   resolutions: list[tuple[int, int, int]],
-                                   bit_depths: list[int],
-                                   iterations: int = 10) -> BenchmarkResult:
+    def benchmark_signal_processing(
+        self, resolutions: list[tuple[int, int, int]], bit_depths: list[int], iterations: int = 10
+    ) -> BenchmarkResult:
         """
         Benchmark signal processing pipeline performance.
-        
+
         Args:
             resolutions: List of (height, width, channels) tuples
             bit_depths: List of bit depths to test
             iterations: Number of iterations per test
-            
+
         Returns:
             BenchmarkResult with processing performance metrics
         """
@@ -172,15 +171,11 @@ class PerformanceProfiler:
         for height, width, channels in resolutions:
             for bit_depth in bit_depths:
                 # Create processor
-                config = SignalConfig(
-                    bit_depth=bit_depth,
-                    noise_reduction_strength=0.1,
-                    color_correction_matrix=np.eye(3)
-                )
+                config = SignalConfig(bit_depth=bit_depth, noise_reduction_strength=0.1, color_correction_matrix=np.eye(3))
                 processor = SignalProcessor(config)
 
                 # Generate test frame
-                max_val = (2 ** bit_depth) - 1
+                max_val = (2**bit_depth) - 1
                 if channels == 1:
                     frame = np.random.randint(0, max_val + 1, (height, width), dtype=np.uint16)
                 else:
@@ -188,7 +183,7 @@ class PerformanceProfiler:
 
                 # Process frames
                 for _ in range(iterations):
-                    processed = processor.process_frame(frame)
+                    _ = processor.process_frame(frame)
                     total_frames += 1
 
         end_time = time.perf_counter()
@@ -210,9 +205,9 @@ class PerformanceProfiler:
                 "resolutions": resolutions,
                 "bit_depths": bit_depths,
                 "iterations": iterations,
-                "total_frames": total_frames
+                "total_frames": total_frames,
             },
-            notes="Pure Python processing performance, not optimized for real-time"
+            notes="Pure Python processing performance, not optimized for real-time",
         )
 
         self.results.append(result)
@@ -221,10 +216,10 @@ class PerformanceProfiler:
     def benchmark_power_modeling(self, iterations: int = 1000) -> BenchmarkResult:
         """
         Benchmark power management simulation performance.
-        
+
         Args:
             iterations: Number of power calculations to perform
-            
+
         Returns:
             BenchmarkResult with power modeling performance
         """
@@ -235,8 +230,8 @@ class PerformanceProfiler:
         start_time = time.perf_counter()
 
         for _ in range(iterations):
-            status = power_manager.get_power_status()
-            power_manager.set_voltage('main', 1.8 + np.random.uniform(-0.1, 0.1))
+            _ = power_manager.get_power_status()
+            power_manager.set_voltage("main", 1.8 + np.random.uniform(-0.1, 0.1))
 
         end_time = time.perf_counter()
         total_time = end_time - start_time
@@ -256,9 +251,9 @@ class PerformanceProfiler:
                 "iterations": iterations,
                 "voltage_main": config.voltage_main,
                 "voltage_io": config.voltage_io,
-                "current_limit": config.current_limit
+                "current_limit": config.current_limit,
             },
-            notes="Power modeling simulation, not actual hardware measurements"
+            notes="Power modeling simulation, not actual hardware measurements",
         )
 
         self.results.append(result)
@@ -277,25 +272,27 @@ class PerformanceProfiler:
                 "memory_gb": self.system_info.memory_gb,
                 "python_version": self.system_info.python_version,
                 "numpy_version": self.system_info.numpy_version,
-                "platform": self.system_info.platform
+                "platform": self.system_info.platform,
             },
             "benchmark_results": [],
             "summary": {
                 "total_tests": len(self.results),
-                "disclaimer": "All measurements are Python simulation performance, not hardware throughput"
-            }
+                "disclaimer": "All measurements are Python simulation performance, not hardware throughput",
+            },
         }
 
         for result in self.results:
-            report["benchmark_results"].append({
-                "test_name": result.test_name,
-                "frames_per_second": result.frames_per_second,
-                "processing_time_ms": result.processing_time_ms,
-                "memory_usage_mb": result.memory_usage_mb,
-                "cpu_usage_percent": result.cpu_usage_percent,
-                "configuration": result.configuration,
-                "notes": result.notes
-            })
+            report["benchmark_results"].append(
+                {
+                    "test_name": result.test_name,
+                    "frames_per_second": result.frames_per_second,
+                    "processing_time_ms": result.processing_time_ms,
+                    "memory_usage_mb": result.memory_usage_mb,
+                    "cpu_usage_percent": result.cpu_usage_percent,
+                    "configuration": result.configuration,
+                    "notes": result.notes,
+                }
+            )
 
         return report
 
@@ -310,7 +307,7 @@ class BenchmarkSuite:
     def run_all_benchmarks(self) -> dict:
         """
         Run all performance benchmarks.
-        
+
         Returns:
             Complete benchmark report
         """
@@ -322,11 +319,7 @@ class BenchmarkSuite:
         self.profiler.benchmark_mipi_simulation(mipi_config, data_sizes, iterations=50)
 
         # Signal processing benchmark
-        resolutions = [
-            (480, 640, 3),    # VGA
-            (720, 1280, 3),   # HD
-            (1080, 1920, 3),  # Full HD
-        ]
+        resolutions = [(480, 640, 3), (720, 1280, 3), (1080, 1920, 3)]  # VGA  # HD  # Full HD
         bit_depths = [8, 12, 16]
         self.profiler.benchmark_signal_processing(resolutions, bit_depths, iterations=5)
 
@@ -340,10 +333,10 @@ class BenchmarkSuite:
 def run_performance_profile(output_file: Optional[str] = None) -> dict:
     """
     Run performance profiling and optionally save results.
-    
+
     Args:
         output_file: Optional file to save results
-        
+
     Returns:
         Performance report dictionary
     """
@@ -352,7 +345,8 @@ def run_performance_profile(output_file: Optional[str] = None) -> dict:
 
     if output_file:
         import json
-        with open(output_file, 'w') as f:
+
+        with open(output_file, "w") as f:
             json.dump(report, f, indent=2)
         logger.info(f"Performance report saved to {output_file}")
 

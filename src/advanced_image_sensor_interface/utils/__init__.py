@@ -12,10 +12,33 @@ Usage:
     from utils import reduce_noise, calculate_snr
 """
 
-from .noise_reduction import adaptive_noise_reduction, reduce_noise
+from .noise_reduction import (
+    BilateralNoiseReducer,
+    GaussianNoiseReducer,
+    MedianNoiseReducer,
+    NoiseReducer,
+    NoiseReducerFactory,
+    NoiseReductionConfig,
+    NoiseType,
+    adaptive_noise_reduction,
+    reduce_noise,
+)
 from .performance_metrics import calculate_color_accuracy, calculate_dynamic_range, calculate_snr
 
-__all__ = ["reduce_noise", "adaptive_noise_reduction", "calculate_snr", "calculate_dynamic_range", "calculate_color_accuracy"]
+__all__ = [
+    "reduce_noise",
+    "adaptive_noise_reduction",
+    "calculate_snr",
+    "calculate_dynamic_range",
+    "calculate_color_accuracy",
+    "NoiseReducer",
+    "NoiseReductionConfig",
+    "NoiseType",
+    "NoiseReducerFactory",
+    "GaussianNoiseReducer",
+    "BilateralNoiseReducer",
+    "MedianNoiseReducer",
+]
 
 __version__ = "1.1.0"
 __author__ = "Mudit Bhargava"

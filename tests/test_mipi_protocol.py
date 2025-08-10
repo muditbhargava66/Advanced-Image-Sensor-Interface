@@ -12,13 +12,7 @@ Usage:
     $ pytest tests/test_mipi_protocol.py
 """
 
-import os
-import sys
-
 import pytest
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 from advanced_image_sensor_interface.sensor_interface.mipi_protocol import (
     DataType,
     LongPacket,

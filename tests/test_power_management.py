@@ -12,15 +12,10 @@ Usage:
     $ pytest tests/test_power_management.py
 """
 
-import os
-import sys
 from unittest.mock import patch
 
 import numpy as np
 import pytest
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 from advanced_image_sensor_interface.sensor_interface.power_management import PowerConfig, PowerManager
 
 

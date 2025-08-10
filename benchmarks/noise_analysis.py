@@ -50,6 +50,7 @@ def generate_noisy_image(size: tuple[int, int] = (1920, 1080), signal_level: int
     noisy_signal = np.clip(clean_signal + noise, 0, 4095).astype(np.uint16)
     return noisy_signal
 
+
 def measure_noise_level(image: np.ndarray) -> float:
     """
     Measure the noise level in an image.
@@ -64,6 +65,7 @@ def measure_noise_level(image: np.ndarray) -> float:
 
     """
     return np.std(image)
+
 
 def benchmark_noise_reduction(noise_levels: list[int] = [10, 50, 100]) -> dict[str, float]:
     """
@@ -93,6 +95,7 @@ def benchmark_noise_reduction(noise_levels: list[int] = [10, 50, 100]) -> dict[s
         results[f"noise_level_{noise_std}"] = reduction_percentage
 
     return results
+
 
 def analyze_snr_improvement(signal_levels: list[int] = [500, 1000, 2000], noise_std: int = 50) -> dict[str, float]:
     """
@@ -124,6 +127,7 @@ def analyze_snr_improvement(signal_levels: list[int] = [500, 1000, 2000], noise_
 
     return results
 
+
 def run_noise_analysis() -> dict[str, Any]:
     """
     Run all noise analysis benchmarks and compile results.
@@ -134,9 +138,10 @@ def run_noise_analysis() -> dict[str, Any]:
 
     """
     results = {}
-    results['noise_reduction'] = benchmark_noise_reduction()
-    results['snr_improvement'] = analyze_snr_improvement()
+    results["noise_reduction"] = benchmark_noise_reduction()
+    results["snr_improvement"] = analyze_snr_improvement()
     return results
+
 
 if __name__ == "__main__":
     noise_analysis_results = run_noise_analysis()
@@ -144,8 +149,8 @@ if __name__ == "__main__":
     print(json.dumps(noise_analysis_results, indent=2))
 
     # Calculate and print overall noise reduction and SNR improvement
-    avg_noise_reduction = np.mean(list(noise_analysis_results['noise_reduction'].values()))
-    avg_snr_improvement = np.mean(list(noise_analysis_results['snr_improvement'].values()))
+    avg_noise_reduction = np.mean(list(noise_analysis_results["noise_reduction"].values()))
+    avg_snr_improvement = np.mean(list(noise_analysis_results["snr_improvement"].values()))
 
     print(f"\nAverage Noise Reduction: {avg_noise_reduction:.2f}%")
     print(f"Average SNR Improvement: {avg_snr_improvement:.2f} dB")

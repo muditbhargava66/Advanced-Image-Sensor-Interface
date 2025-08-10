@@ -54,7 +54,6 @@ class PatternGenerator:
         self.height = height
         self.bit_depth = bit_depth
         self.max_value = 2**bit_depth - 1
-        logger.info(f"PatternGenerator initialized with {width}x{height} resolution and {bit_depth}-bit depth")
 
     def generate_pattern(self, pattern_name: str, **kwargs: Any) -> np.ndarray:
         """
@@ -74,6 +73,13 @@ class PatternGenerator:
             ValueError: If the specified pattern name is not recognized.
 
         """
+        if "width" in kwargs or "height" in kwargs or "bit_depth" in kwargs:
+            width = kwargs.pop("width", self.width)
+            height = kwargs.pop("height", self.height)
+            bit_depth = kwargs.pop("bit_depth", self.bit_depth)
+            temp_gen = PatternGenerator(width, height, bit_depth)
+            return temp_gen.generate_pattern(pattern_name, **kwargs)
+
         pattern_functions = {
             "color_bars": self._generate_color_bars,
             "grayscale_ramp": self._generate_grayscale_ramp,
@@ -82,6 +88,7 @@ class PatternGenerator:
             "siemens_star": self._generate_siemens_star,
             "zone_plate": self._generate_zone_plate,
             "noise": self._generate_noise,
+            "solid_color": self._generate_solid_color,
         }
 
         if pattern_name not in pattern_functions:
@@ -92,16 +99,17 @@ class PatternGenerator:
 
     def _generate_color_bars(self, num_bars: int = 8) -> np.ndarray:
         """Generate a color bar pattern."""
-        pattern = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        dtype = np.uint16 if self.bit_depth > 8 else np.uint8
+        pattern = np.zeros((self.height, self.width, 3), dtype=dtype)
         bar_width = self.width // num_bars
         colors = [
-            (255, 255, 255),  # White
-            (255, 255, 0),  # Yellow
-            (0, 255, 255),  # Cyan
-            (0, 255, 0),  # Green
-            (255, 0, 255),  # Magenta
-            (255, 0, 0),  # Red
-            (0, 0, 255),  # Blue
+            (self.max_value, self.max_value, self.max_value),  # White
+            (self.max_value, self.max_value, 0),  # Yellow
+            (0, self.max_value, self.max_value),  # Cyan
+            (0, self.max_value, 0),  # Green
+            (self.max_value, 0, self.max_value),  # Magenta
+            (self.max_value, 0, 0),  # Red
+            (0, 0, self.max_value),  # Blue
             (0, 0, 0),  # Black
         ]
         for i, color in enumerate(colors[:num_bars]):
@@ -110,45 +118,70 @@ class PatternGenerator:
 
     def _generate_grayscale_ramp(self) -> np.ndarray:
         """Generate a grayscale ramp pattern."""
-        return np.linspace(0, self.max_value, self.width, dtype=np.uint8).reshape(1, -1).repeat(self.height, 0)
+        dtype = np.uint16 if self.bit_depth > 8 else np.uint8
+        return np.linspace(0, self.max_value, self.width, dtype=dtype).reshape(1, -1).repeat(self.height, 0)
 
     def _generate_checkerboard(self, square_size: int = 64) -> np.ndarray:
         """Generate a checkerboard pattern."""
-        pattern = np.zeros((self.height, self.width), dtype=np.uint8)
+        dtype = np.uint16 if self.bit_depth > 8 else np.uint8
+        pattern = np.zeros((self.height, self.width), dtype=dtype)
         pattern[::2, ::2] = self.max_value
         pattern[1::2, 1::2] = self.max_value
         return pattern
 
     def _generate_slanted_edge(self, angle: float = 5.0) -> np.ndarray:
         """Generate a slanted edge pattern."""
+        dtype = np.uint16 if self.bit_depth > 8 else np.uint8
         x = np.arange(self.width)
         y = np.arange(self.height)
         xx, yy = np.meshgrid(x, y)
         edge = (xx * np.cos(np.radians(angle)) + yy * np.sin(np.radians(angle))) > self.width / 2
-        return edge.astype(np.uint8) * self.max_value
+        return edge.astype(dtype) * self.max_value
 
     def _generate_siemens_star(self, num_segments: int = 144) -> np.ndarray:
         """Generate a Siemens star pattern."""
+        dtype = np.uint16 if self.bit_depth > 8 else np.uint8
         x = np.linspace(-1, 1, self.width)
         y = np.linspace(-1, 1, self.height)
         xx, yy = np.meshgrid(x, y)
         angle = np.arctan2(yy, xx)
         pattern = np.sin(angle * num_segments / 2) > 0
-        return pattern.astype(np.uint8) * self.max_value
+        return pattern.astype(dtype) * self.max_value
 
     def _generate_zone_plate(self) -> np.ndarray:
         """Generate a zone plate pattern."""
+        dtype = np.uint16 if self.bit_depth > 8 else np.uint8
         x = np.linspace(-1, 1, self.width)
         y = np.linspace(-1, 1, self.height)
         xx, yy = np.meshgrid(x, y)
         r = np.sqrt(xx**2 + yy**2)
         pattern = (1 + np.sin(2 * np.pi * self.width * r**2)) / 2
-        return (pattern * self.max_value).astype(np.uint8)
+        return (pattern * self.max_value).astype(dtype)
 
     def _generate_noise(self, mean: float = 128, std_dev: float = 32) -> np.ndarray:
         """Generate a noise pattern."""
+        dtype = np.uint16 if self.bit_depth > 8 else np.uint8
         noise = np.random.normal(mean, std_dev, (self.height, self.width))
-        return np.clip(noise, 0, self.max_value).astype(np.uint8)
+        return np.clip(noise, 0, self.max_value).astype(dtype)
+
+    def _generate_solid_color(self, color: tuple = (128, 128, 128)) -> np.ndarray:
+        """Generate a solid color pattern.
+
+        Args:
+            color: RGB color tuple (default: middle gray)
+
+        Returns:
+            Solid color pattern
+        """
+        dtype = np.uint16 if self.bit_depth > 8 else np.uint8
+        if len(color) == 3:
+            # RGB color
+            pattern = np.full((self.height, self.width, 3), color, dtype=dtype)
+        else:
+            # Grayscale
+            pattern = np.full((self.height, self.width), color[0], dtype=dtype)
+
+        return pattern
 
 
 def get_available_patterns() -> list[str]:

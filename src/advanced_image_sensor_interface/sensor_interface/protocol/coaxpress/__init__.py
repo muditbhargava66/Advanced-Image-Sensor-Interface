@@ -1,13 +1,10 @@
 """
-CoaXPress Protocol Package
+CoaXPress protocol implementation.
 
-This package provides CoaXPress protocol implementation for image sensor interfaces.
-
-Modules:
-    driver: Main CoaXPress driver implementation.
-    cxp12: CXP-12 specification implementation.
+CoaXPress is a high-speed interface standard for industrial and scientific cameras,
+using standard coaxial cables for both data transmission and power delivery.
 """
 
-from .driver import CoaXPressProtocolDriver
+from .driver import CoaXPressConfig, CoaXPressDriver
 
-__all__ = ["CoaXPressProtocolDriver"]
+__all__ = ["CoaXPressDriver", "CoaXPressConfig"]

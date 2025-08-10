@@ -284,7 +284,8 @@ class MIPIProtocolValidator:
                 # Short packet
                 short_packet = ShortPacket.from_bytes(packet_data)
                 logger.debug(
-                    f"Valid short packet: VC={short_packet.virtual_channel}, " f"DT={short_packet.data_type.name}, Data={short_packet.data:04X}"
+                    f"Valid short packet: VC={short_packet.virtual_channel}, "
+                    f"DT={short_packet.data_type.name}, Data={short_packet.data:04X}"
                 )
 
                 # Track frame/line markers

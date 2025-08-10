@@ -1,452 +1,605 @@
 """
-Advanced Image Processing for Sensor Interface
+Advanced image processing algorithms and pipelines.
 
-This module provides sophisticated image processing algorithms including
-advanced noise reduction, proper color space handling, and quality metrics.
-
-Classes:
-    AdvancedDenoiser: Multiple denoising algorithm implementations
-    ColorSpaceProcessor: Proper color space conversions and corrections
-    QualityMetrics: PSNR, SSIM, and proper Delta E calculations
-
-Functions:
-    bilateral_denoise: Bilateral filtering for edge-preserving denoising
-    guided_filter_denoise: Guided filter denoising
-    calculate_psnr: Peak Signal-to-Noise Ratio calculation
-    calculate_ssim: Structural Similarity Index calculation
-    calculate_delta_e_2000: Proper CIE Delta E 2000 calculation
+This module provides sophisticated image processing capabilities including
+advanced noise reduction, edge enhancement, color processing, and optimization
+algorithms for high-quality image output.
 """
 
 import logging
+from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
-import cv2
 import numpy as np
-from scipy import ndimage
-from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 logger = logging.getLogger(__name__)
 
 
-class DenoiseMethod(Enum):
-    """Available denoising methods."""
+class ProcessingMode(Enum):
+    """Image processing modes."""
 
+    FAST = "fast"
+    BALANCED = "balanced"
+    QUALITY = "quality"
+    CUSTOM = "custom"
+
+
+class NoiseReductionMethod(Enum):
+    """Noise reduction methods."""
+
+    GAUSSIAN = "gaussian"
     BILATERAL = "bilateral"
-    GUIDED_FILTER = "guided_filter"
     NON_LOCAL_MEANS = "non_local_means"
-    BM3D = "bm3d"  # Would require additional dependency
-    GAUSSIAN = "gaussian"  # Simple fallback
+    WAVELET = "wavelet"
+    ADAPTIVE = "adaptive"
 
 
-class ColorSpace(Enum):
-    """Supported color spaces."""
+@dataclass
+class AdvancedProcessingConfig:
+    """Configuration for advanced image processing."""
 
-    RGB = "rgb"
-    SRGB = "srgb"
-    XYZ = "xyz"
-    LAB = "lab"
-    LUV = "luv"
+    # Processing mode
+    mode: ProcessingMode = ProcessingMode.BALANCED
+
+    # Noise reduction
+    enable_noise_reduction: bool = True
+    noise_reduction_method: NoiseReductionMethod = NoiseReductionMethod.BILATERAL
+    noise_reduction_strength: float = 0.5
+
+    # Edge enhancement
+    enable_edge_enhancement: bool = True
+    edge_enhancement_strength: float = 0.3
+    edge_preservation: bool = True
+
+    # Color processing
+    enable_color_enhancement: bool = True
+    saturation_boost: float = 1.1
+    contrast_enhancement: float = 1.05
+
+    # Advanced features
+    enable_adaptive_processing: bool = True
+    enable_multi_scale: bool = True
+    enable_temporal_filtering: bool = False
+
+    # Performance settings
+    use_gpu_acceleration: bool = False
+    num_threads: int = 4
+
+    def __post_init__(self):
+        """Validate configuration parameters."""
+        if not 0.0 <= self.noise_reduction_strength <= 1.0:
+            raise ValueError("Noise reduction strength must be between 0.0 and 1.0")
+        if not 0.0 <= self.edge_enhancement_strength <= 1.0:
+            raise ValueError("Edge enhancement strength must be between 0.0 and 1.0")
 
 
-class AdvancedDenoiser:
+class AdvancedImageProcessor:
     """
-    Advanced denoising algorithms for image sensor processing.
+    Advanced image processing pipeline with sophisticated algorithms.
 
-    Provides multiple denoising options beyond simple Gaussian blur,
-    with proper edge preservation and noise characteristics.
+    This processor provides high-quality image enhancement using advanced
+    algorithms for noise reduction, edge enhancement, and color processing.
     """
 
-    def __init__(self, method: DenoiseMethod = DenoiseMethod.BILATERAL):
+    def __init__(self, config: Optional[AdvancedProcessingConfig] = None):
+        """Initialize advanced image processor."""
+        self.config = config or AdvancedProcessingConfig()
+        self.processing_stats = {
+            "frames_processed": 0,
+            "total_processing_time": 0.0,
+            "average_processing_time": 0.0,
+            "quality_improvements": [],
+        }
+
+        # Initialize processing kernels
+        self._initialize_kernels()
+
+        logger.info(f"Advanced image processor initialized with mode: {self.config.mode.value}")
+
+    def _initialize_kernels(self):
+        """Initialize processing kernels and filters."""
+        # Edge detection kernels
+        self.sobel_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=np.float32)
+        self.sobel_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=np.float32)
+
+        # Gaussian kernels for different scales
+        self.gaussian_kernels = {}
+        for sigma in [0.5, 1.0, 1.5, 2.0]:
+            size = int(6 * sigma + 1)
+            if size % 2 == 0:
+                size += 1
+            kernel = self._create_gaussian_kernel(size, sigma)
+            self.gaussian_kernels[sigma] = kernel
+
+        # Laplacian kernel for edge enhancement
+        self.laplacian_kernel = np.array([[0, -1, 0], [-1, 4, -1], [0, -1, 0]], dtype=np.float32)
+
+    def _create_gaussian_kernel(self, size: int, sigma: float) -> np.ndarray:
+        """Create Gaussian kernel for filtering."""
+        kernel = np.zeros((size, size), dtype=np.float32)
+        center = size // 2
+
+        for i in range(size):
+            for j in range(size):
+                x, y = i - center, j - center
+                kernel[i, j] = np.exp(-(x * x + y * y) / (2 * sigma * sigma))
+
+        return kernel / np.sum(kernel)
+
+    def process_image(self, image: np.ndarray, metadata: Optional[dict[str, Any]] = None) -> np.ndarray:
         """
-        Initialize the denoiser.
+        Process image with advanced algorithms.
 
         Args:
-            method: Denoising method to use
-        """
-        self.method = method
-        logger.info(f"Advanced denoiser initialized with method: {method.value}")
-
-    def denoise(self, image: np.ndarray, strength: float = 0.1) -> np.ndarray:
-        """
-        Apply denoising to an image.
-
-        Args:
-            image: Input image (float32, range [0, 1])
-            strength: Denoising strength (0.0 to 1.0)
+            image: Input image array
+            metadata: Optional metadata for adaptive processing
 
         Returns:
-            Denoised image
+            Processed image array
         """
-        if self.method == DenoiseMethod.BILATERAL:
-            return self._bilateral_denoise(image, strength)
-        elif self.method == DenoiseMethod.GUIDED_FILTER:
-            return self._guided_filter_denoise(image, strength)
-        elif self.method == DenoiseMethod.NON_LOCAL_MEANS:
-            return self._non_local_means_denoise(image, strength)
-        elif self.method == DenoiseMethod.GAUSSIAN:
-            return self._gaussian_denoise(image, strength)
+        import time
+
+        start_time = time.time()
+
+        try:
+            # Validate input
+            if image is None or image.size == 0:
+                raise ValueError("Invalid input image")
+
+            # Convert to float for processing
+            processed = image.astype(np.float32)
+
+            # Apply processing pipeline based on mode
+            if self.config.mode == ProcessingMode.FAST:
+                processed = self._fast_processing_pipeline(processed, metadata)
+            elif self.config.mode == ProcessingMode.QUALITY:
+                processed = self._quality_processing_pipeline(processed, metadata)
+            else:  # BALANCED or CUSTOM
+                processed = self._balanced_processing_pipeline(processed, metadata)
+
+            # Convert back to original dtype
+            processed = np.clip(processed, 0, 255).astype(image.dtype)
+
+            # Update statistics
+            processing_time = time.time() - start_time
+            self._update_statistics(processing_time)
+
+            logger.debug(f"Image processed in {processing_time:.3f}s")
+            return processed
+
+        except Exception as e:
+            logger.error(f"Image processing failed: {e}")
+            return image  # Return original image on error
+
+    def _fast_processing_pipeline(self, image: np.ndarray, metadata: Optional[dict[str, Any]]) -> np.ndarray:
+        """Fast processing pipeline optimized for speed."""
+        processed = image.copy()
+
+        # Basic noise reduction
+        if self.config.enable_noise_reduction:
+            processed = self._apply_gaussian_blur(processed, sigma=0.5)
+
+        # Simple edge enhancement
+        if self.config.enable_edge_enhancement:
+            processed = self._apply_simple_edge_enhancement(processed)
+
+        # Basic color enhancement
+        if self.config.enable_color_enhancement and len(image.shape) == 3:
+            processed = self._apply_basic_color_enhancement(processed)
+
+        return processed
+
+    def _balanced_processing_pipeline(self, image: np.ndarray, metadata: Optional[dict[str, Any]]) -> np.ndarray:
+        """Balanced processing pipeline with good quality/speed tradeoff."""
+        processed = image.copy()
+
+        # Advanced noise reduction
+        if self.config.enable_noise_reduction:
+            processed = self._apply_bilateral_filter(processed)
+
+        # Edge-preserving enhancement
+        if self.config.enable_edge_enhancement:
+            processed = self._apply_edge_preserving_enhancement(processed)
+
+        # Color processing
+        if self.config.enable_color_enhancement and len(image.shape) == 3:
+            processed = self._apply_advanced_color_enhancement(processed)
+
+        # Adaptive processing if enabled
+        if self.config.enable_adaptive_processing:
+            processed = self._apply_adaptive_enhancement(processed, metadata)
+
+        return processed
+
+    def _quality_processing_pipeline(self, image: np.ndarray, metadata: Optional[dict[str, Any]]) -> np.ndarray:
+        """High-quality processing pipeline with best results."""
+        processed = image.copy()
+
+        # Multi-scale noise reduction
+        if self.config.enable_noise_reduction:
+            if self.config.enable_multi_scale:
+                processed = self._apply_multiscale_noise_reduction(processed)
+            else:
+                processed = self._apply_non_local_means_denoising(processed)
+
+        # Advanced edge enhancement
+        if self.config.enable_edge_enhancement:
+            processed = self._apply_advanced_edge_enhancement(processed)
+
+        # Professional color processing
+        if self.config.enable_color_enhancement and len(image.shape) == 3:
+            processed = self._apply_professional_color_processing(processed)
+
+        # Adaptive and temporal processing
+        if self.config.enable_adaptive_processing:
+            processed = self._apply_adaptive_enhancement(processed, metadata)
+
+        return processed
+
+    def _apply_gaussian_blur(self, image: np.ndarray, sigma: float = 1.0) -> np.ndarray:
+        """Apply Gaussian blur for noise reduction."""
+        kernel = self.gaussian_kernels.get(sigma)
+        if kernel is None:
+            kernel = self._create_gaussian_kernel(int(6 * sigma + 1), sigma)
+
+        return self._convolve_2d(image, kernel)
+
+    def _apply_bilateral_filter(self, image: np.ndarray) -> np.ndarray:
+        """Apply bilateral filter for edge-preserving noise reduction."""
+        # Simplified bilateral filter implementation
+        # In practice, this would use optimized implementations
+
+        filtered = np.zeros_like(image)
+        h, w = image.shape[:2]
+
+        # Bilateral filter parameters
+        spatial_sigma = 5.0
+        intensity_sigma = 50.0
+        kernel_size = 9
+
+        for i in range(kernel_size // 2, h - kernel_size // 2):
+            for j in range(kernel_size // 2, w - kernel_size // 2):
+                # Extract neighborhood
+                neighborhood = image[
+                    i - kernel_size // 2 : i + kernel_size // 2 + 1, j - kernel_size // 2 : j + kernel_size // 2 + 1
+                ]
+
+                # Compute bilateral weights
+                center_intensity = image[i, j]
+                weights = self._compute_bilateral_weights(neighborhood, center_intensity, spatial_sigma, intensity_sigma)
+
+                # Apply weighted average
+                if len(image.shape) == 3:
+                    for c in range(image.shape[2]):
+                        filtered[i, j, c] = np.sum(weights * neighborhood[:, :, c]) / np.sum(weights)
+                else:
+                    filtered[i, j] = np.sum(weights * neighborhood) / np.sum(weights)
+
+        return filtered
+
+    def _compute_bilateral_weights(
+        self, neighborhood: np.ndarray, center_intensity: float, spatial_sigma: float, intensity_sigma: float
+    ) -> np.ndarray:
+        """Compute bilateral filter weights."""
+        h, w = neighborhood.shape[:2]
+        weights = np.zeros((h, w))
+
+        center_y, center_x = h // 2, w // 2
+
+        for i in range(h):
+            for j in range(w):
+                # Spatial distance
+                spatial_dist = np.sqrt((i - center_y) ** 2 + (j - center_x) ** 2)
+                spatial_weight = np.exp(-(spatial_dist**2) / (2 * spatial_sigma**2))
+
+                # Intensity difference
+                if len(neighborhood.shape) == 3:
+                    intensity_diff = np.linalg.norm(neighborhood[i, j] - center_intensity)
+                else:
+                    intensity_diff = abs(neighborhood[i, j] - center_intensity)
+
+                intensity_weight = np.exp(-(intensity_diff**2) / (2 * intensity_sigma**2))
+
+                weights[i, j] = spatial_weight * intensity_weight
+
+        return weights
+
+    def _apply_simple_edge_enhancement(self, image: np.ndarray) -> np.ndarray:
+        """Apply simple edge enhancement."""
+        # Detect edges using Laplacian
+        edges = self._convolve_2d(image, self.laplacian_kernel)
+
+        # Enhance edges
+        strength = self.config.edge_enhancement_strength
+        enhanced = image + strength * edges
+
+        return np.clip(enhanced, 0, 255)
+
+    def _apply_edge_preserving_enhancement(self, image: np.ndarray) -> np.ndarray:
+        """Apply edge-preserving enhancement."""
+        # Compute edge map
+        if len(image.shape) == 3:
+            gray = np.mean(image, axis=2)
         else:
-            logger.warning(f"Unknown method {self.method}, falling back to bilateral")
-            return self._bilateral_denoise(image, strength)
+            gray = image
 
-    def _bilateral_denoise(self, image: np.ndarray, strength: float) -> np.ndarray:
-        """Apply bilateral filtering for edge-preserving denoising."""
-        # Convert strength to bilateral filter parameters
-        d = int(9 * strength + 5)  # Diameter: 5-14
-        sigma_color = 75 * strength + 25  # Color sigma: 25-100
-        sigma_space = 75 * strength + 25  # Space sigma: 25-100
+        edges_x = self._convolve_2d(gray, self.sobel_x)
+        edges_y = self._convolve_2d(gray, self.sobel_y)
+        edge_magnitude = np.sqrt(edges_x**2 + edges_y**2)
 
-        if image.ndim == 2:
-            # Grayscale
-            img_uint8 = (image * 255).astype(np.uint8)
-            denoised = cv2.bilateralFilter(img_uint8, d, sigma_color, sigma_space)
-            return denoised.astype(np.float32) / 255.0
+        # Create edge mask
+        edge_threshold = np.percentile(edge_magnitude, 75)
+        edge_mask = edge_magnitude > edge_threshold
+
+        # Apply enhancement only to edge regions
+        enhanced = image.copy()
+        strength = self.config.edge_enhancement_strength
+
+        if len(image.shape) == 3:
+            for c in range(image.shape[2]):
+                laplacian = self._convolve_2d(image[:, :, c], self.laplacian_kernel)
+                enhanced[:, :, c] = np.where(edge_mask, image[:, :, c] + strength * laplacian, image[:, :, c])
         else:
-            # Color image - process each channel
-            img_uint8 = (image * 255).astype(np.uint8)
-            denoised = cv2.bilateralFilter(img_uint8, d, sigma_color, sigma_space)
-            return denoised.astype(np.float32) / 255.0
+            laplacian = self._convolve_2d(image, self.laplacian_kernel)
+            enhanced = np.where(edge_mask, image + strength * laplacian, image)
 
-    def _guided_filter_denoise(self, image: np.ndarray, strength: float) -> np.ndarray:
-        """Apply guided filter denoising."""
-        # Simplified guided filter implementation
-        radius = int(8 * strength + 2)  # Radius: 2-10
-        epsilon = 0.1 * strength + 0.01  # Regularization: 0.01-0.11
+        return np.clip(enhanced, 0, 255)
 
-        if image.ndim == 2:
-            guide = image
+    def _apply_basic_color_enhancement(self, image: np.ndarray) -> np.ndarray:
+        """Apply basic color enhancement."""
+        if len(image.shape) != 3:
+            return image
+
+        enhanced = image.copy().astype(np.float32)
+
+        # Saturation boost
+        if self.config.saturation_boost != 1.0:
+            # Convert to HSV-like processing
+            # Simplified saturation enhancement
+            mean_intensity = np.mean(enhanced, axis=2, keepdims=True)
+            enhanced = mean_intensity + self.config.saturation_boost * (enhanced - mean_intensity)
+
+        # Contrast enhancement
+        if self.config.contrast_enhancement != 1.0:
+            mean_val = np.mean(enhanced)
+            enhanced = mean_val + self.config.contrast_enhancement * (enhanced - mean_val)
+
+        return np.clip(enhanced, 0, 255)
+
+    def _apply_advanced_color_enhancement(self, image: np.ndarray) -> np.ndarray:
+        """Apply advanced color enhancement."""
+        if len(image.shape) != 3:
+            return image
+
+        enhanced = image.copy().astype(np.float32)
+
+        # Advanced saturation enhancement with luminance preservation
+        # Convert to YUV-like color space
+        weights = np.array([0.299, 0.587, 0.114])  # Luminance weights
+        luminance = np.dot(enhanced, weights)
+
+        # Enhance chrominance
+        for c in range(3):
+            chrominance = enhanced[:, :, c] - luminance
+            enhanced[:, :, c] = luminance + self.config.saturation_boost * chrominance
+
+        # Adaptive contrast enhancement
+        local_mean = self._apply_gaussian_blur(enhanced, sigma=2.0)
+        enhanced = local_mean + self.config.contrast_enhancement * (enhanced - local_mean)
+
+        return np.clip(enhanced, 0, 255)
+
+    def _apply_professional_color_processing(self, image: np.ndarray) -> np.ndarray:
+        """Apply professional-grade color processing."""
+        if len(image.shape) != 3:
+            return image
+
+        enhanced = image.copy().astype(np.float32)
+
+        # Color balance adjustment
+        enhanced = self._apply_color_balance(enhanced)
+
+        # Selective color enhancement
+        enhanced = self._apply_selective_color_enhancement(enhanced)
+
+        # Tone curve adjustment
+        enhanced = self._apply_tone_curve(enhanced)
+
+        return np.clip(enhanced, 0, 255)
+
+    def _apply_adaptive_enhancement(self, image: np.ndarray, metadata: Optional[dict[str, Any]]) -> np.ndarray:
+        """Apply adaptive enhancement based on image content and metadata."""
+        # Analyze image characteristics
+        characteristics = self._analyze_image_characteristics(image)
+
+        # Adapt processing based on characteristics
+        if characteristics["noise_level"] > 0.3:
+            # High noise - apply stronger noise reduction
+            image = self._apply_gaussian_blur(image, sigma=1.5)
+
+        if characteristics["edge_density"] < 0.2:
+            # Low edge density - apply stronger edge enhancement
+            strength = min(1.0, self.config.edge_enhancement_strength * 1.5)
+            temp_config = self.config
+            temp_config.edge_enhancement_strength = strength
+            image = self._apply_edge_preserving_enhancement(image)
+
+        return image
+
+    def _analyze_image_characteristics(self, image: np.ndarray) -> dict[str, float]:
+        """Analyze image characteristics for adaptive processing."""
+        if len(image.shape) == 3:
+            gray = np.mean(image, axis=2)
         else:
-            # Use luminance as guide for color images
-            guide = np.dot(image, [0.299, 0.587, 0.114])
+            gray = image
 
-        # Box filter implementation
-        kernel = np.ones((radius, radius)) / (radius * radius)
+        # Estimate noise level
+        laplacian_var = np.var(self._convolve_2d(gray, self.laplacian_kernel))
+        noise_level = min(1.0, laplacian_var / 1000.0)  # Normalize
 
-        mean_guide = ndimage.convolve(guide, kernel, mode="reflect")
-        mean_image = ndimage.convolve(image, kernel, mode="reflect")
+        # Estimate edge density
+        edges_x = self._convolve_2d(gray, self.sobel_x)
+        edges_y = self._convolve_2d(gray, self.sobel_y)
+        edge_magnitude = np.sqrt(edges_x**2 + edges_y**2)
+        edge_density = np.mean(edge_magnitude > np.percentile(edge_magnitude, 80))
 
-        if image.ndim == 2:
-            corr_guide = ndimage.convolve(guide * guide, kernel, mode="reflect")
-            corr_guide_image = ndimage.convolve(guide * image, kernel, mode="reflect")
+        # Estimate contrast
+        contrast = np.std(gray) / 255.0
 
-            var_guide = corr_guide - mean_guide * mean_guide
-            cov_guide_image = corr_guide_image - mean_guide * mean_image
+        return {
+            "noise_level": noise_level,
+            "edge_density": edge_density,
+            "contrast": contrast,
+            "brightness": np.mean(gray) / 255.0,
+        }
 
-            a = cov_guide_image / (var_guide + epsilon)
-            b = mean_image - a * mean_guide
+    def _convolve_2d(self, image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+        """Apply 2D convolution."""
+        # Simplified convolution implementation
+        # In practice, this would use optimized implementations like scipy.ndimage
 
-            mean_a = ndimage.convolve(a, kernel, mode="reflect")
-            mean_b = ndimage.convolve(b, kernel, mode="reflect")
-
-            return mean_a * guide + mean_b
-        else:
-            # Process each channel separately for color images
+        if len(image.shape) == 3:
             result = np.zeros_like(image)
             for c in range(image.shape[2]):
-                corr_guide = ndimage.convolve(guide * guide, kernel, mode="reflect")
-                corr_guide_image = ndimage.convolve(guide * image[:, :, c], kernel, mode="reflect")
-
-                var_guide = corr_guide - mean_guide * mean_guide
-                cov_guide_image = corr_guide_image - mean_guide * mean_image[:, :, c]
-
-                a = cov_guide_image / (var_guide + epsilon)
-                b = mean_image[:, :, c] - a * mean_guide
-
-                mean_a = ndimage.convolve(a, kernel, mode="reflect")
-                mean_b = ndimage.convolve(b, kernel, mode="reflect")
-
-                result[:, :, c] = mean_a * guide + mean_b
-
+                result[:, :, c] = self._convolve_2d_single(image[:, :, c], kernel)
             return result
-
-    def _non_local_means_denoise(self, image: np.ndarray, strength: float) -> np.ndarray:
-        """Apply non-local means denoising using OpenCV."""
-        h = 10 * strength + 3  # Filter strength: 3-13
-        template_window_size = 7
-        search_window_size = 21
-
-        if image.ndim == 2:
-            img_uint8 = (image * 255).astype(np.uint8)
-            denoised = cv2.fastNlMeansDenoising(img_uint8, None, h, template_window_size, search_window_size)
-            return denoised.astype(np.float32) / 255.0
         else:
-            img_uint8 = (image * 255).astype(np.uint8)
-            denoised = cv2.fastNlMeansDenoisingColored(img_uint8, None, h, h, template_window_size, search_window_size)
-            return denoised.astype(np.float32) / 255.0
+            return self._convolve_2d_single(image, kernel)
 
-    def _gaussian_denoise(self, image: np.ndarray, strength: float) -> np.ndarray:
-        """Apply simple Gaussian denoising (fallback method)."""
-        sigma = 2.0 * strength + 0.5  # Sigma: 0.5-2.5
-        return ndimage.gaussian_filter(image, sigma)
+    def _convolve_2d_single(self, image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+        """Apply 2D convolution to single channel."""
+        h, w = image.shape
+        kh, kw = kernel.shape
 
+        # Pad image
+        pad_h, pad_w = kh // 2, kw // 2
+        padded = np.pad(image, ((pad_h, pad_h), (pad_w, pad_w)), mode="reflect")
 
-class ColorSpaceProcessor:
-    """
-    Proper color space processing and correction.
+        # Apply convolution
+        result = np.zeros_like(image)
+        for i in range(h):
+            for j in range(w):
+                result[i, j] = np.sum(padded[i : i + kh, j : j + kw] * kernel)
 
-    Handles color space conversions, white balance, and proper
-    color correction in linear space.
-    """
+        return result
 
-    def __init__(self):
-        """Initialize the color space processor."""
-        # sRGB to XYZ conversion matrix (D65 illuminant)
-        self.srgb_to_xyz = np.array(
-            [[0.4124564, 0.3575761, 0.1804375], [0.2126729, 0.7151522, 0.0721750], [0.0193339, 0.1191920, 0.9503041]]
+    def _apply_multiscale_noise_reduction(self, image: np.ndarray) -> np.ndarray:
+        """Apply multi-scale noise reduction."""
+        # Process at multiple scales
+        scales = [0.5, 1.0, 1.5]
+        processed_scales = []
+
+        for sigma in scales:
+            denoised = self._apply_gaussian_blur(image, sigma)
+            processed_scales.append(denoised)
+
+        # Combine scales with weights
+        weights = [0.2, 0.6, 0.2]  # Emphasize middle scale
+        result = np.zeros_like(image, dtype=np.float32)
+
+        for scale, weight in zip(processed_scales, weights):
+            result += weight * scale.astype(np.float32)
+
+        return result
+
+    def _apply_non_local_means_denoising(self, image: np.ndarray) -> np.ndarray:
+        """Apply non-local means denoising (simplified version)."""
+        # This is a simplified implementation
+        # Real implementation would be much more sophisticated
+        return self._apply_bilateral_filter(image)
+
+    def _apply_advanced_edge_enhancement(self, image: np.ndarray) -> np.ndarray:
+        """Apply advanced edge enhancement with multiple operators."""
+        # Combine multiple edge detection operators
+        if len(image.shape) == 3:
+            gray = np.mean(image, axis=2)
+        else:
+            gray = image
+
+        # Sobel edges
+        edges_x = self._convolve_2d(gray, self.sobel_x)
+        edges_y = self._convolve_2d(gray, self.sobel_y)
+        sobel_edges = np.sqrt(edges_x**2 + edges_y**2)
+
+        # Laplacian edges
+        laplacian_edges = np.abs(self._convolve_2d(gray, self.laplacian_kernel))
+
+        # Combine edge maps
+        combined_edges = 0.7 * sobel_edges + 0.3 * laplacian_edges
+
+        # Apply enhancement
+        strength = self.config.edge_enhancement_strength
+        if len(image.shape) == 3:
+            enhanced = image.copy().astype(np.float32)
+            for c in range(image.shape[2]):
+                enhanced[:, :, c] += strength * combined_edges
+        else:
+            enhanced = image.astype(np.float32) + strength * combined_edges
+
+        return np.clip(enhanced, 0, 255)
+
+    def _apply_color_balance(self, image: np.ndarray) -> np.ndarray:
+        """Apply automatic color balance."""
+        # Gray world assumption
+        mean_r, mean_g, mean_b = np.mean(image, axis=(0, 1))
+        gray_mean = (mean_r + mean_g + mean_b) / 3
+
+        # Calculate correction factors
+        r_factor = gray_mean / mean_r if mean_r > 0 else 1.0
+        g_factor = gray_mean / mean_g if mean_g > 0 else 1.0
+        b_factor = gray_mean / mean_b if mean_b > 0 else 1.0
+
+        # Apply correction
+        balanced = image.copy()
+        balanced[:, :, 0] *= r_factor
+        balanced[:, :, 1] *= g_factor
+        balanced[:, :, 2] *= b_factor
+
+        return balanced
+
+    def _apply_selective_color_enhancement(self, image: np.ndarray) -> np.ndarray:
+        """Apply selective color enhancement."""
+        # Enhance specific color ranges
+        enhanced = image.copy()
+
+        # Enhance reds
+        red_mask = (image[:, :, 0] > image[:, :, 1]) & (image[:, :, 0] > image[:, :, 2])
+        enhanced[:, :, 0] = np.where(red_mask, np.minimum(255, image[:, :, 0] * 1.1), image[:, :, 0])
+
+        # Enhance greens
+        green_mask = (image[:, :, 1] > image[:, :, 0]) & (image[:, :, 1] > image[:, :, 2])
+        enhanced[:, :, 1] = np.where(green_mask, np.minimum(255, image[:, :, 1] * 1.05), image[:, :, 1])
+
+        return enhanced
+
+    def _apply_tone_curve(self, image: np.ndarray) -> np.ndarray:
+        """Apply tone curve adjustment."""
+        # S-curve for contrast enhancement
+        normalized = image / 255.0
+
+        # Apply S-curve: y = 3x² - 2x³ (for x in [0,1])
+        s_curve = 3 * normalized**2 - 2 * normalized**3
+
+        return s_curve * 255.0
+
+    def _update_statistics(self, processing_time: float):
+        """Update processing statistics."""
+        self.processing_stats["frames_processed"] += 1
+        self.processing_stats["total_processing_time"] += processing_time
+        self.processing_stats["average_processing_time"] = (
+            self.processing_stats["total_processing_time"] / self.processing_stats["frames_processed"]
         )
 
-        # XYZ to sRGB conversion matrix
-        self.xyz_to_srgb = np.linalg.inv(self.srgb_to_xyz)
+    def get_statistics(self) -> dict[str, Any]:
+        """Get processing statistics."""
+        return self.processing_stats.copy()
 
-        logger.info("Color space processor initialized")
-
-    def srgb_to_linear(self, image: np.ndarray) -> np.ndarray:
-        """
-        Convert sRGB to linear RGB.
-
-        Args:
-            image: sRGB image (range [0, 1])
-
-        Returns:
-            Linear RGB image
-        """
-        return np.where(image <= 0.04045, image / 12.92, np.power((image + 0.055) / 1.055, 2.4))
-
-    def linear_to_srgb(self, image: np.ndarray) -> np.ndarray:
-        """
-        Convert linear RGB to sRGB.
-
-        Args:
-            image: Linear RGB image (range [0, 1])
-
-        Returns:
-            sRGB image
-        """
-        return np.where(image <= 0.0031308, 12.92 * image, 1.055 * np.power(image, 1.0 / 2.4) - 0.055)
-
-    def rgb_to_xyz(self, rgb: np.ndarray) -> np.ndarray:
-        """
-        Convert RGB to XYZ color space.
-
-        Args:
-            rgb: RGB image (linear, range [0, 1])
-
-        Returns:
-            XYZ image
-        """
-        if rgb.ndim == 2:
-            raise ValueError("RGB to XYZ conversion requires 3-channel image")
-
-        # Reshape for matrix multiplication
-        original_shape = rgb.shape
-        rgb_flat = rgb.reshape(-1, 3)
-
-        # Apply conversion matrix
-        xyz_flat = np.dot(rgb_flat, self.srgb_to_xyz.T)
-
-        return xyz_flat.reshape(original_shape)
-
-    def xyz_to_lab(self, xyz: np.ndarray) -> np.ndarray:
-        """
-        Convert XYZ to LAB color space.
-
-        Args:
-            xyz: XYZ image
-
-        Returns:
-            LAB image
-        """
-        # D65 illuminant white point
-        xn, yn, zn = 0.95047, 1.00000, 1.08883
-
-        # Normalize by white point
-        x = xyz[:, :, 0] / xn
-        y = xyz[:, :, 1] / yn
-        z = xyz[:, :, 2] / zn
-
-        # Apply LAB transformation
-        def f(t):
-            return np.where(t > 0.008856, np.power(t, 1.0 / 3.0), (7.787 * t) + (16.0 / 116.0))
-
-        fx = f(x)
-        fy = f(y)
-        fz = f(z)
-
-        L = 116.0 * fy - 16.0
-        a = 500.0 * (fx - fy)
-        b = 200.0 * (fy - fz)
-
-        return np.stack([L, a, b], axis=2)
-
-    def apply_color_correction(
-        self, image: np.ndarray, ccm: np.ndarray, white_balance: Optional[tuple[float, float, float]] = None
-    ) -> np.ndarray:
-        """
-        Apply color correction in linear space.
-
-        Args:
-            image: Input RGB image (sRGB, range [0, 1])
-            ccm: 3x3 color correction matrix
-            white_balance: Optional RGB white balance gains
-
-        Returns:
-            Color corrected image
-        """
-        if image.ndim != 3 or image.shape[2] != 3:
-            raise ValueError("Color correction requires 3-channel RGB image")
-
-        # Convert to linear space
-        linear_image = self.srgb_to_linear(image)
-
-        # Apply white balance if provided
-        if white_balance is not None:
-            wb_gains = np.array(white_balance).reshape(1, 1, 3)
-            linear_image = linear_image * wb_gains
-
-        # Apply color correction matrix
-        original_shape = linear_image.shape
-        linear_flat = linear_image.reshape(-1, 3)
-        corrected_flat = np.dot(linear_flat, ccm.T)
-        corrected_linear = corrected_flat.reshape(original_shape)
-
-        # Clamp to valid range
-        corrected_linear = np.clip(corrected_linear, 0.0, 1.0)
-
-        # Convert back to sRGB
-        return self.linear_to_srgb(corrected_linear)
-
-
-class QualityMetrics:
-    """
-    Proper image quality metrics including PSNR, SSIM, and Delta E 2000.
-    """
-
-    def __init__(self):
-        """Initialize quality metrics calculator."""
-        self.color_processor = ColorSpaceProcessor()
-        logger.info("Quality metrics calculator initialized")
-
-    def calculate_psnr(self, reference: np.ndarray, test: np.ndarray) -> float:
-        """
-        Calculate Peak Signal-to-Noise Ratio.
-
-        Args:
-            reference: Reference image
-            test: Test image
-
-        Returns:
-            PSNR in dB
-        """
-        if reference.shape != test.shape:
-            raise ValueError("Images must have the same shape")
-
-        return peak_signal_noise_ratio(reference, test, data_range=1.0)
-
-    def calculate_ssim(self, reference: np.ndarray, test: np.ndarray) -> float:
-        """
-        Calculate Structural Similarity Index.
-
-        Args:
-            reference: Reference image
-            test: Test image
-
-        Returns:
-            SSIM value (0-1)
-        """
-        if reference.shape != test.shape:
-            raise ValueError("Images must have the same shape")
-
-        if reference.ndim == 2:
-            return structural_similarity(reference, test, data_range=1.0)
-        else:
-            return structural_similarity(reference, test, data_range=1.0, channel_axis=2)
-
-    def calculate_delta_e_2000(self, reference_rgb: np.ndarray, test_rgb: np.ndarray) -> tuple[float, np.ndarray]:
-        """
-        Calculate CIE Delta E 2000 color difference.
-
-        Args:
-            reference_rgb: Reference RGB image (sRGB, range [0, 1])
-            test_rgb: Test RGB image (sRGB, range [0, 1])
-
-        Returns:
-            Tuple of (mean_delta_e, delta_e_map)
-        """
-        if reference_rgb.shape != test_rgb.shape:
-            raise ValueError("Images must have the same shape")
-
-        if reference_rgb.ndim != 3 or reference_rgb.shape[2] != 3:
-            raise ValueError("Delta E calculation requires 3-channel RGB images")
-
-        # Convert to linear RGB
-        ref_linear = self.color_processor.srgb_to_linear(reference_rgb)
-        test_linear = self.color_processor.srgb_to_linear(test_rgb)
-
-        # Convert to XYZ
-        ref_xyz = self.color_processor.rgb_to_xyz(ref_linear)
-        test_xyz = self.color_processor.rgb_to_xyz(test_linear)
-
-        # Convert to LAB
-        ref_lab = self.color_processor.xyz_to_lab(ref_xyz)
-        test_lab = self.color_processor.xyz_to_lab(test_xyz)
-
-        # Simplified Delta E 2000 calculation
-        # (Full implementation would be much more complex)
-        delta_l = test_lab[:, :, 0] - ref_lab[:, :, 0]
-        delta_a = test_lab[:, :, 1] - ref_lab[:, :, 1]
-        delta_b = test_lab[:, :, 2] - ref_lab[:, :, 2]
-
-        # Simplified formula (not full CIE Delta E 2000)
-        delta_e_map = np.sqrt(delta_l**2 + delta_a**2 + delta_b**2)
-        mean_delta_e = np.mean(delta_e_map)
-
-        logger.info(f"Calculated Delta E 2000: mean = {mean_delta_e:.2f}")
-        return float(mean_delta_e), delta_e_map
-
-
-# Example usage and testing
-if __name__ == "__main__":
-    # Test advanced denoising
-    print("Testing Advanced Image Processing...")
-
-    # Create test image with noise
-    np.random.seed(42)
-    clean_image = np.random.rand(256, 256, 3).astype(np.float32)
-    noisy_image = clean_image + 0.1 * np.random.randn(256, 256, 3).astype(np.float32)
-    noisy_image = np.clip(noisy_image, 0, 1)
-
-    # Test different denoising methods
-    methods = [DenoiseMethod.BILATERAL, DenoiseMethod.GUIDED_FILTER, DenoiseMethod.NON_LOCAL_MEANS, DenoiseMethod.GAUSSIAN]
-
-    quality_metrics = QualityMetrics()
-
-    print("Denoising Results:")
-    print("-" * 40)
-    for method in methods:
-        try:
-            denoiser = AdvancedDenoiser(method)
-            denoised = denoiser.denoise(noisy_image, strength=0.3)
-
-            psnr = quality_metrics.calculate_psnr(clean_image, denoised)
-            ssim = quality_metrics.calculate_ssim(clean_image, denoised)
-
-            print(f"{method.value:15s}: PSNR = {psnr:.2f} dB, SSIM = {ssim:.3f}")
-        except Exception as e:
-            print(f"{method.value:15s}: Error - {e}")
-
-    # Test color space processing
-    print("\nColor Space Processing:")
-    print("-" * 40)
-    color_processor = ColorSpaceProcessor()
-
-    # Test color correction
-    test_rgb = np.random.rand(100, 100, 3).astype(np.float32)
-    ccm = np.array([[1.1, -0.05, -0.05], [-0.05, 1.1, -0.05], [-0.05, -0.05, 1.1]])
-
-    corrected = color_processor.apply_color_correction(test_rgb, ccm)
-    delta_e, _ = quality_metrics.calculate_delta_e_2000(test_rgb, corrected)
-
-    print(f"Color correction Delta E: {delta_e:.2f}")
-
-    print("\nAdvanced processing tests completed!")
+    def reset_statistics(self):
+        """Reset processing statistics."""
+        self.processing_stats = {
+            "frames_processed": 0,
+            "total_processing_time": 0.0,
+            "average_processing_time": 0.0,
+            "quality_improvements": [],
+        }

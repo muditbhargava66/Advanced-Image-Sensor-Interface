@@ -14,14 +14,8 @@ Usage:
     $ pytest tests/test_performance_metrics.py
 """
 
-import os
-import sys
-
 import numpy as np
 import pytest
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 from advanced_image_sensor_interface.utils.performance_metrics import (
     calculate_color_accuracy,
     calculate_dynamic_range,

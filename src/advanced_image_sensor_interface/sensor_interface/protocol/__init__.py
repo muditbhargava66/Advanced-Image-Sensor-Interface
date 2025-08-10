@@ -1,16 +1,13 @@
 """
-Protocol Package for Advanced Image Sensor Interface
+Protocol implementations for camera interfaces.
 
-This package provides protocol implementations for various image sensor interfaces
-including MIPI CSI-2, GigE Vision, and CoaXPress.
-
-Modules:
-    base: Abstract base classes for protocol implementations.
-    mipi: MIPI CSI-2 protocol implementation.
-    gige: GigE Vision protocol implementation.
-    coaxpress: CoaXPress protocol implementation.
+This module provides support for multiple camera interface protocols:
+- MIPI CSI-2: Mobile Industry Processor Interface
+- CoaXPress: High-speed coaxial cable interface
+- GigE Vision: Ethernet-based camera interface
+- USB3 Vision: USB 3.0-based camera interface
 """
 
-from .base import ProtocolBase
+from .base import ProtocolBase, ProtocolError
 
-__all__ = ["ProtocolBase"]
+__all__ = ["ProtocolBase", "ProtocolError"]

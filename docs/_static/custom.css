@@ -1,0 +1,346 @@
+/* Custom CSS for Advanced Image Sensor Interface Documentation */
+
+/* Improve code block styling */
+.highlight {
+    background: #f8f8f8;
+    border: 1px solid #e1e4e5;
+    border-radius: 4px;
+    margin: 1em 0;
+}
+
+/* Style for API documentation */
+.py.class > dt {
+    background-color: #f0f0f0;
+    border-left: 4px solid #2980b9;
+    padding-left: 10px;
+}
+
+.py.method > dt {
+    background-color: #f9f9f9;
+    border-left: 3px solid #27ae60;
+    padding-left: 8px;
+}
+
+.py.function > dt {
+    background-color: #f9f9f9;
+    border-left: 3px solid #e67e22;
+    padding-left: 8px;
+}
+
+/* Improve parameter lists */
+.field-list {
+    margin: 1em 0;
+}
+
+.field-list > dt {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* Style for examples */
+.admonition.example {
+    border-left: 4px solid #f39c12;
+    background-color: #fef9e7;
+}
+
+.admonition.example .admonition-title {
+    background-color: #f39c12;
+    color: white;
+}
+
+/* Style for warnings */
+.admonition.warning {
+    border-left: 4px solid #e74c3c;
+    background-color: #fdf2f2;
+}
+
+/* Style for notes */
+.admonition.note {
+    border-left: 4px solid #3498db;
+    background-color: #f4f8fb;
+}
+
+/* Improve table styling */
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+    white-space: normal;
+}
+
+/* Style for protocol comparison tables */
+.protocol-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+}
+
+.protocol-table th,
+.protocol-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.protocol-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+/* Performance metrics styling */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1em;
+    margin: 1em 0;
+}
+
+.metric-card {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1em;
+    background-color: #f9f9f9;
+}
+
+.metric-value {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #2980b9;
+}
+
+/* Hardware integration styling */
+.hardware-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1em;
+    margin: 1em 0;
+}
+
+.hardware-card {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1em;
+    background-color: #f8f9fa;
+}
+
+.hardware-card h4 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+/* Code example improvements */
+.code-example {
+    background-color: #f8f8f8;
+    border: 1px solid #e1e4e5;
+    border-radius: 4px;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+.code-example .caption {
+    font-weight: bold;
+    margin-bottom: 0.5em;
+    color: #2c3e50;
+}
+
+/* Protocol-specific styling */
+.protocol-mipi {
+    border-left: 4px solid #3498db;
+    background-color: #f4f8fb;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+.protocol-coaxpress {
+    border-left: 4px solid #e67e22;
+    background-color: #fef9e7;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+.protocol-gige {
+    border-left: 4px solid #27ae60;
+    background-color: #f4f9f4;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+.protocol-usb3 {
+    border-left: 4px solid #e74c3c;
+    background-color: #fdf2f2;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+/* ELI5 section styling */
+.eli5-section {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 1.5em;
+    margin: 1.5em 0;
+}
+
+.eli5-section h3 {
+    color: #856404;
+    margin-top: 0;
+}
+
+.eli5-section .emoji {
+    font-size: 1.2em;
+    margin-right: 0.5em;
+}
+
+/* Protocol comparison table enhancements */
+.protocol-comparison {
+    overflow-x: auto;
+    margin: 1em 0;
+}
+
+.protocol-comparison table {
+    min-width: 600px;
+    width: 100%;
+}
+
+.protocol-comparison .star-rating {
+    color: #f39c12;
+    font-size: 1.1em;
+}
+
+/* Code example with protocol highlighting */
+.code-mipi .highlight {
+    border-left: 4px solid #3498db;
+}
+
+.code-coaxpress .highlight {
+    border-left: 4px solid #e67e22;
+}
+
+.code-gige .highlight {
+    border-left: 4px solid #27ae60;
+}
+
+.code-usb3 .highlight {
+    border-left: 4px solid #e74c3c;
+}
+
+/* Real-world example styling */
+.real-world-example {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 1.5em;
+    margin: 1.5em 0;
+}
+
+.real-world-example h4 {
+    color: #495057;
+    margin-top: 0;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 0.5em;
+}
+
+/* Decision tree styling */
+.decision-tree {
+    background-color: #f0f8ff;
+    border: 1px solid #b0d4f1;
+    border-radius: 6px;
+    padding: 1.5em;
+    margin: 1.5em 0;
+}
+
+.decision-node {
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 1em;
+    margin: 0.5em 0;
+    text-align: center;
+}
+
+/* Performance tips styling */
+.performance-tip {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-left: 4px solid #28a745;
+    border-radius: 4px;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+.performance-tip::before {
+    content: "💡 ";
+    font-size: 1.2em;
+}
+
+/* Troubleshooting section styling */
+.troubleshooting {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-left: 4px solid #dc3545;
+    border-radius: 4px;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+.troubleshooting::before {
+    content: "🔧 ";
+    font-size: 1.2em;
+}
+
+/* Quick reference cards */
+.quick-ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1em;
+    margin: 1.5em 0;
+}
+
+.quick-ref-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5em;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quick-ref-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.quick-ref-card h4 {
+    margin-top: 0;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5em;
+}
+
+/* Navigation improvements */
+.toctree-wrapper .toctree-l1 > a {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.toctree-wrapper .toctree-l2 > a {
+    color: #34495e;
+    padding-left: 1em;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .metrics-grid,
+    .hardware-grid,
+    .quick-ref-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .protocol-comparison {
+        font-size: 0.9em;
+    }
+    
+    .eli5-section,
+    .real-world-example,
+    .decision-tree {
+        padding: 1em;
+        margin: 1em 0;
+    }
+}

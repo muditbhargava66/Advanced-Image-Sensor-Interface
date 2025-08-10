@@ -226,7 +226,10 @@ class BitDepthConverter:
         if target_dtype == np.float32:
             return scaled.astype(np.float32)
         else:
-            return np.round(scaled).astype(target_dtype)
+            # Ensure values don't exceed the bit depth limit
+            rounded = np.round(scaled)
+            clipped = np.clip(rounded, 0, max_val)
+            return clipped.astype(target_dtype)
 
     @staticmethod
     def convert_bit_depth(image: np.ndarray, source_depth: int, target_depth: int) -> np.ndarray:

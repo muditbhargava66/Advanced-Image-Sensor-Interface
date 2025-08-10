@@ -19,11 +19,22 @@ Functions:
 import logging
 import time
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Optional
 
 import numpy as np
 
+from ..config import get_mipi_config, get_processing_config, get_security_config
+
 logger = logging.getLogger(__name__)
+
+
+class ValidationMode(Enum):
+    """Validation mode for performance optimization."""
+
+    STRICT = "strict"  # Validate everything
+    BALANCED = "balanced"  # Validate critical operations
+    PERFORMANCE = "performance"  # Minimal validation
 
 
 @dataclass
@@ -44,15 +55,33 @@ class ValidationResult:
 class SecurityLimits:
     """Security limits and constraints."""
 
-    max_image_size: int = 100 * 1024 * 1024  # 100MB max image
-    max_buffer_size: int = 1024 * 1024 * 1024  # 1GB max buffer
-    max_frame_rate: float = 1000.0  # 1000 fps max
-    max_data_rate: float = 50.0  # 50 Gbps max
-    max_voltage: float = 5.0  # 5V max
-    min_voltage: float = 0.0  # 0V min
-    max_current: float = 10.0  # 10A max
-    max_temperature: float = 150.0  # 150°C max
-    timeout_seconds: float = 30.0  # 30 second timeout
+    def __init__(
+        self,
+        max_image_size: int | None = None,
+        max_buffer_size: int | None = None,
+        max_frame_rate: float | None = None,
+        max_data_rate: float | None = None,
+        max_voltage: float | None = None,
+        min_voltage: float | None = None,
+        max_current: float | None = None,
+        max_temperature: float | None = None,
+        timeout_seconds: float | None = None,
+    ):
+        """Initialize with configurable limits."""
+        security_config = get_security_config()
+
+        self.max_image_size: int = max_image_size or security_config.MAX_IMAGE_SIZE
+        self.max_buffer_size: int = max_buffer_size or security_config.MAX_BUFFER_SIZE
+        self.max_frame_rate: float = max_frame_rate or security_config.MAX_FRAME_RATE
+        self.max_data_rate: float = max_data_rate or security_config.MAX_DATA_RATE
+        self.max_voltage: float = max_voltage or security_config.MAX_VOLTAGE
+        self.min_voltage: float = min_voltage or security_config.MIN_VOLTAGE
+        self.max_current: float = max_current or security_config.MAX_CURRENT
+        self.max_temperature: float = max_temperature or security_config.MAX_TEMPERATURE
+        self.timeout_seconds: float = timeout_seconds or security_config.OPERATION_TIMEOUT
+
+        # Dynamic memory limit based on system resources
+        self.max_memory_usage: int = getattr(security_config, "MAX_MEMORY_USAGE", self.max_buffer_size)
 
 
 class InputValidator:
@@ -63,15 +92,17 @@ class InputValidator:
     and other system inputs with security checks.
     """
 
-    def __init__(self, limits: Optional[SecurityLimits] = None):
+    def __init__(self, limits: Optional[SecurityLimits] = None, validation_mode: ValidationMode = ValidationMode.BALANCED):
         """
         Initialize input validator.
 
         Args:
             limits: Security limits (uses defaults if None)
+            validation_mode: Validation mode for performance tuning
         """
         self.limits = limits or SecurityLimits()
-        logger.info("Input validator initialized with security limits")
+        self.validation_mode = validation_mode
+        logger.info(f"Input validator initialized with {validation_mode.value} mode")
 
     def validate_image_data(self, image: Any, expected_shape: Optional[tuple[int, ...]] = None) -> ValidationResult:
         """
@@ -98,23 +129,30 @@ class InputValidator:
         if image.ndim < 2 or image.ndim > 3:
             return ValidationResult(False, f"Image must be 2D or 3D, got {image.ndim}D")
 
-        # Check image size limits
-        image_bytes = image.nbytes
-        if image_bytes > self.limits.max_image_size:
-            return ValidationResult(False, f"Image size {image_bytes} bytes exceeds limit {self.limits.max_image_size}")
+        # Check image size limits (always validate in strict mode)
+        if self.validation_mode in (ValidationMode.STRICT, ValidationMode.BALANCED):
+            image_bytes = image.nbytes
+            if image_bytes > self.limits.max_image_size:
+                return ValidationResult(False, f"Image size {image_bytes} bytes exceeds limit {self.limits.max_image_size}")
 
         # Check for reasonable dimensions
         height, width = image.shape[:2]
-        if height < 1 or width < 1:
+        processing_config = get_processing_config()
+
+        if height < processing_config.MIN_IMAGE_DIMENSION or width < processing_config.MIN_IMAGE_DIMENSION:
             return ValidationResult(False, f"Invalid image dimensions: {height}x{width}")
 
-        if height > 16384 or width > 16384:
-            warnings.append(f"Very large image dimensions: {height}x{width}")
+        if height > processing_config.MAX_IMAGE_DIMENSION or width > processing_config.MAX_IMAGE_DIMENSION:
+            if self.validation_mode == ValidationMode.STRICT:
+                return ValidationResult(False, f"Image dimensions too large: {height}x{width}")
+            else:
+                warnings.append(f"Very large image dimensions: {height}x{width}")
 
         # Check channels for color images
         if image.ndim == 3:
             channels = image.shape[2]
-            if channels not in {1, 3, 4}:
+            processing_config = get_processing_config()
+            if channels not in processing_config.SUPPORTED_CHANNELS:
                 return ValidationResult(False, f"Invalid number of channels: {channels}")
 
         # Check data type
@@ -122,22 +160,24 @@ class InputValidator:
         if not any(image.dtype == dtype for dtype in supported_dtypes):
             return ValidationResult(False, f"Unsupported image dtype: {image.dtype}")
 
-        # Check for non-finite values
-        if np.issubdtype(image.dtype, np.floating):
-            if not np.all(np.isfinite(image)):
-                return ValidationResult(False, "Image contains non-finite values (NaN or Inf)")
+        # Check for non-finite values (skip in performance mode)
+        if self.validation_mode != ValidationMode.PERFORMANCE:
+            if np.issubdtype(image.dtype, np.floating):
+                if not np.all(np.isfinite(image)):
+                    return ValidationResult(False, "Image contains non-finite values (NaN or Inf)")
 
-            if np.any(image < 0) or np.any(image > 1):
-                warnings.append("Float image values outside [0, 1] range")
+                if np.any(image < 0) or np.any(image > 1):
+                    warnings.append("Float image values outside [0, 1] range")
 
         # Check expected shape if provided
         if expected_shape is not None:
             if image.shape != expected_shape:
                 return ValidationResult(False, f"Shape mismatch: expected {expected_shape}, got {image.shape}")
 
-        # Check for suspicious patterns that might indicate corruption
-        if np.all(image == image.flat[0]):
-            warnings.append("Image has constant values (might be corrupted)")
+        # Check for suspicious patterns (only in strict mode)
+        if self.validation_mode == ValidationMode.STRICT:
+            if np.all(image == image.flat[0]):
+                warnings.append("Image has constant values (might be corrupted)")
 
         return ValidationResult(True, warnings=warnings, sanitized_value=image)
 
@@ -168,21 +208,24 @@ class InputValidator:
         if data_size == 0:
             return ValidationResult(False, "MIPI data cannot be empty")
 
-        # Check for reasonable packet sizes
-        if data_size < 4:
-            warnings.append("Very small MIPI packet (< 4 bytes)")
-        elif data_size > 64 * 1024:
-            warnings.append(f"Large MIPI packet ({data_size} bytes)")
+        # Check for reasonable packet sizes (skip in performance mode)
+        if self.validation_mode != ValidationMode.PERFORMANCE:
+            mipi_config = get_mipi_config()
+            if data_size < mipi_config.SMALL_PACKET_THRESHOLD:
+                warnings.append("Very small MIPI packet (< 4 bytes)")
+            elif data_size > mipi_config.LARGE_PACKET_THRESHOLD:
+                warnings.append(f"Large MIPI packet ({data_size} bytes)")
 
-        # Basic pattern validation for MIPI packets
-        if data_size >= 4:
+        # Basic pattern validation for MIPI packets (only in strict/balanced mode)
+        if self.validation_mode != ValidationMode.PERFORMANCE and data_size >= 4:
             # Check if it looks like a valid MIPI packet header
             header = data[:4]
             di = header[0]  # Data Identifier
 
             # Check virtual channel (bits 6-7)
             virtual_channel = (di >> 6) & 0x3
-            if virtual_channel > 3:
+            mipi_config = get_mipi_config()
+            if virtual_channel > mipi_config.MAX_CHANNEL:
                 warnings.append(f"Invalid virtual channel: {virtual_channel}")
 
             # Check data type (bits 0-5)
@@ -237,9 +280,9 @@ class InputValidator:
 
         # Check power calculation
         power = voltage * current
-        max_power = 50.0  # 50W max power
-        if power > max_power:
-            return ValidationResult(False, f"Power {power:.2f}W exceeds safe limit {max_power}W")
+        security_config = get_security_config()
+        if power > security_config.MAX_POWER:
+            return ValidationResult(False, f"Power {power:.2f}W exceeds safe limit {security_config.MAX_POWER}W")
 
         # Warnings for unusual values
         if voltage > 4.0:
@@ -372,18 +415,37 @@ class SecurityManager:
     security policy enforcement across the system.
     """
 
-    def __init__(self, limits: Optional[SecurityLimits] = None):
+    def __init__(self, limits: Optional[SecurityLimits] = None, validation_mode: ValidationMode = ValidationMode.BALANCED):
         """
         Initialize security manager.
 
         Args:
             limits: Security limits (uses defaults if None)
+            validation_mode: Validation mode for performance tuning
         """
         self.limits = limits or SecurityLimits()
-        self.validator = InputValidator(self.limits)
+        self.validation_mode = validation_mode
+        self.validator = InputValidator(self.limits, validation_mode)
         self.buffer_guard = BufferGuard(self.limits)
         self.operation_timeouts: dict[str, float] = {}
-        logger.info("Security manager initialized")
+        logger.info(f"Security manager initialized with {validation_mode.value} validation mode")
+
+    def should_validate(self, operation_type: str) -> bool:
+        """
+        Determine if validation should be performed based on mode and operation.
+
+        Args:
+            operation_type: Type of operation ("security_critical", "data_integrity", "performance")
+
+        Returns:
+            bool: True if validation should be performed
+        """
+        if self.validation_mode == ValidationMode.STRICT:
+            return True
+        elif self.validation_mode == ValidationMode.PERFORMANCE:
+            return operation_type == "security_critical"
+        else:  # BALANCED
+            return operation_type in ["security_critical", "data_integrity"]
 
     def start_operation(self, operation_id: str) -> bool:
         """

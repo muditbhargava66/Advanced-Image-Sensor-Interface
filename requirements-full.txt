@@ -1,0 +1,72 @@
+# Advanced Image Sensor Interface - Full Feature Set
+# Install with: pip install -r requirements-full.txt
+# This includes all optional dependencies for GPU acceleration, advanced processing, etc.
+
+# Include core requirements
+-r requirements.txt
+
+# GPU acceleration (optional - graceful degradation if not available)
+cupy-cuda12x>=12.0.0; sys_platform != "darwin"  # CUDA support for Linux/Windows
+numba>=0.58.0,<1.0.0  # JIT compilation
+
+# Advanced image processing
+opencv-contrib-python>=4.8.1,<5.0.0  # Extended OpenCV features
+scikit-image>=0.20.0,<1.0.0  # Advanced image processing algorithms
+imageio[ffmpeg]>=2.33.0,<3.0.0  # Video processing support
+rawpy>=0.18.0,<1.0.0  # RAW image processing
+
+# Machine learning and AI
+torch>=2.0.0,<3.0.0; sys_platform != "darwin"  # PyTorch for neural networks
+torchvision>=0.15.0,<1.0.0; sys_platform != "darwin"  # Computer vision models
+tensorflow>=2.13.0,<3.0.0; sys_platform != "darwin"  # TensorFlow for ML
+
+# Scientific computing enhancements
+sympy>=1.12.0,<2.0.0  # Symbolic mathematics
+astropy>=5.3.0,<6.0.0  # Astronomical image processing
+photutils>=1.9.0,<2.0.0  # Photometry and image analysis
+
+# Hardware interface simulation
+pyserial>=3.5.0,<4.0.0  # Serial communication simulation
+pyusb>=1.2.0,<2.0.0  # USB interface simulation
+smbus2>=0.4.0,<1.0.0; sys_platform == "linux"  # I2C interface (Linux only)
+
+# Performance monitoring
+memory-profiler>=0.61.0,<1.0.0  # Memory usage profiling
+line-profiler>=4.1.0,<5.0.0  # Line-by-line profiling
+py-spy>=0.3.0,<1.0.0  # Sampling profiler
+
+# Data formats and serialization
+h5py>=3.8.0,<4.0.0  # HDF5 file format
+zarr>=2.16.0,<3.0.0  # Chunked, compressed arrays
+msgpack>=1.0.0,<2.0.0  # Fast serialization
+protobuf>=4.24.0,<5.0.0  # Protocol buffers
+
+# Networking and protocols
+requests>=2.31.0,<3.0.0  # HTTP requests
+websockets>=11.0.0,<12.0.0  # WebSocket support
+pyzmq>=25.1.0,<26.0.0  # ZeroMQ messaging
+
+# Visualization enhancements
+plotly>=5.17.0,<6.0.0  # Interactive plotting
+bokeh>=3.2.0,<4.0.0  # Web-based visualization
+seaborn>=0.12.0,<1.0.0  # Statistical visualization
+
+# Configuration and utilities
+click>=8.1.0,<9.0.0  # Command-line interface
+rich>=13.6.0,<14.0.0  # Rich text and beautiful formatting
+typer>=0.9.0,<1.0.0  # Modern CLI framework
+pydantic>=2.4.0,<3.0.0  # Data validation
+
+# Development and debugging
+icecream>=2.1.0,<3.0.0  # Debugging print statements
+loguru>=0.7.0,<1.0.0  # Advanced logging
+colorama>=0.4.0,<1.0.0  # Cross-platform colored terminal text
+
+# Optional GUI support
+tkinter-tooltip>=2.1.0,<3.0.0  # GUI tooltips
+pillow-simd>=10.0.0,<11.0.0; sys_platform != "darwin"  # SIMD-optimized Pillow
+
+# Note: Some packages may not be available on all platforms
+# GPU packages (cupy, torch, tensorflow) are excluded on macOS for compatibility
+# Linux-specific packages (smbus2) are only installed on Linux systems
+# All packages include version constraints for stability

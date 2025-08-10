@@ -1,15 +1,16 @@
 """
-Calibration Package for Advanced Image Sensor Interface
+Camera calibration module for the Advanced Image Sensor Interface.
 
-This package provides AI-based calibration and parameter tuning capabilities
-for image sensor optimization.
-
-Modules:
-    neural_tuner: AI-based parameter tuning system.
-    models: Machine learning models for calibration.
+This module provides comprehensive camera calibration capabilities including:
+- Intrinsic camera calibration
+- Extrinsic camera calibration
+- Multi-camera calibration
+- Stereo calibration
+- Color calibration
+- Temporal calibration
 """
 
-from .neural_tuner import NeuralTuner
-from .models import CalibrationModel
+from .models import CalibrationQualityMetrics, CalibrationResult, StereoCalibrationResult
+from .neural_tuner import NeuralCalibrationTuner
 
-__all__ = ["NeuralTuner", "CalibrationModel"]
+__all__ = ["CalibrationResult", "StereoCalibrationResult", "CalibrationQualityMetrics", "NeuralCalibrationTuner"]

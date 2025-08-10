@@ -3,22 +3,24 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Advanced Image Sensor Interface Documentation (v1.1.0)
+Advanced Image Sensor Interface Documentation (v2.0.0)
 ======================================================
 
-Welcome to the Advanced Image Sensor Interface documentation! This is a high-level Python simulation and modeling framework for MIPI CSI-2 image sensor pipelines with comprehensive processing and power modeling capabilities.
+Welcome to the Advanced Image Sensor Interface documentation! This is a comprehensive Python framework for camera interface protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities.
 
 Overview
 --------
 
 The Advanced Image Sensor Interface provides:
 
-* **MIPI CSI-2 Protocol Simulation**: Complete packet-level simulation with ECC/CRC validation
-* **Advanced Signal Processing**: Sophisticated noise reduction and image enhancement algorithms  
-* **Power Management Modeling**: Simulates power delivery and noise characteristics
-* **Multi-Protocol Support**: MIPI CSI-2, GigE Vision, and CoaXPress protocol models
-* **Comprehensive Testing**: 122 unit tests with focused coverage on core functionality
-* **AI-Based Calibration**: Neural network parameter tuning and optimization
+* **Multi-Protocol Support**: MIPI CSI-2, CoaXPress, GigE Vision, and USB3 Vision protocols
+* **Advanced Image Processing**: HDR processing, RAW image pipeline, and GPU acceleration
+* **Multi-Sensor Synchronization**: Hardware and software synchronization with sub-millisecond accuracy
+* **Professional Calibration**: Comprehensive camera calibration with distortion correction
+* **Enhanced Buffer Management**: Asynchronous buffer operations with intelligent memory pooling
+* **Power Management**: Advanced power states and thermal management
+* **Comprehensive Testing**: 200+ unit tests with extensive protocol and integration testing
+* **Production-Ready**: 100% linting compliance and robust CI/CD pipeline
 
 Quick Start
 -----------
@@ -49,12 +51,42 @@ Documentation Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Getting Started:
 
    design_specs.md
-   performance_analysis.md
    api_documentation.md
+   api_reference.md
    testing_guide.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Camera Protocols:
+
+   protocols_index.md
+   protocol_comparison_guide.md
+   protocol_mipi_csi2.md
+   protocol_coaxpress.md
+   protocol_gige_vision.md
+   protocol_usb3_vision.md
+   protocols.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Hardware Integration:
+
+   hardware_integration.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Calibration & Configuration:
+
+   calibration.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Performance & Analysis:
+
+   performance_analysis.md
 
 
 

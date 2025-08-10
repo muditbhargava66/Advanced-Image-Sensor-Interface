@@ -1,258 +1,228 @@
 """
-Machine Learning Models for Sensor Calibration
+Calibration data models and structures.
 
-This module provides machine learning models for automated sensor calibration
-and parameter optimization.
-
-Classes:
-    CalibrationModel: Base class for calibration models.
-    LinearCalibrationModel: Linear regression-based calibration model.
-    NeuralCalibrationModel: Neural network-based calibration model.
+This module defines the data structures used for camera calibration results,
+quality metrics, and calibration parameters.
 """
 
-import logging
-from abc import ABC, abstractmethod
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Optional
 
 import numpy as np
-from sklearn.linear_model import LinearRegression
-from sklearn.neural_network import MLPRegressor
-from sklearn.preprocessing import StandardScaler
-
-logger = logging.getLogger(__name__)
 
 
-class CalibrationModel(ABC):
-    """
-    Abstract base class for calibration models.
-    """
+@dataclass
+class CalibrationResult:
+    """Results from camera calibration."""
 
-    @abstractmethod
-    def train(self, X: np.ndarray, y: np.ndarray) -> None:
-        """
-        Train the calibration model.
+    camera_matrix: np.ndarray
+    distortion_coefficients: np.ndarray
+    rotation_vectors: list[np.ndarray]
+    translation_vectors: list[np.ndarray]
+    rms_reprojection_error: float
+    image_size: tuple[int, int]
+    calibration_flags: int
+    object_points: list[np.ndarray]
+    image_points: list[np.ndarray]
 
-        Args:
-            X (np.ndarray): Input features.
-            y (np.ndarray): Target values.
-        """
-        pass
-
-    @abstractmethod
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        """
-        Make predictions using the trained model.
-
-        Args:
-            X (np.ndarray): Input features.
-
-        Returns:
-            np.ndarray: Predicted values.
-        """
-        pass
-
-    @abstractmethod
-    def get_model_info(self) -> dict[str, Any]:
-        """
-        Get information about the model.
-
-        Returns:
-            Dict[str, Any]: Model information dictionary.
-        """
-        pass
+    def __post_init__(self):
+        """Validate calibration result data."""
+        if self.camera_matrix.shape != (3, 3):
+            raise ValueError("Camera matrix must be 3x3")
+        if len(self.distortion_coefficients) < 4:
+            raise ValueError("Must have at least 4 distortion coefficients")
 
 
-class LinearCalibrationModel(CalibrationModel):
-    """
-    Linear regression-based calibration model.
-    """
+@dataclass
+class StereoCalibrationResult:
+    """Results from stereo camera calibration."""
 
-    def __init__(self):
-        """Initialize the linear calibration model."""
-        self.model = LinearRegression()
-        self.scaler = StandardScaler()
-        self.is_trained = False
-        logger.info("Linear calibration model initialized")
+    camera_matrix_left: np.ndarray
+    camera_matrix_right: np.ndarray
+    distortion_left: np.ndarray
+    distortion_right: np.ndarray
+    rotation_matrix: np.ndarray
+    translation_vector: np.ndarray
+    essential_matrix: np.ndarray
+    fundamental_matrix: np.ndarray
+    rms_error: float
 
-    def train(self, X: np.ndarray, y: np.ndarray) -> None:
-        """
-        Train the linear calibration model.
-
-        Args:
-            X (np.ndarray): Input features.
-            y (np.ndarray): Target values.
-        """
-        try:
-            # Scale the input features
-            X_scaled = self.scaler.fit_transform(X)
-
-            # Train the model
-            self.model.fit(X_scaled, y)
-            self.is_trained = True
-
-            logger.info(f"Linear model trained with {X.shape[0]} samples")
-        except Exception as e:
-            logger.error(f"Error training linear model: {e}")
-            raise
-
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        """
-        Make predictions using the trained linear model.
-
-        Args:
-            X (np.ndarray): Input features.
-
-        Returns:
-            np.ndarray: Predicted values.
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before making predictions")
-
-        try:
-            X_scaled = self.scaler.transform(X)
-            predictions = self.model.predict(X_scaled)
-            return predictions
-        except Exception as e:
-            logger.error(f"Error making predictions: {e}")
-            raise
-
-    def get_model_info(self) -> dict[str, Any]:
-        """
-        Get information about the linear model.
-
-        Returns:
-            Dict[str, Any]: Model information dictionary.
-        """
-        info = {"model_type": "Linear Regression", "is_trained": self.is_trained}
-
-        if self.is_trained:
-            info.update(
-                {
-                    "coefficients": self.model.coef_.tolist() if hasattr(self.model, "coef_") else None,
-                    "intercept": float(self.model.intercept_) if hasattr(self.model, "intercept_") else None,
-                    "score": getattr(self.model, "score_", None),
-                }
-            )
-
-        return info
+    # Rectification results
+    rectification_transform_left: Optional[np.ndarray] = None
+    rectification_transform_right: Optional[np.ndarray] = None
+    projection_matrix_left: Optional[np.ndarray] = None
+    projection_matrix_right: Optional[np.ndarray] = None
+    disparity_to_depth_matrix: Optional[np.ndarray] = None
 
 
-class NeuralCalibrationModel(CalibrationModel):
-    """
-    Neural network-based calibration model.
-    """
+@dataclass
+class CalibrationQualityMetrics:
+    """Quality assessment metrics for calibration."""
 
-    def __init__(self, hidden_layer_sizes: tuple[int, ...] = (100, 50), max_iter: int = 1000):
-        """
-        Initialize the neural calibration model.
+    rms_error: float
+    mean_error: float
+    max_error: float
+    std_error: float
+    per_image_errors: list[float]
+    coverage_score: float  # How well the calibration pattern covers the image
+    symmetry_score: float  # How symmetric the error distribution is
 
-        Args:
-            hidden_layer_sizes (Tuple[int, ...]): Sizes of hidden layers.
-            max_iter (int): Maximum number of iterations for training.
-        """
-        self.model = MLPRegressor(hidden_layer_sizes=hidden_layer_sizes, max_iter=max_iter, random_state=42)
-        self.scaler = StandardScaler()
-        self.is_trained = False
-        self.hidden_layer_sizes = hidden_layer_sizes
-        logger.info(f"Neural calibration model initialized with layers: {hidden_layer_sizes}")
+    @property
+    def quality_grade(self) -> str:
+        """Get quality grade based on RMS error."""
+        if self.rms_error < 0.5:
+            return "Excellent"
+        elif self.rms_error < 1.0:
+            return "Good"
+        elif self.rms_error < 2.0:
+            return "Acceptable"
+        else:
+            return "Poor"
 
-    def train(self, X: np.ndarray, y: np.ndarray) -> None:
-        """
-        Train the neural calibration model.
 
-        Args:
-            X (np.ndarray): Input features.
-            y (np.ndarray): Target values.
-        """
-        try:
-            # Scale the input features
-            X_scaled = self.scaler.fit_transform(X)
+@dataclass
+class CalibrationPattern:
+    """Calibration pattern configuration."""
 
-            # Train the model
-            self.model.fit(X_scaled, y)
-            self.is_trained = True
+    pattern_type: str  # "checkerboard", "circles", "asymmetric_circles"
+    pattern_size: tuple[int, int]  # (width, height) in pattern units
+    square_size: float  # Size of each square/circle in mm
 
-            logger.info(f"Neural model trained with {X.shape[0]} samples, " f"converged in {self.model.n_iter_} iterations")
-        except Exception as e:
-            logger.error(f"Error training neural model: {e}")
-            raise
+    def generate_object_points(self) -> np.ndarray:
+        """Generate 3D object points for the calibration pattern."""
+        if self.pattern_type == "checkerboard":
+            # Create checkerboard pattern points
+            objp = np.zeros((self.pattern_size[0] * self.pattern_size[1], 3), np.float32)
+            objp[:, :2] = np.mgrid[0 : self.pattern_size[0], 0 : self.pattern_size[1]].T.reshape(-1, 2)
+            objp *= self.square_size
+            return objp
+        elif self.pattern_type == "circles":
+            # Create circular grid pattern points
+            objp = np.zeros((self.pattern_size[0] * self.pattern_size[1], 3), np.float32)
+            objp[:, :2] = np.mgrid[0 : self.pattern_size[0], 0 : self.pattern_size[1]].T.reshape(-1, 2)
+            objp *= self.square_size
+            return objp
+        else:
+            raise ValueError(f"Unsupported pattern type: {self.pattern_type}")
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        """
-        Make predictions using the trained neural model.
 
-        Args:
-            X (np.ndarray): Input features.
+@dataclass
+class MultiCameraCalibrationResult:
+    """Results from multi-camera array calibration."""
 
-        Returns:
-            np.ndarray: Predicted values.
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before making predictions")
+    camera_matrices: list[np.ndarray]
+    distortion_coefficients: list[np.ndarray]
+    relative_poses: list[dict[str, np.ndarray]]  # Rotation and translation relative to reference
+    reference_camera_id: int
+    rms_errors: list[float]
+    overall_rms_error: float
 
-        try:
-            X_scaled = self.scaler.transform(X)
-            predictions = self.model.predict(X_scaled)
-            return predictions
-        except Exception as e:
-            logger.error(f"Error making predictions: {e}")
-            raise
+    def get_camera_pose(self, camera_id: int) -> tuple[np.ndarray, np.ndarray]:
+        """Get rotation and translation for a specific camera."""
+        if camera_id == self.reference_camera_id:
+            return np.eye(3), np.zeros(3)
 
-    def get_model_info(self) -> dict[str, Any]:
-        """
-        Get information about the neural model.
+        pose = self.relative_poses[camera_id]
+        return pose["rotation"], pose["translation"]
 
-        Returns:
-            Dict[str, Any]: Model information dictionary.
-        """
-        info = {
-            "model_type": "Neural Network (MLP)",
-            "hidden_layer_sizes": self.hidden_layer_sizes,
-            "is_trained": self.is_trained,
+
+@dataclass
+class ColorCalibrationResult:
+    """Results from color calibration."""
+
+    color_correction_matrix: np.ndarray
+    white_balance_gains: np.ndarray
+    gamma_correction: float
+    color_temperature: float
+    illuminant_type: str
+    delta_e_mean: float  # Mean color error
+    delta_e_max: float  # Maximum color error
+
+    def apply_color_correction(self, image: np.ndarray) -> np.ndarray:
+        """Apply color correction to an image."""
+        # Apply white balance
+        corrected = image.astype(np.float32)
+        for i in range(3):
+            corrected[:, :, i] *= self.white_balance_gains[i]
+
+        # Apply color correction matrix
+        corrected = corrected.reshape(-1, 3)
+        corrected = np.dot(corrected, self.color_correction_matrix.T)
+        corrected = corrected.reshape(image.shape)
+
+        # Apply gamma correction
+        corrected = np.power(corrected / 255.0, 1.0 / self.gamma_correction) * 255.0
+
+        return np.clip(corrected, 0, 255).astype(np.uint8)
+
+
+@dataclass
+class TemporalCalibrationResult:
+    """Results from temporal/timing calibration."""
+
+    frame_timing_offsets: list[float]  # Timing offset for each camera in milliseconds
+    synchronization_accuracy: float  # RMS synchronization error in milliseconds
+    frame_rate_accuracy: float  # Actual vs expected frame rate accuracy
+    jitter_statistics: dict[str, float]  # Min, max, mean, std of timing jitter
+
+    @property
+    def is_synchronized(self) -> bool:
+        """Check if cameras are well synchronized."""
+        return self.synchronization_accuracy < 1.0  # Less than 1ms error
+
+
+@dataclass
+class CalibrationConfiguration:
+    """Configuration for calibration process."""
+
+    pattern: CalibrationPattern
+    num_images: int = 20
+    image_size: tuple[int, int] = (1920, 1080)
+    calibration_flags: int = 0
+    termination_criteria: tuple[int, int, float] = (3, 30, 0.001)  # cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER
+
+    # Quality thresholds
+    max_rms_error: float = 1.0
+    min_coverage_score: float = 0.7
+
+    def validate(self) -> bool:
+        """Validate calibration configuration."""
+        if self.num_images < 10:
+            raise ValueError("Need at least 10 calibration images")
+        if self.image_size[0] < 640 or self.image_size[1] < 480:
+            raise ValueError("Image size too small for reliable calibration")
+        return True
+
+
+class CalibrationDatabase:
+    """Database for storing and retrieving calibration results."""
+
+    def __init__(self, storage_path: str = "calibration_data"):
+        self.storage_path = storage_path
+        self._calibrations: dict[str, CalibrationResult] = {}
+
+    def store_calibration(self, camera_id: str, result: CalibrationResult) -> None:
+        """Store calibration result for a camera."""
+        self._calibrations[camera_id] = result
+
+    def get_calibration(self, camera_id: str) -> Optional[CalibrationResult]:
+        """Retrieve calibration result for a camera."""
+        return self._calibrations.get(camera_id)
+
+    def list_calibrations(self) -> list[str]:
+        """List all stored calibration camera IDs."""
+        return list(self._calibrations.keys())
+
+    def export_calibration(self, camera_id: str) -> dict[str, Any]:
+        """Export calibration data as dictionary."""
+        result = self.get_calibration(camera_id)
+        if result is None:
+            raise ValueError(f"No calibration found for camera {camera_id}")
+
+        return {
+            "camera_matrix": result.camera_matrix.tolist(),
+            "distortion_coefficients": result.distortion_coefficients.tolist(),
+            "rms_error": result.rms_reprojection_error,
+            "image_size": result.image_size,
+            "calibration_flags": result.calibration_flags,
         }
-
-        if self.is_trained:
-            info.update(
-                {
-                    "n_layers": self.model.n_layers_,
-                    "n_iter": self.model.n_iter_,
-                    "loss": float(self.model.loss_) if hasattr(self.model, "loss_") else None,
-                }
-            )
-
-        return info
-
-
-# Example usage
-if __name__ == "__main__":
-    # Generate sample calibration data
-    np.random.seed(42)
-    n_samples = 1000
-    n_features = 5
-
-    X = np.random.randn(n_samples, n_features)
-    # Create a non-linear relationship for testing
-    y = np.sum(X**2, axis=1) + 0.1 * np.random.randn(n_samples)
-
-    # Split data
-    split_idx = int(0.8 * n_samples)
-    X_train, X_test = X[:split_idx], X[split_idx:]
-    y_train, y_test = y[:split_idx], y[split_idx:]
-
-    # Test linear model
-    linear_model = LinearCalibrationModel()
-    linear_model.train(X_train, y_train)
-    linear_predictions = linear_model.predict(X_test)
-    linear_mse = np.mean((y_test - linear_predictions) ** 2)
-
-    print(f"Linear Model MSE: {linear_mse:.4f}")
-    print(f"Linear Model Info: {linear_model.get_model_info()}")
-
-    # Test neural model
-    neural_model = NeuralCalibrationModel(hidden_layer_sizes=(50, 25))
-    neural_model.train(X_train, y_train)
-    neural_predictions = neural_model.predict(X_test)
-    neural_mse = np.mean((y_test - neural_predictions) ** 2)
-
-    print(f"Neural Model MSE: {neural_mse:.4f}")
-    print(f"Neural Model Info: {neural_model.get_model_info()}")
