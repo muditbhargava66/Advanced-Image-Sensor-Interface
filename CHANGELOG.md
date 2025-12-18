@@ -5,6 +5,27 @@ All notable changes to the Advanced Image Sensor Interface project will be docum
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-12-18
+
+### 🔒 Security
+
+- Updated `fonttools` to 4.60.2 to address CVE-2025-66034 (moderate severity)
+
+### 🔧 Fixed
+
+- **CI Pipeline**: Fixed ruff linting failures across all platforms (Linux, macOS, Windows)
+  - Added `docs/` directory to ruff per-file-ignores for optional extension imports
+  - All CI jobs now pass for Python 3.10, 3.11, 3.12, and 3.13
+- **Documentation**: Corrected MIPIConfig example in API reference to match actual class signature
+  - Fixed incorrect parameters (`data_rate_mbps`, `pixel_format`) to correct ones (`lanes`, `data_rate`, `channel`)
+
+### 📦 Dependencies
+
+- Updated `Pillow` constraint from `<11.0.0` to `<12.0.0` to allow latest secure versions
+- Synchronized dependency constraints across `requirements.in`, `requirements.txt`, and `pyproject.toml`
+
+---
+
 ## [2.0.0] - 2025-08-10
 
 ### 🚀 Major Release - Multi-Protocol Camera Interface Framework
@@ -242,6 +263,7 @@ This major release represents a significant advancement in camera interface tech
 - Performance Metrics utilities and benchmarking tools
 - Comprehensive documentation including API docs, design specs, and performance analysis
 
+[2.0.1]: https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/compare/v1.0.0...v1.0.1

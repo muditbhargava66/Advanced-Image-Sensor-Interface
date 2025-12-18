@@ -65,34 +65,31 @@ async def process_frames():
 #### MIPI CSI-2 Driver
 
 ```python
-from advanced_image_sensor_interface.sensor_interface.mipi_driver import MIPIDriver
-from advanced_image_sensor_interface.config.constants import MIPIConfig
+from advanced_image_sensor_interface.sensor_interface.mipi_driver import MIPIDriver, MIPIConfig
 
 # Configure MIPI interface
 config = MIPIConfig(
-    lanes=4,
-    data_rate_mbps=2500,
-    pixel_format="RAW12",
-    resolution=(4096, 3072),
-    frame_rate=30.0
+    lanes=4,           # Number of data lanes (1-4)
+    data_rate=2.5,     # Data rate in Gbps per lane
+    channel=0          # Virtual channel ID (0-3)
 )
 
 # Initialize driver
 driver = MIPIDriver(config)
 
-# Connect and start streaming
-if driver.connect():
-    driver.start_streaming()
-    
-    # Capture frames
-    for _ in range(100):
-        frame_data = driver.capture_frame()
-        if frame_data:
-            # Process frame
-            process_frame(frame_data)
-    
-    driver.stop_streaming()
-    driver.disconnect()
+# Get driver status
+status = driver.get_status()
+print(f"Throughput: {status['throughput']:.2f} Gbps")
+
+# Send data
+test_data = b"Hello MIPI!" * 100
+if driver.send_data(test_data):
+    print(f"Sent {len(test_data)} bytes successfully")
+
+# Receive data  
+received = driver.receive_data(len(test_data))
+if received:
+    print(f"Received {len(received)} bytes")
 ```
 
 #### CoaXPress Driver

@@ -10,7 +10,7 @@ cycler==0.12.1
     # via matplotlib
 dataclasses-json==0.6.7
     # via -r requirements.in
-fonttools==4.59.0
+fonttools==4.60.2
     # via matplotlib
 h5py==3.14.0
     # via -r requirements.in

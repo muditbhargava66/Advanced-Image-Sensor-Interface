@@ -1,7 +1,7 @@
 """Version information for Advanced Image Sensor Interface."""
 
-__version__ = "2.0.0"
-__version_info__ = (2, 0, 0)
+__version__ = "2.0.1"
+__version_info__ = (2, 0, 1)
 
 # Release information
 __title__ = "Advanced Image Sensor Interface"
@@ -13,6 +13,16 @@ __url__ = "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface"
 
 # Version history
 VERSION_HISTORY = {
+    "2.0.1": {
+        "release_date": "2025-12-18",
+        "major_features": [
+            "Security fix for fonttools CVE-2025-66034",
+            "Updated Pillow dependency constraint to allow 11.x",
+            "Fixed CI pipeline for all platforms",
+            "Fixed MIPIConfig documentation examples",
+            "Added docs/ to ruff ignore for optional imports",
+        ],
+    },
     "2.0.0": {
         "release_date": "2025-01-10",
         "major_features": [
