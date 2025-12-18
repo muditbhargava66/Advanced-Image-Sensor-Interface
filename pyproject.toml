@@ -204,6 +204,10 @@ ignore = [
     "F401",  # Unused imports in examples (might be used by users)
     "D1", "PLR2004"
 ]
+"docs/**/*.py" = [
+    "F401",  # Unused imports for optional extension detection
+    "D1"
+]
 "src/advanced_image_sensor_interface/sensor_interface/gpu_acceleration.py" = [
     "F401",  # Optional dependency imports (numba)
 ]
