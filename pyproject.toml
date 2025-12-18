@@ -172,24 +172,22 @@ select = [
 
 # Global ignores
 ignore = [
-    "D",    # Disable all pydocstyle rules
-    "PLR2004",  # Magic numbers (common in tests)
-    "B006", # Mutable defaults (enable later)
-    "E501", # Line length (handled by formatter)
+    "D",
+    "PLR2004",
+    "B006",
+    "E501",
     "UP038",
     "UP007",
+    "UP045",   # DO NOT force X | None yet
+    "RUF059",  # Allow unused unpacking in demos/examples
     "E712",
-    # Acceptable complexity for domain-specific functions
-    "PLR0911",  # Too many return statements
-    "PLR0912",  # Too many branches
-    "PLR0913",  # Too many arguments (SecurityLimits constructor)
-    # Configuration management globals are acceptable
-    "PLW0603",  # Global statement usage
-    # Import organization and placement
-    "PLC0415", # Import should be at top-level (acceptable for optional deps)
-    "I001",    # Import block formatting (handled by formatter)
-    # Performance optimizations (acceptable for readability)
-    "PLR1730", # Replace if with max/min call
+    "PLR0911",
+    "PLR0912",
+    "PLR0913",
+    "PLW0603",
+    "PLC0415",
+    "I001",
+    "PLR1730",
 ]
 
 # Directory-specific ignores
