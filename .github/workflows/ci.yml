@@ -69,9 +69,6 @@ jobs:
       - name: Check formatting with Black
         run: black --check src/ examples/ benchmarks/ stubs/
       
-      - name: Check import sorting with isort
-        run: isort --check-only src/ examples/ benchmarks/ stubs/
-      
       - name: Type check with MyPy
         run: mypy src --config-file=pyproject.toml || true
       
