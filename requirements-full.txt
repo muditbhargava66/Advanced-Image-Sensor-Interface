@@ -10,7 +10,7 @@ cupy-cuda12x>=12.0.0; sys_platform != "darwin"  # CUDA support for Linux/Windows
 numba>=0.58.0,<1.0.0  # JIT compilation
 
 # Advanced image processing
-opencv-contrib-python>=4.8.1,<5.0.0  # Extended OpenCV features
+opencv-contrib-python>=5.0.0.93,<6.0.0  # Extended OpenCV features
 scikit-image>=0.20.0,<1.0.0  # Advanced image processing algorithms
 imageio[ffmpeg]>=2.33.0,<3.0.0  # Video processing support
 rawpy>=0.18.0,<1.0.0  # RAW image processing
