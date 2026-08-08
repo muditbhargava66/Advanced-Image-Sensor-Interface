@@ -1,10 +1,39 @@
 # Core dependencies for basic functionality (matches pyproject.toml).
 # For full optional features, install via: pip install -e ".[full]"
 # For development dependencies, install via: pip install -e ".[dev]"
-
-numpy>=1.23.5
-scipy>=1.10.0
-matplotlib>=3.7.0
-Pillow>=12.3.0,<13.0.0
-tqdm>=4.66.0
-psutil>=5.9.0
+contourpy==1.3.2
+cycler==0.12.1
+dataclasses-json==0.6.7
+fonttools==4.63.0
+h5py==3.16.0
+imageio==2.37.4
+joblib==1.5.3
+kiwisolver==1.5.0
+lazy-loader==0.5
+llvmlite==0.48.0
+marshmallow==3.26.2
+matplotlib==3.10.9
+mypy-extensions==1.1.0
+networkx==3.4.2
+numba==0.66.0
+numpy==1.26.4
+opencv-python==4.11.0.86
+packaging==26.3
+pandas==2.3.3
+pillow==11.3.0
+psutil==5.9.8
+pyparsing==3.3.2
+python-dateutil==2.9.0.post0
+pytz==2026.3.post1
+pyyaml==6.0.3
+rawpy==0.27.0
+scikit-image==0.25.2
+scikit-learn==1.7.2
+scipy==1.15.3
+six==1.17.0
+threadpoolctl==3.6.0
+tifffile==2025.5.10
+tqdm==4.70.0
+typing-extensions==4.16.0
+typing-inspect==0.9.0
+tzdata==2026.3
