@@ -32,7 +32,7 @@ smbus2>=0.4.0,<1.0.0; sys_platform == "linux"  # I2C interface (Linux only)
 
 # Performance monitoring
 memory-profiler>=0.61.0,<1.0.0  # Memory usage profiling
-line-profiler>=4.1.0,<5.0.0  # Line-by-line profiling
+line-profiler>=4.1.0,<6.0.0  # Line-by-line profiling
 py-spy>=0.3.0,<1.0.0  # Sampling profiler
 
 # Data formats and serialization
