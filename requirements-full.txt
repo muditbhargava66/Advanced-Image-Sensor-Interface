@@ -55,7 +55,7 @@ seaborn>=0.12.0,<1.0.0  # Statistical visualization
 click>=8.1.0,<9.0.0  # Command-line interface
 rich>=13.6.0,<14.0.0  # Rich text and beautiful formatting
 typer>=0.9.0,<1.0.0  # Modern CLI framework
-pydantic>=2.4.0,<3.0.0  # Data validation
+pydantic>=2.13.4,<3.0.0  # Data validation
 
 # Development and debugging
 icecream>=2.1.0,<3.0.0  # Debugging print statements
