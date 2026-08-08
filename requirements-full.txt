@@ -58,7 +58,7 @@ typer>=0.9.0,<1.0.0  # Modern CLI framework
 pydantic>=2.4.0,<3.0.0  # Data validation
 
 # Development and debugging
-icecream>=2.1.0,<3.0.0  # Debugging print statements
+icecream>=2.2.0,<3.0.0  # Debugging print statements
 loguru>=0.7.0,<1.0.0  # Advanced logging
 colorama>=0.4.0,<1.0.0  # Cross-platform colored terminal text
 
