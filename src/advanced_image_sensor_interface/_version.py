@@ -1,7 +1,7 @@
 """Version information for Advanced Image Sensor Interface."""
 
-__version__ = "2.0.1"
-__version_info__ = (2, 0, 1)
+__version__ = "3.0.0"
+__version_info__ = (3, 0, 0)
 
 # Release information
 __title__ = "Advanced Image Sensor Interface"
@@ -13,6 +13,22 @@ __url__ = "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface"
 
 # Version history
 VERSION_HISTORY = {
+    "3.0.0": {
+        "release_date": "2026-02-03",
+        "major_features": [
+            "CoaXPress CXP-12 support (50Gbps aggregate, 4-lane)",
+            "GigE Vision RoCE transport (RDMA over Converged Ethernet)",
+            "MIPI D-PHY v2.5 support (4.5Gbps per lane, adaptive equalization)",
+            "MIPI Security Framework (AES-GCM encryption, key management)",
+            "USB3 Enhanced Streaming (buffer pooling, async frame capture)",
+            "USB3 Device Discovery (hot-plug detection, device filtering)",
+            "Data Integrity module (CRC-32, Reed-Solomon FEC)",
+            "Lens Correction Pipeline (radial/tangential distortion)",
+            "Multi-System Power Management (coordinated power budgeting)",
+            "Security fixes for CVE-2025-68480, CVE-2026-0994, CVE-2026-25990",
+            "328 automated tests passing in the current release workspace",
+        ],
+    },
     "2.0.1": {
         "release_date": "2025-12-18",
         "major_features": [

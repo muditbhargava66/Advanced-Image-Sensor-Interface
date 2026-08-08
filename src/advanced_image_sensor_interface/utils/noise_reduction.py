@@ -3,9 +3,6 @@ Extensible Noise Reduction Framework
 
 This module provides abstract base classes and interfaces for implementing
 custom noise reduction algorithms in the Advanced Image Sensor Interface.
-
-Author: Advanced Image Sensor Interface Team
-Version: 2.0.0
 """
 
 from abc import ABC, abstractmethod

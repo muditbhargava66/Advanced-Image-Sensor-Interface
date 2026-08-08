@@ -2,14 +2,24 @@
 Advanced Image Sensor Interface - Sensor Interface Module
 
 This module provides comprehensive sensor interface capabilities including:
-- MIPI CSI-2 protocol implementation
+- MIPI CSI-2 protocol implementation with D-PHY v2.5 and Security Framework
+- CoaXPress CXP-12 support (50Gbps aggregate bandwidth)
+- GigE Vision with RoCE transport (RDMA over Converged Ethernet)
+- USB3 Vision with enhanced streaming and device discovery
 - Advanced signal processing
-- Power management
+- Power management with multi-system coordination
 - Buffer management
 - Image validation
 - Security features
 
-Version 2.0.0 Features:
+Version 3.0.0 Features:
+- CoaXPress CXP-12, GigE RoCE, MIPI D-PHY v2.5, USB3 streaming
+- Data integrity (CRC-32, Reed-Solomon FEC)
+- Lens distortion correction pipeline
+- Multi-system power management for sensor arrays
+- MIPI Security Framework (AES-GCM encryption)
+
+Previous Features (v2.0.0):
 - Enhanced sensor interface (up to 8K resolution)
 - HDR image processing pipeline
 - RAW image format support
@@ -21,6 +31,8 @@ IMPORTANT: This is a simulation framework, not a hardware driver. It models the 
 of image sensor interfaces for development, testing, and validation purposes.
 """
 
+# isort: skip_file
+
 # Legacy v1.x modules (maintained for compatibility)
 from .mipi_driver import MIPIConfig, MIPIDriver
 from .power_management import PowerConfig, PowerManager
@@ -28,15 +40,15 @@ from .signal_processing import AutomatedTestSuite, SignalConfig, SignalProcessor
 
 # New v2.0.0 modules
 try:
-    from .advanced_power_management import AdvancedPowerManager
-    from .advanced_power_management import PowerConfiguration as AdvancedPowerConfiguration
     from .advanced_power_management import (
+        AdvancedPowerManager,
         PowerMode,
         PowerState,
         ThermalState,
         create_power_config_for_automotive,
         create_power_config_for_mobile,
     )
+    from .advanced_power_management import PowerConfiguration as AdvancedPowerConfiguration
     from .enhanced_sensor import (
         EnhancedSensorInterface,
         HDRMode,
@@ -135,6 +147,6 @@ if V2_FEATURES_AVAILABLE:
         ]
     )
 
-__version__ = "2.0.0"
+__version__ = "3.0.0"
 __author__ = "Mudit Bhargava"
 __license__ = "MIT"

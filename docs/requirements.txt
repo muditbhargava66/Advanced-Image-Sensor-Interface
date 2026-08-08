@@ -1,5 +1,4 @@
 # Documentation dependencies for ReadTheDocs
-# Version: 2.0.0
 
 # Core Sphinx and theme
 sphinx>=7.2.0
@@ -27,7 +26,7 @@ numpy>=1.23.5,<2.0.0
 scipy>=1.10.0,<2.0.0
 matplotlib>=3.7.0,<4.0.0
 opencv-python>=4.8.1,<5.0.0
-Pillow>=10.0.0,<12.0.0
+Pillow>=12.3.0,<13.0.0
 pandas>=2.1.0,<3.0.0
 scikit-learn>=1.3.0,<2.0.0
 scikit-image>=0.20.0,<1.0.0

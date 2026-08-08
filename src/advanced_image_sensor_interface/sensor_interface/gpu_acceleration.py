@@ -1,4 +1,4 @@
-"""GPU Acceleration Support for v2.0.0.
+"""GPU Acceleration Support.
 
 This module provides GPU acceleration capabilities for image processing including:
 - CUDA-based processing (when available)
@@ -34,6 +34,81 @@ try:
 except ImportError:
     CUPY_AVAILABLE = False
     logger.info("CuPy not available - CUDA acceleration disabled")
+
+
+# -------------------------------------------------------------------------
+# Module-level JIT-compiled functions.
+#
+# These are defined outside the class body to avoid the class-level
+# conditional definition issue (BUG-5). Numba's @jit decorator must be
+# applied at module scope so that the compiled function objects are stable
+# and not re-created on each class instantiation.
+# -------------------------------------------------------------------------
+
+if NUMBA_AVAILABLE:
+
+    @jit(nopython=True, parallel=True)
+    def _jit_convolve_2d(img: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+        """JIT-compiled 2D convolution.
+
+        Performs direct spatial-domain convolution using nested loops that
+        Numba can auto-parallelise. The outer two loops iterate over valid
+        (non-padded) output pixels; the inner two loops accumulate the
+        weighted sum of the input neighbourhood defined by the kernel.
+        """
+        h, w = img.shape
+        kh, kw = kernel.shape
+        pad_h, pad_w = kh // 2, kw // 2
+
+        result = np.zeros_like(img)
+
+        for i in range(pad_h, h - pad_h):
+            for j in range(pad_w, w - pad_w):
+                value = 0.0
+                for ki in range(kh):
+                    for kj in range(kw):
+                        value += img[i - pad_h + ki, j - pad_w + kj] * kernel[ki, kj]
+                result[i, j] = value
+
+        return result
+
+    @jit(nopython=True, parallel=True)
+    def _jit_gaussian_blur(img: np.ndarray, sigma: float = 1.0) -> np.ndarray:
+        """JIT-compiled Gaussian blur.
+
+        Constructs a 2D Gaussian kernel of size ceil(6*sigma)+1 (ensuring
+        an odd dimension), normalises it to unit sum, then applies spatial
+        convolution via ``_jit_convolve_2d``.
+        """
+        # Kernel covers +/- 3 sigma, ensuring odd size
+        kernel_size = int(6 * sigma + 1)
+        if kernel_size % 2 == 0:
+            kernel_size += 1
+
+        # Build isotropic Gaussian kernel
+        kernel = np.zeros((kernel_size, kernel_size), dtype=np.float32)
+        center = kernel_size // 2
+
+        for i in range(kernel_size):
+            for j in range(kernel_size):
+                x, y = i - center, j - center
+                kernel[i, j] = np.exp(-(x * x + y * y) / (2 * sigma * sigma))
+
+        kernel = kernel / np.sum(kernel)
+
+        # Apply per-channel or single-channel
+        if len(img.shape) == 3:
+            result = np.zeros_like(img)
+            for c in range(img.shape[2]):
+                result[:, :, c] = _jit_convolve_2d(img[:, :, c], kernel)
+            return result
+        else:
+            return _jit_convolve_2d(img, kernel)
+
+else:
+    # Stubs so that references resolve even when Numba is absent.
+    _jit_gaussian_blur = None  # type: ignore[assignment]
+    _jit_convolve_2d = None  # type: ignore[assignment]
 
 
 class GPUBackend(Enum):
@@ -266,6 +341,10 @@ class GPUAccelerator:
             else:
                 raise
 
+    def process_batch(self, images: list[np.ndarray], operation: str, **kwargs) -> list[np.ndarray]:
+        """Backward-compatible alias for ``process_image_batch``."""
+        return self.process_image_batch(images, operation, **kwargs)
+
     def _process_batch_cupy(self, images: list[np.ndarray], operation: str, **kwargs) -> list[np.ndarray]:
         """Process batch using CuPy."""
         import time
@@ -343,14 +422,14 @@ class GPUAccelerator:
 
     def _process_batch_cpu_jit(self, images: list[np.ndarray], operation: str, **kwargs) -> list[np.ndarray]:
         """Process batch using CPU with JIT compilation."""
-        if not NUMBA_AVAILABLE:
+        if not NUMBA_AVAILABLE or _jit_gaussian_blur is None:
             return self._process_batch_cpu(images, operation, **kwargs)
 
         # Use Numba JIT for CPU acceleration
         result = []
         for img in images:
             if operation == "gaussian_blur":
-                processed = self._jit_gaussian_blur(img, **kwargs)
+                processed = _jit_gaussian_blur(img, **kwargs)
             else:
                 processed = self._process_batch_cpu([img], operation, **kwargs)[0]
 
@@ -440,17 +519,47 @@ class GPUAccelerator:
         return edges
 
     def _cpu_histogram_equalization(self, img: np.ndarray, **kwargs) -> np.ndarray:
-        """Apply histogram equalization using CPU."""
-        from skimage import exposure
+        """Apply histogram equalization using CPU.
+
+        Uses scikit-image for histogram equalization when available,
+        falling back to a numpy-based implementation.
+        """
+        try:
+            from skimage import exposure
+
+            if len(img.shape) == 3:
+                result = np.zeros_like(img)
+                for c in range(img.shape[2]):
+                    result[:, :, c] = exposure.equalize_hist(img[:, :, c]) * 255
+                return result.astype(np.uint8)
+            else:
+                return (exposure.equalize_hist(img) * 255).astype(np.uint8)
+
+        except ImportError:
+            logger.info("scikit-image not available, using numpy histogram equalization")
+            return self._cpu_histogram_equalization_numpy(img)
+
+    def _cpu_histogram_equalization_numpy(self, img: np.ndarray) -> np.ndarray:
+        """Numpy-based histogram equalization fallback."""
+
+        def equalize(channel: np.ndarray) -> np.ndarray:
+            ch = channel.astype(np.uint8)
+            hist, _ = np.histogram(ch.flatten(), bins=256, range=(0, 256))
+            cdf = hist.cumsum().astype(np.float64)
+            cdf_min = cdf[cdf > 0].min()
+            total = cdf[-1]
+            if total == cdf_min:
+                return channel
+            cdf_norm = ((cdf - cdf_min) / (total - cdf_min) * 255).astype(np.uint8)
+            return cdf_norm[ch]
 
         if len(img.shape) == 3:
-            # Process each channel separately
-            result = np.zeros_like(img)
+            result = np.zeros_like(img, dtype=np.uint8)
             for c in range(img.shape[2]):
-                result[:, :, c] = exposure.equalize_hist(img[:, :, c]) * 255
-            return result.astype(np.uint8)
+                result[:, :, c] = equalize(img[:, :, c])
+            return result
         else:
-            return (exposure.equalize_hist(img) * 255).astype(np.uint8)
+            return equalize(img)
 
     def _cpu_noise_reduction(self, img: np.ndarray, strength: float = 0.5) -> np.ndarray:
         """Apply noise reduction using CPU."""
@@ -459,58 +568,6 @@ class GPUAccelerator:
         # Simple Gaussian denoising
         sigma = strength * 2.0
         return ndimage.gaussian_filter(img, sigma=sigma)
-
-    # JIT-compiled functions
-    if NUMBA_AVAILABLE:
-
-        @staticmethod
-        @jit(nopython=True, parallel=True)
-        def _jit_gaussian_blur(img: np.ndarray, sigma: float = 1.0) -> np.ndarray:
-            """JIT-compiled Gaussian blur (simplified)."""
-            # Simplified Gaussian blur implementation
-            kernel_size = int(6 * sigma + 1)
-            if kernel_size % 2 == 0:
-                kernel_size += 1
-
-            # Create Gaussian kernel
-            kernel = np.zeros((kernel_size, kernel_size), dtype=np.float32)
-            center = kernel_size // 2
-
-            for i in range(kernel_size):
-                for j in range(kernel_size):
-                    x, y = i - center, j - center
-                    kernel[i, j] = np.exp(-(x * x + y * y) / (2 * sigma * sigma))
-
-            kernel = kernel / np.sum(kernel)
-
-            # Apply convolution
-            if len(img.shape) == 3:
-                result = np.zeros_like(img)
-                for c in range(img.shape[2]):
-                    result[:, :, c] = GPUAccelerator._convolve_2d_jit(img[:, :, c], kernel)
-                return result
-            else:
-                return GPUAccelerator._convolve_2d_jit(img, kernel)
-
-        @staticmethod
-        @jit(nopython=True, parallel=True)
-        def _convolve_2d_jit(img: np.ndarray, kernel: np.ndarray) -> np.ndarray:
-            """JIT-compiled 2D convolution."""
-            h, w = img.shape
-            kh, kw = kernel.shape
-            pad_h, pad_w = kh // 2, kw // 2
-
-            result = np.zeros_like(img)
-
-            for i in range(pad_h, h - pad_h):
-                for j in range(pad_w, w - pad_w):
-                    value = 0.0
-                    for ki in range(kh):
-                        for kj in range(kw):
-                            value += img[i - pad_h + ki, j - pad_w + kj] * kernel[ki, kj]
-                    result[i, j] = value
-
-            return result
 
     def get_device_info(self) -> dict[str, Any]:
         """Get GPU device information.

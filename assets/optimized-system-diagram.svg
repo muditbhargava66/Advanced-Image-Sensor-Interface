@@ -1,80 +1,232 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="880" viewBox="0 0 1400 880">
   <defs>
-    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#475569" />
     </marker>
-    <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#50E3C2;stop-opacity:1" />
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e40af" />
+      <stop offset="50%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#06b6d4" />
     </linearGradient>
+    <linearGradient id="protocolGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#dbeafe" />
+      <stop offset="100%" stop-color="#bfdbfe" />
+    </linearGradient>
+    <linearGradient id="processingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#dcfce7" />
+      <stop offset="100%" stop-color="#bbf7d0" />
+    </linearGradient>
+    <linearGradient id="powerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef3c7" />
+      <stop offset="100%" stop-color="#fde68a" />
+    </linearGradient>
+    <linearGradient id="integrityGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fce7f3" />
+      <stop offset="100%" stop-color="#fbcfe8" />
+    </linearGradient>
+    <linearGradient id="outputGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f3e8ff" />
+      <stop offset="100%" stop-color="#e9d5ff" />
+    </linearGradient>
+    <linearGradient id="securityGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffe4e6" />
+      <stop offset="100%" stop-color="#fecdd3" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#00000020" />
+    </filter>
   </defs>
-  
+
   <!-- Background -->
-  <rect width="1280" height="640" fill="#f0f0f0" />
-  
-  <!-- Header Background -->
-  <rect x="0" y="0" width="1280" height="80" fill="url(#headerGradient)" />
-  
-  <!-- Header Text -->
-  <text x="640" y="35" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white" text-anchor="middle">Next-Generation Imaging: Advanced Sensor Interface System</text>
-  <text x="640" y="65" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle">High-Performance Architecture for Computational Photography and Machine Vision Applications</text>
-  
+  <rect width="1400" height="880" rx="12" fill="#f8fafc" />
+
+  <!-- Header -->
+  <rect x="0" y="0" width="1400" height="90" fill="url(#headerGrad)" rx="12" />
+  <rect x="0" y="60" width="1400" height="30" fill="url(#headerGrad)" />
+  <text x="700" y="38" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="700" fill="white" text-anchor="middle">Advanced Image Sensor Interface — System Architecture</text>
+  <text x="700" y="68" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#cbd5e1" text-anchor="middle">Multi-Protocol Camera Framework │ MIPI CSI-2 · CoaXPress CXP-12 · GigE Vision RoCE · USB3 Vision</text>
+
+  <!-- ═══════════════════ ROW 1: Camera Sensor → Protocol Layer → Signal Processing → Output ═══════════════════ -->
+
   <!-- Image Sensor -->
-  <rect x="80" y="160" width="200" height="120" rx="10" ry="10" fill="#FFD700" stroke="#333" stroke-width="2" />
-  <text x="180" y="200" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Image Sensor</text>
-  <text x="180" y="230" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Raw Data Output</text>
-  <text x="180" y="255" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Up to 8K Resolution</text>
-  
-  <!-- MIPI Driver -->
-  <rect x="380" y="160" width="200" height="120" rx="10" ry="10" fill="#98FB98" stroke="#333" stroke-width="2" />
-  <text x="480" y="190" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">MIPI Driver</text>
-  <text x="480" y="215" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">High-Speed Transfer</text>
-  <text x="480" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Up to 4 Lanes</text>
-  <text x="480" y="265" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">2.5 Gbps per Lane</text>
-  
-  <!-- Signal Processor -->
-  <rect x="680" y="160" width="200" height="120" rx="10" ry="10" fill="#87CEFA" stroke="#333" stroke-width="2" />
-  <text x="780" y="190" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Signal Processor</text>
-  <text x="780" y="215" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Noise Reduction</text>
-  <text x="780" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Color Correction</text>
-  <text x="780" y="265" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Dynamic Range Expansion</text>
-  
-  <!-- Power Manager -->
-  <rect x="380" y="400" width="200" height="120" rx="10" ry="10" fill="#FFA07A" stroke="#333" stroke-width="2" />
-  <text x="480" y="440" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Power Manager</text>
-  <text x="480" y="465" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Voltage Regulation</text>
-  <text x="480" y="490" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Power Optimization</text>
-  
+  <rect x="40" y="120" width="200" height="140" rx="10" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="140" y="155" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="700" fill="#854d0e" text-anchor="middle">Image Sensor</text>
+  <line x1="60" y1="168" x2="220" y2="168" stroke="#ca8a04" stroke-width="0.5" />
+  <text x="140" y="190" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#713f12" text-anchor="middle">Up to 8K (7680×4320)</text>
+  <text x="140" y="210" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#713f12" text-anchor="middle">8–20 bit RAW output</text>
+  <text x="140" y="230" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#713f12" text-anchor="middle">Multi-sensor arrays (×8)</text>
+  <text x="140" y="250" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#713f12" text-anchor="middle">Bayer RGGB/BGGR/GRBG</text>
+
+  <!-- Protocol Layer (4 sub-blocks) -->
+  <rect x="300" y="110" width="340" height="160" rx="10" fill="url(#protocolGrad)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="470" y="135" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="700" fill="#1e3a5f" text-anchor="middle">Multi-Protocol Layer</text>
+  <line x1="320" y1="148" x2="620" y2="148" stroke="#3b82f6" stroke-width="0.5" />
+
+  <!-- MIPI sub-box -->
+  <rect x="315" y="158" width="150" height="44" rx="6" fill="#eff6ff" stroke="#60a5fa" stroke-width="1" />
+  <text x="390" y="176" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#1d4ed8" text-anchor="middle">MIPI D-PHY v2.5</text>
+  <text x="390" y="194" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#3b82f6" text-anchor="middle">4.5 Gbps/lane · 4 lanes</text>
+
+  <!-- CoaXPress sub-box -->
+  <rect x="475" y="158" width="150" height="44" rx="6" fill="#eff6ff" stroke="#60a5fa" stroke-width="1" />
+  <text x="550" y="176" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#1d4ed8" text-anchor="middle">CoaXPress CXP-12</text>
+  <text x="550" y="194" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#3b82f6" text-anchor="middle">50 Gbps aggregate</text>
+
+  <!-- GigE sub-box -->
+  <rect x="315" y="210" width="150" height="44" rx="6" fill="#eff6ff" stroke="#60a5fa" stroke-width="1" />
+  <text x="390" y="228" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#1d4ed8" text-anchor="middle">GigE Vision RoCE</text>
+  <text x="390" y="246" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#3b82f6" text-anchor="middle">RDMA zero-copy</text>
+
+  <!-- USB3 sub-box -->
+  <rect x="475" y="210" width="150" height="44" rx="6" fill="#eff6ff" stroke="#60a5fa" stroke-width="1" />
+  <text x="550" y="228" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#1d4ed8" text-anchor="middle">USB3 Vision</text>
+  <text x="550" y="246" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#3b82f6" text-anchor="middle">Hot-plug · Streaming</text>
+
+  <!-- Signal Processing -->
+  <rect x="700" y="120" width="220" height="140" rx="10" fill="url(#processingGrad)" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="810" y="155" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="700" fill="#14532d" text-anchor="middle">Signal Processing</text>
+  <line x1="720" y1="168" x2="900" y2="168" stroke="#22c55e" stroke-width="0.5" />
+  <text x="810" y="190" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#166534" text-anchor="middle">Noise Reduction (30% SNR↑)</text>
+  <text x="810" y="210" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#166534" text-anchor="middle">HDR Tone Mapping (14+ stops)</text>
+  <text x="810" y="230" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#166534" text-anchor="middle">RAW Bayer Demosaicing</text>
+  <text x="810" y="250" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#166534" text-anchor="middle">Color Correction (ΔE &lt; 2.0)</text>
+
+  <!-- Processed Output -->
+  <rect x="980" y="120" width="200" height="140" rx="10" fill="url(#outputGrad)" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="1080" y="155" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="700" fill="#581c87" text-anchor="middle">Processed Output</text>
+  <line x1="1000" y1="168" x2="1160" y2="168" stroke="#a855f7" stroke-width="0.5" />
+  <text x="1080" y="190" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#6b21a8" text-anchor="middle">Enhanced Image Data</text>
+  <text x="1080" y="210" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#6b21a8" text-anchor="middle">8K @ 30fps Simulation</text>
+  <text x="1080" y="230" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#6b21a8" text-anchor="middle">4K @ 120fps Simulation</text>
+  <text x="1080" y="250" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#6b21a8" text-anchor="middle">Multi-Sensor Fused</text>
+
+  <!-- Row 1 Arrows -->
+  <line x1="240" y1="190" x2="300" y2="190" stroke="#475569" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="270" y="183" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">RAW</text>
+
+  <line x1="640" y1="190" x2="700" y2="190" stroke="#475569" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="670" y="183" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">Buffered</text>
+
+  <line x1="920" y1="190" x2="980" y2="190" stroke="#475569" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="950" y="183" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">RGB</text>
+
+  <!-- ═══════════════════ ROW 2: Multi-Sensor Sync · GPU Acceleration · Lens Correction ═══════════════════ -->
+  <text x="700" y="306" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Processing Enhancements ──</text>
+
+  <!-- Multi-Sensor Sync -->
+  <rect x="40" y="325" width="280" height="120" rx="10" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="180" y="355" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#0c4a6e" text-anchor="middle">Multi-Sensor Sync</text>
+  <line x1="60" y1="368" x2="300" y2="368" stroke="#0ea5e9" stroke-width="0.5" />
+  <text x="180" y="390" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#0369a1" text-anchor="middle">Up to 8 sensors synchronized</text>
+  <text x="180" y="410" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#0369a1" text-anchor="middle">&lt;100μs timing accuracy</text>
+  <text x="180" y="430" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#0369a1" text-anchor="middle">HW/SW/Hybrid/Master-Slave</text>
+
+  <!-- GPU Acceleration -->
+  <rect x="370" y="325" width="280" height="120" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="510" y="355" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#064e3b" text-anchor="middle">GPU Acceleration</text>
+  <line x1="390" y1="368" x2="630" y2="368" stroke="#10b981" stroke-width="0.5" />
+  <text x="510" y="390" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#047857" text-anchor="middle">CUDA / OpenCL / CPU fallback</text>
+  <text x="510" y="410" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#047857" text-anchor="middle">5–10× speedup (batch ops)</text>
+  <text x="510" y="430" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#047857" text-anchor="middle">GPU memory pooling</text>
+
+  <!-- Lens Correction (v3.0.0) -->
+  <rect x="700" y="325" width="280" height="120" rx="10" fill="url(#integrityGrad)" stroke="#ec4899" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="840" y="355" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#831843" text-anchor="middle">Lens Correction</text>
+  <line x1="720" y1="368" x2="960" y2="368" stroke="#ec4899" stroke-width="0.5" />
+  <text x="840" y="390" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#9d174d" text-anchor="middle">Radial distortion correction</text>
+  <text x="840" y="410" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#9d174d" text-anchor="middle">Tangential distortion correction</text>
+  <text x="840" y="430" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#9d174d" text-anchor="middle">Standard lens profiles</text>
+
+  <!-- Calibration -->
+  <rect x="1030" y="325" width="200" height="120" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="1130" y="355" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#713f12" text-anchor="middle">Calibration</text>
+  <line x1="1050" y1="368" x2="1210" y2="368" stroke="#eab308" stroke-width="0.5" />
+  <text x="1130" y="390" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#854d0e" text-anchor="middle">Intrinsic / Extrinsic</text>
+  <text x="1130" y="410" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#854d0e" text-anchor="middle">Stereo &amp; Multi-Camera</text>
+  <text x="1130" y="430" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#854d0e" text-anchor="middle">Color &amp; Temporal</text>
+
+  <!-- ═══════════════════ ROW 3: Power · Data Integrity · Security · Performance ═══════════════════ -->
+  <text x="700" y="490" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Infrastructure &amp; Security ──</text>
+
+  <!-- Power Management -->
+  <rect x="40" y="510" width="280" height="130" rx="10" fill="url(#powerGrad)" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="180" y="540" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#78350f" text-anchor="middle">Power Management</text>
+  <line x1="60" y1="553" x2="300" y2="553" stroke="#f59e0b" stroke-width="0.5" />
+  <text x="180" y="575" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#92400e" text-anchor="middle">7 power states (Active → Hibernate)</text>
+  <text x="180" y="595" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#92400e" text-anchor="middle">Thermal monitoring &amp; DVFS</text>
+  <text x="180" y="615" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#92400e" text-anchor="middle">Multi-system coordination (v3)</text>
+  <text x="180" y="635" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#92400e" text-anchor="middle">&lt;500 mW @ 4K/60fps (modeled)</text>
+
+  <!-- Data Integrity (v3.0.0) -->
+  <rect x="370" y="510" width="280" height="130" rx="10" fill="url(#integrityGrad)" stroke="#ec4899" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="510" y="540" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#831843" text-anchor="middle">Data Integrity</text>
+  <line x1="390" y1="553" x2="630" y2="553" stroke="#ec4899" stroke-width="0.5" />
+  <text x="510" y="575" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#9d174d" text-anchor="middle">CRC-32 validation</text>
+  <text x="510" y="595" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#9d174d" text-anchor="middle">Reed-Solomon FEC</text>
+  <text x="510" y="615" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#9d174d" text-anchor="middle">End-to-end frame integrity</text>
+  <text x="510" y="635" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#9d174d" text-anchor="middle">Error detection &amp; recovery</text>
+
+  <!-- Security Framework (v3.0.0) -->
+  <rect x="700" y="510" width="280" height="130" rx="10" fill="url(#securityGrad)" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="840" y="540" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#7f1d1d" text-anchor="middle">Security Framework</text>
+  <line x1="720" y1="553" x2="960" y2="553" stroke="#ef4444" stroke-width="0.5" />
+  <text x="840" y="575" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#991b1b" text-anchor="middle">AES-GCM encryption</text>
+  <text x="840" y="595" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#991b1b" text-anchor="middle">Key management (PBKDF2)</text>
+  <text x="840" y="615" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#991b1b" text-anchor="middle">Identity &amp; session control</text>
+  <text x="840" y="635" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#991b1b" text-anchor="middle">Privilege levels (3-tier)</text>
+
   <!-- Performance Metrics -->
-  <rect x="680" y="400" width="200" height="120" rx="10" ry="10" fill="#DDA0DD" stroke="#333" stroke-width="2" />
-  <text x="780" y="440" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Performance</text>
-  <text x="780" y="465" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Metrics</text>
-  <text x="780" y="490" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">SNR, Dynamic Range</text>
-  <text x="780" y="515" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Color Accuracy</text>
-  
-  <!-- Output -->
-  <rect x="980" y="160" width="200" height="120" rx="10" ry="10" fill="#D3D3D3" stroke="#333" stroke-width="2" />
-  <text x="1080" y="200" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Processed</text>
-  <text x="1080" y="225" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Image Output</text>
-  <text x="1080" y="250" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Enhanced Quality</text>
-  <text x="1080" y="275" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Reduced Noise</text>
-  
-  <!-- Connections -->
-  <line x1="280" y1="220" x2="380" y2="220" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
-  <text x="330" y="210" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Raw Data</text>
-  
-  <line x1="580" y1="220" x2="680" y2="220" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
-  <text x="630" y="210" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Buffered Data</text>
-  
-  <line x1="880" y1="220" x2="980" y2="220" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
-  <text x="930" y="210" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Processed Data</text>
-  
-  <line x1="480" y1="280" x2="480" y2="400" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
-  <text x="530" y="340" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Power Control</text>
-  
-  <line x1="580" y1="460" x2="680" y2="460" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
-  <text x="630" y="450" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Performance Data</text>
-  
-  <path d="M 780 400 Q 780 360 740 320 Q 700 280 580 280" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
-  <text x="720" y="350" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Optimization Feedback</text>
+  <rect x="1030" y="510" width="200" height="130" rx="10" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="1130" y="540" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#0c4a6e" text-anchor="middle">Metrics</text>
+  <line x1="1050" y1="553" x2="1210" y2="553" stroke="#0284c7" stroke-width="0.5" />
+  <text x="1130" y="575" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#0369a1" text-anchor="middle">SNR / Dynamic Range</text>
+  <text x="1130" y="595" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#0369a1" text-anchor="middle">Color Accuracy (ΔE)</text>
+  <text x="1130" y="615" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#0369a1" text-anchor="middle">Throughput / Latency</text>
+  <text x="1130" y="635" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#0369a1" text-anchor="middle">Power / Thermal</text>
+
+  <!-- ═══════════════════ ROW 4: Buffer Management · Configuration · Testing ═══════════════════ -->
+  <text x="700" y="686" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Foundation ──</text>
+
+  <!-- Buffer Management -->
+  <rect x="100" y="705" width="300" height="70" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="250" y="732" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#334155" text-anchor="middle">Buffer Management</text>
+  <text x="250" y="755" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#475569" text-anchor="middle">Memory pooling · Async ops · Backpressure</text>
+
+  <!-- Configuration Management -->
+  <rect x="450" y="705" width="300" height="70" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="600" y="732" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#334155" text-anchor="middle">Configuration</text>
+  <text x="600" y="755" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#475569" text-anchor="middle">Env-aware · Validation · Dynamic reload</text>
+
+  <!-- Testing -->
+  <rect x="800" y="705" width="300" height="70" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)" />
+  <text x="950" y="732" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#334155" text-anchor="middle">Testing (322 tests)</text>
+  <text x="950" y="755" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#475569" text-anchor="middle">60% coverage · ruff · black · mypy · pyright</text>
+
+  <!-- ═══════════════════ Vertical data-flow arrows (Row 1 → Row 2) ═══════════════════ -->
+  <line x1="470" y1="270" x2="470" y2="325" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" />
+  <line x1="810" y1="260" x2="810" y2="325" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" />
+  <line x1="1080" y1="260" x2="1130" y2="325" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" />
+
+  <!-- Row 2 → Row 3 -->
+  <line x1="180" y1="445" x2="180" y2="510" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" />
+  <line x1="510" y1="445" x2="510" y2="510" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" />
+  <line x1="840" y1="445" x2="840" y2="510" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" />
+  <line x1="1130" y1="445" x2="1130" y2="510" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" />
+
+  <!-- Feedback loop: Metrics → Signal Processing -->
+  <path d="M 1200 575 Q 1300 575 1300 300 Q 1300 190 920 190" fill="none" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowhead)" />
+  <text x="1320" y="400" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#0284c7" text-anchor="middle" transform="rotate(-90 1320 400)">Optimization Feedback</text>
+
+  <!-- Power → Protocol -->
+  <path d="M 180 510 Q 180 475 300 475 Q 360 475 360 270" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowhead)" />
+  <text x="220" y="468" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#d97706" text-anchor="middle">Power Control</text>
+
+  <!-- Footer -->
+  <rect x="0" y="795" width="1400" height="85" rx="0" fill="#1e293b" />
+  <rect x="0" y="795" width="1400" height="1" fill="#334155" />
+  <text x="250" y="825" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">Python 3.10–3.13</text>
+  <text x="500" y="825" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">NumPy · SciPy · OpenCV</text>
+  <text x="750" y="825" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">MIT License</text>
+  <text x="1000" y="825" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">322 Tests · 60% Coverage</text>
+  <text x="700" y="860" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">© 2026 Mudit Bhargava — Simulation Framework for Algorithm Development &amp; Validation</text>
 </svg>

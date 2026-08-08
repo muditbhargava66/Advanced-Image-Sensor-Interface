@@ -16,18 +16,13 @@ Usage:
     run_noise_analysis()
 """
 
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 import json
 from typing import Any
 
 import numpy as np
 
-from src.sensor_interface.signal_processing import SignalConfig, SignalProcessor
-from src.utils.performance_metrics import calculate_snr
+from advanced_image_sensor_interface.sensor_interface.signal_processing import SignalConfig, SignalProcessor
+from advanced_image_sensor_interface.utils.performance_metrics import calculate_snr
 
 
 def generate_noisy_image(size: tuple[int, int] = (1920, 1080), signal_level: int = 1000, noise_std: int = 50) -> np.ndarray:

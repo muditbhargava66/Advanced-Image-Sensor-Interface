@@ -8,6 +8,7 @@ from pattern generation through MIPI transmission, processing, and metrics valid
 
 import numpy as np
 import pytest
+
 from advanced_image_sensor_interface.sensor_interface import (
     MIPIConfig,
     MIPIDriver,
@@ -17,10 +18,7 @@ from advanced_image_sensor_interface.sensor_interface import (
     SignalProcessor,
 )
 from advanced_image_sensor_interface.test_patterns import PatternGenerator
-from advanced_image_sensor_interface.utils.performance_metrics import (
-    calculate_color_accuracy,
-    calculate_dynamic_range,
-)
+from advanced_image_sensor_interface.utils.performance_metrics import calculate_color_accuracy, calculate_dynamic_range
 
 
 @pytest.fixture
@@ -31,11 +29,7 @@ def pipeline_components():
     mipi_driver = MIPIDriver(mipi_config)
 
     # Signal processing configuration
-    signal_config = SignalConfig(
-        bit_depth=12,
-        noise_reduction_strength=0.2,
-        color_correction_matrix=np.eye(3)
-    )
+    signal_config = SignalConfig(bit_depth=12, noise_reduction_strength=0.2, color_correction_matrix=np.eye(3))
     signal_processor = SignalProcessor(signal_config)
 
     # Power management configuration
@@ -46,10 +40,10 @@ def pipeline_components():
     pattern_generator = PatternGenerator()
 
     return {
-        'mipi_driver': mipi_driver,
-        'signal_processor': signal_processor,
-        'power_manager': power_manager,
-        'pattern_generator': pattern_generator,
+        "mipi_driver": mipi_driver,
+        "signal_processor": signal_processor,
+        "power_manager": power_manager,
+        "pattern_generator": pattern_generator,
     }
 
 
@@ -64,11 +58,7 @@ class TestFullPipelineIntegration:
         components = pipeline_components
 
         # Update signal processor for current bit depth
-        signal_config = SignalConfig(
-            bit_depth=bit_depth,
-            noise_reduction_strength=0.1,
-            color_correction_matrix=np.eye(3)
-        )
+        signal_config = SignalConfig(bit_depth=bit_depth, noise_reduction_strength=0.1, color_correction_matrix=np.eye(3))
         signal_processor = SignalProcessor(signal_config)
 
         # Step 1: Generate test pattern
@@ -85,11 +75,11 @@ class TestFullPipelineIntegration:
 
         # Step 2: Simulate MIPI transmission
         frame_bytes = test_pattern.tobytes()
-        transmission_success = components['mipi_driver'].send_data(frame_bytes)
+        transmission_success = components["mipi_driver"].send_data(frame_bytes)
         assert transmission_success
 
         # Simulate receiving the data
-        received_bytes = components['mipi_driver'].receive_data(len(frame_bytes))
+        received_bytes = components["mipi_driver"].receive_data(len(frame_bytes))
         assert received_bytes is not None
         assert len(received_bytes) == len(frame_bytes)
 
@@ -106,14 +96,14 @@ class TestFullPipelineIntegration:
         assert processed_frame.dtype == test_pattern.dtype
 
         # Step 4: Validate processing quality
-        max_value = (2 ** bit_depth) - 1
+        max_value = (2**bit_depth) - 1
         assert np.all(processed_frame >= 0)
         assert np.all(processed_frame <= max_value)
 
         # Step 5: Check power consumption during processing
-        power_status = components['power_manager'].get_power_status()
-        assert power_status['power_consumption'] > 0
-        assert power_status['temperature'] >= 25.0  # Should be at least room temperature
+        power_status = components["power_manager"].get_power_status()
+        assert power_status["power_consumption"] > 0
+        assert power_status["temperature"] >= 25.0  # Should be at least room temperature
 
     def test_hdr_processing_pipeline(self, pipeline_components):
         """Test HDR processing pipeline with multiple exposures."""
@@ -123,7 +113,7 @@ class TestFullPipelineIntegration:
         exposures = [0.5, 1.0, 2.0]  # Relative exposure values
         width, height = 640, 480
         bit_depth = 12
-        max_value = (2 ** bit_depth) - 1
+        max_value = (2**bit_depth) - 1
 
         exposure_frames = []
         for exposure in exposures:
@@ -140,10 +130,10 @@ class TestFullPipelineIntegration:
         for frame in exposure_frames:
             # Transmit via MIPI
             frame_bytes = frame.tobytes()
-            assert components['mipi_driver'].send_data(frame_bytes)
+            assert components["mipi_driver"].send_data(frame_bytes)
 
             # Process
-            processed = components['signal_processor'].process_frame(frame)
+            processed = components["signal_processor"].process_frame(frame)
             processed_frames.append(processed)
 
         # Validate all frames processed correctly
@@ -164,18 +154,15 @@ class TestFullPipelineIntegration:
         clean_pattern = pattern_gen.generate_pattern("solid_color", color=(128, 128, 128))
 
         # Add controlled noise
-        noise_std = noise_level * (2 ** bit_depth) * 0.1  # Scale noise to bit depth
+        noise_std = noise_level * (2**bit_depth) * 0.1  # Scale noise to bit depth
         noise = np.random.normal(0, noise_std, clean_pattern.shape)
-        noisy_pattern = np.clip(
-            clean_pattern.astype(np.float32) + noise,
-            0, (2 ** bit_depth) - 1
-        ).astype(np.uint16)
+        noisy_pattern = np.clip(clean_pattern.astype(np.float32) + noise, 0, (2**bit_depth) - 1).astype(np.uint16)
 
         # Process through pipeline with noise reduction
         signal_config = SignalConfig(
             bit_depth=bit_depth,
             noise_reduction_strength=min(noise_level * 2, 0.5),  # More conservative strength
-            color_correction_matrix=np.eye(3)
+            color_correction_matrix=np.eye(3),
         )
         signal_processor = SignalProcessor(signal_config)
 
@@ -192,12 +179,14 @@ class TestFullPipelineIntegration:
             assert processed_frame.shape == noisy_pattern.shape
             assert processed_frame.dtype == noisy_pattern.dtype
             assert np.all(processed_frame >= 0)
-            assert np.all(processed_frame <= (2 ** bit_depth) - 1)
+            assert np.all(processed_frame <= (2**bit_depth) - 1)
 
             # Verify that processing occurred (pipeline is functional)
             # Allow for significant variance due to dynamic range expansion
             max_allowed_variance = noisy_variance * 12  # Very lenient for pipeline functionality test
-            assert processed_variance <= max_allowed_variance, f"Processing variance too high: processed_var={processed_variance:.2f}, max_allowed={max_allowed_variance:.2f}"
+            assert (
+                processed_variance <= max_allowed_variance
+            ), f"Processing variance too high: processed_var={processed_variance:.2f}, max_allowed={max_allowed_variance:.2f}"
         else:
             # For zero noise, processed should be very similar to original
             # Allow for some processing artifacts but not too much
@@ -207,25 +196,23 @@ class TestFullPipelineIntegration:
     def test_power_optimization_during_processing(self, pipeline_components):
         """Test power optimization during different processing loads."""
         components = pipeline_components
-        power_manager = components['power_manager']
-        signal_processor = components['signal_processor']
+        power_manager = components["power_manager"]
+        signal_processor = components["signal_processor"]
 
         # Generate test frames of different complexities
         pattern_gen = PatternGenerator(width=320, height=240, bit_depth=12)
         simple_frame = pattern_gen.generate_pattern("solid_color", color=(128, 128, 128))
-        complex_frame = components['pattern_generator'].generate_pattern(
-            "color_bars", width=1920, height=1080, bit_depth=12
-        )
+        complex_frame = components["pattern_generator"].generate_pattern("color_bars", width=1920, height=1080, bit_depth=12)
 
         # Measure power during simple processing
-        initial_power = power_manager.get_power_status()['power_consumption']
+        initial_power = power_manager.get_power_status()["power_consumption"]
 
         signal_processor.process_frame(simple_frame)
-        simple_power = power_manager.get_power_status()['power_consumption']
+        simple_power = power_manager.get_power_status()["power_consumption"]
 
         # Measure power during complex processing
         signal_processor.process_frame(complex_frame)
-        complex_power = power_manager.get_power_status()['power_consumption']
+        complex_power = power_manager.get_power_status()["power_consumption"]
 
         # Power consumption should be reasonable (allow some variation due to simulation)
         # Since the power manager doesn't actually track processing complexity,
@@ -237,7 +224,7 @@ class TestFullPipelineIntegration:
     def test_mipi_error_recovery(self, pipeline_components):
         """Test MIPI error recovery and data integrity."""
         components = pipeline_components
-        mipi_driver = components['mipi_driver']
+        mipi_driver = components["mipi_driver"]
 
         # Generate test data
         pattern_gen = PatternGenerator(width=640, height=480, bit_depth=12)
@@ -250,14 +237,14 @@ class TestFullPipelineIntegration:
         assert received_normal is not None
 
         # Test with oversized data (should handle gracefully)
-        oversized_data = b'x' * (len(frame_bytes) * 2)
+        oversized_data = b"x" * (len(frame_bytes) * 2)
         result = mipi_driver.send_data(oversized_data)
         # Should either succeed or fail gracefully without crashing
         assert isinstance(result, bool)
 
         # Test with empty data
         with pytest.raises(ValueError):
-            mipi_driver.send_data(b'')
+            mipi_driver.send_data(b"")
 
     def test_end_to_end_color_accuracy(self, pipeline_components):
         """Test end-to-end color accuracy through the complete pipeline."""
@@ -269,11 +256,11 @@ class TestFullPipelineIntegration:
 
         # Create a pattern with known colors
         reference_colors = [
-            (255, 0, 0),    # Red
-            (0, 255, 0),    # Green
-            (0, 0, 255),    # Blue
-            (255, 255, 255), # White
-            (128, 128, 128), # Gray
+            (255, 0, 0),  # Red
+            (0, 255, 0),  # Green
+            (0, 0, 255),  # Blue
+            (255, 255, 255),  # White
+            (128, 128, 128),  # Gray
         ]
 
         color_accuracy_results = []
@@ -288,18 +275,18 @@ class TestFullPipelineIntegration:
 
             # Process through complete pipeline
             frame_bytes = test_pattern.tobytes()
-            assert components['mipi_driver'].send_data(frame_bytes)
+            assert components["mipi_driver"].send_data(frame_bytes)
 
-            received_bytes = components['mipi_driver'].receive_data(len(frame_bytes))
+            received_bytes = components["mipi_driver"].receive_data(len(frame_bytes))
             received_frame = np.frombuffer(received_bytes, dtype=np.uint16).reshape(height, width, 3)
 
-            processed_frame = components['signal_processor'].process_frame(received_frame)
+            processed_frame = components["signal_processor"].process_frame(received_frame)
 
             # Calculate color accuracy
             # Use center region to avoid edge effects
             center_h, center_w = height // 4, width // 4
-            reference_region = test_pattern[center_h:3*center_h, center_w:3*center_w]
-            processed_region = processed_frame[center_h:3*center_h, center_w:3*center_w]
+            reference_region = test_pattern[center_h : 3 * center_h, center_w : 3 * center_w]
+            processed_region = processed_frame[center_h : 3 * center_h, center_w : 3 * center_w]
 
             color_accuracy, _ = calculate_color_accuracy(reference_region, processed_region)
             color_accuracy_results.append(color_accuracy)
@@ -316,20 +303,20 @@ class TestFullPipelineIntegration:
         # Generate gradient pattern with full dynamic range
         width, height = 640, 480
         bit_depth = 12
-        max_value = (2 ** bit_depth) - 1
+        max_value = (2**bit_depth) - 1
 
         pattern_gen = PatternGenerator(width=width, height=height, bit_depth=bit_depth)
         gradient_pattern = pattern_gen.generate_pattern("grayscale_ramp")
 
         # Process through pipeline
         frame_bytes = gradient_pattern.tobytes()
-        assert components['mipi_driver'].send_data(frame_bytes)
+        assert components["mipi_driver"].send_data(frame_bytes)
 
-        received_bytes = components['mipi_driver'].receive_data(len(frame_bytes))
+        received_bytes = components["mipi_driver"].receive_data(len(frame_bytes))
         # Grayscale pattern is 2D, so reshape accordingly
         received_frame = np.frombuffer(received_bytes, dtype=np.uint16).reshape(gradient_pattern.shape)
 
-        processed_frame = components['signal_processor'].process_frame(received_frame)
+        processed_frame = components["signal_processor"].process_frame(received_frame)
 
         # Calculate dynamic range
         original_dr = calculate_dynamic_range(gradient_pattern)
@@ -360,7 +347,7 @@ class TestStressConditions:
 
         for i in range(frame_count):
             # Generate unique frame
-            test_frame = components['pattern_generator'].generate_pattern(
+            test_frame = components["pattern_generator"].generate_pattern(
                 "color_bars", width=width, height=height, bit_depth=bit_depth
             )
 
@@ -369,16 +356,17 @@ class TestStressConditions:
 
             # Time the processing
             import time
+
             start_time = time.time()
 
             # Full pipeline processing
             frame_bytes = test_frame.tobytes()
-            assert components['mipi_driver'].send_data(frame_bytes)
+            assert components["mipi_driver"].send_data(frame_bytes)
 
-            received_bytes = components['mipi_driver'].receive_data(len(frame_bytes))
+            received_bytes = components["mipi_driver"].receive_data(len(frame_bytes))
             received_frame = np.frombuffer(received_bytes, dtype=np.uint16).reshape(height, width, 3)
 
-            processed_frame = components['signal_processor'].process_frame(received_frame)
+            processed_frame = components["signal_processor"].process_frame(received_frame)
 
             processing_time = time.time() - start_time
             processing_times.append(processing_time)
@@ -397,7 +385,9 @@ class TestStressConditions:
 
         # Should achieve reasonable throughput for a simulation framework
         fps = 1.0 / avg_time
-        assert fps > 0.5, f"Throughput too low: {fps:.2f} FPS (avg time: {avg_time:.3f}s)"  # At least 0.5 FPS for 1080p processing in simulation
+        assert (
+            fps > 0.5
+        ), f"Throughput too low: {fps:.2f} FPS (avg time: {avg_time:.3f}s)"  # At least 0.5 FPS for 1080p processing in simulation
 
     def test_memory_usage_stability(self, pipeline_components):
         """Test memory usage remains stable during extended processing."""
@@ -416,16 +406,16 @@ class TestStressConditions:
         bit_depth = 12
 
         for i in range(50):  # Process 50 frames
-            test_frame = components['pattern_generator'].generate_pattern(
+            test_frame = components["pattern_generator"].generate_pattern(
                 "color_bars", width=width, height=height, bit_depth=bit_depth
             )
 
             # Full pipeline
             frame_bytes = test_frame.tobytes()
-            components['mipi_driver'].send_data(frame_bytes)
-            received_bytes = components['mipi_driver'].receive_data(len(frame_bytes))
+            components["mipi_driver"].send_data(frame_bytes)
+            received_bytes = components["mipi_driver"].receive_data(len(frame_bytes))
             received_frame = np.frombuffer(received_bytes, dtype=np.uint16).reshape(height, width, 3)
-            components['signal_processor'].process_frame(received_frame)
+            components["signal_processor"].process_frame(received_frame)
 
         # Check final memory usage
         final_memory = process.memory_info().rss
@@ -441,23 +431,23 @@ class TestStressConditions:
 
         # Test with invalid frame dimensions
         invalid_frame = np.zeros((0, 0, 3), dtype=np.uint16)
-        result = components['signal_processor'].process_frame(invalid_frame)
+        result = components["signal_processor"].process_frame(invalid_frame)
         # Should handle gracefully (return None or empty array)
         assert result is None or result.size == 0
 
         # Test with wrong data type
         wrong_type_frame = np.random.rand(100, 100, 3).astype(np.float64)
-        result = components['signal_processor'].process_frame(wrong_type_frame)
+        result = components["signal_processor"].process_frame(wrong_type_frame)
         # Should handle gracefully
         assert result is not None  # Should convert or handle appropriately
 
         # Test MIPI with invalid data sizes
-        invalid_data = b'invalid'
-        result = components['mipi_driver'].send_data(invalid_data)
+        invalid_data = b"invalid"
+        result = components["mipi_driver"].send_data(invalid_data)
         assert isinstance(result, bool)  # Should return boolean result
 
         # Test power manager with extreme values
-        power_status = components['power_manager'].get_power_status()
+        power_status = components["power_manager"].get_power_status()
         assert isinstance(power_status, dict)
-        assert 'power_consumption' in power_status
-        assert 'temperature' in power_status
+        assert "power_consumption" in power_status
+        assert "temperature" in power_status

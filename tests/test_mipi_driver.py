@@ -12,10 +12,10 @@ Usage:
     $ pytest tests/test_mipi_driver.py
 """
 
-import time
 from unittest.mock import patch
 
 import pytest
+
 from advanced_image_sensor_interface.sensor_interface.mipi_driver import MIPIConfig, MIPIDriver
 
 
@@ -72,36 +72,29 @@ class TestMIPIDriver:
         assert "throughput" in status
 
     @pytest.mark.parametrize("data_size", [1000, 10000, 100000])
-    def test_performance_optimization(self, mipi_driver, data_size):
+    @patch("advanced_image_sensor_interface.sensor_interface.mipi_driver.time.sleep")
+    def test_performance_optimization(self, mock_sleep, mipi_driver, data_size):
         """Test performance optimization with different data sizes."""
         test_data = b"0" * data_size
 
-        # Measure initial performance - run multiple times and take average
-        initial_times = []
-        for _ in range(3):  # Run 3 times
-            start_time = time.time()
-            mipi_driver.send_data(test_data)
-            initial_times.append(time.time() - start_time)
-        initial_time = sum(initial_times) / len(initial_times)
+        initial_data_rate = mipi_driver.config.data_rate
+        initial_transfer_time = mipi_driver.get_status()["transfer_time_per_mb"]
+
+        assert mipi_driver.send_data(test_data)
+        initial_delay = mock_sleep.call_args[0][0]
 
         # Optimize performance
         mipi_driver.optimize_performance()
 
-        # Measure optimized performance - run multiple times and take average
-        optimized_times = []
-        for _ in range(3):  # Run 3 times
-            start_time = time.time()
-            mipi_driver.send_data(test_data)
-            optimized_times.append(time.time() - start_time)
-        optimized_time = sum(optimized_times) / len(optimized_times)
+        mock_sleep.reset_mock()
+        assert mipi_driver.send_data(test_data)
+        optimized_delay = mock_sleep.call_args[0][0]
 
-        # Check if performance improved - using a very lenient threshold for simulation
-        # Since this is a simulation framework, timing can be highly variable
-        # We just ensure the optimization doesn't cause catastrophic performance degradation
-        assert optimized_time <= initial_time * 3.0, f"Performance worsened catastrophically: {optimized_time} vs {initial_time}"
-
-        # Log the performance for debugging
-        print(f"Data size: {data_size}, Initial: {initial_time:.6f}s, Optimized: {optimized_time:.6f}s")
+        # The simulation should improve its modeled throughput without relying on
+        # wall-clock timing, which is noisy for microsecond-scale sleeps.
+        assert mipi_driver.config.data_rate > initial_data_rate
+        assert mipi_driver.get_status()["transfer_time_per_mb"] < initial_transfer_time
+        assert optimized_delay <= initial_delay
 
     def test_error_handling(self, mipi_driver):
         """Test error handling in the driver."""

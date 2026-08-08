@@ -49,7 +49,7 @@ class ProtocolCapabilities:
     hardware_trigger_support: bool
     software_trigger_support: bool
     supported_pixel_formats: list[str]
-    supported_resolutions: list[tuple]
+    supported_resolutions: list[tuple[int, int]]
 
 
 @dataclass
@@ -154,7 +154,7 @@ class ProtocolBase(ABC):
         """
         pass
 
-    def get_status(self) -> ProtocolStatus:
+    def get_status(self) -> ProtocolStatus | dict[str, Any]:
         """Get current protocol status."""
         return self.status
 
@@ -273,3 +273,63 @@ class StreamingProtocolBase(ProtocolBase):
     def _get_buffer_utilization(self) -> float:
         """Get buffer utilization percentage (to be implemented by subclasses)."""
         return 0.0
+
+    # -----------------------------------------------------------------
+    # ARCH-2: Shared utility methods extracted from per-driver code.
+    # Subclass drivers may delegate to these instead of duplicating
+    # the logic.
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def _get_bytes_per_pixel_common(pixel_format: str) -> int:
+        """Map a pixel format string to bytes per pixel.
+
+        Covers the common formats shared across MIPI, GigE, CoaXPress,
+        and USB3.  Subclasses can extend this with protocol-specific
+        formats.
+        """
+        format_map: dict[str, int] = {
+            "RAW8": 1,
+            "RAW10": 2,
+            "RAW12": 2,
+            "RAW14": 2,
+            "RAW16": 2,
+            "Mono8": 1,
+            "Mono10": 2,
+            "Mono12": 2,
+            "Mono16": 2,
+            "RGB8": 3,
+            "BGR8": 3,
+            "RGB10": 4,
+            "RGB16": 6,
+            "YUV422": 2,
+            "YUV422_8": 2,
+            "YUV444": 3,
+            "BayerRG8": 1,
+            "BayerRG10": 2,
+            "BayerRG12": 2,
+            "BayerRG16": 2,
+        }
+        return format_map.get(pixel_format, 1)
+
+    @staticmethod
+    def _generate_test_frame_vectorized(width: int, height: int, bytes_per_pixel: int, frame_count: int = 0) -> bytes:
+        """Generate a diagonal-gradient test frame using vectorized numpy.
+
+        PERF-2: Shared, vectorized implementation that all protocol
+        drivers can call.
+        """
+        import numpy as np
+
+        y_coords = np.arange(height, dtype=np.int32)[:, np.newaxis]
+        x_coords = np.arange(width, dtype=np.int32)[np.newaxis, :]
+
+        if bytes_per_pixel == 1:
+            frame = ((x_coords + y_coords + frame_count) % 256).astype(np.uint8)
+        elif bytes_per_pixel == 2:
+            frame = (((x_coords + y_coords + frame_count) * 16) % 65536).astype(np.uint16)
+        else:
+            channels = [((x_coords + y_coords + c * 50 + frame_count) % 256).astype(np.uint8) for c in range(bytes_per_pixel)]
+            frame = np.stack(channels, axis=-1)
+
+        return frame.tobytes()

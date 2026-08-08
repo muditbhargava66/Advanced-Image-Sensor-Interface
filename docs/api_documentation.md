@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project (v2.0.0). It covers all supported protocols, advanced image processing, multi-sensor synchronization, calibration, and buffer management interfaces.
+This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project (v3.0.0). It covers all supported protocols, advanced image processing, multi-sensor synchronization, calibration, and buffer management interfaces.
 
 ## Table of Contents
 
@@ -12,8 +12,10 @@ This document provides comprehensive documentation for the API of the Advanced I
 4. [Image Processing](#image-processing)
 5. [Buffer Management](#buffer-management)
 6. [Power Management](#power-management)
-7. [Calibration](#calibration)
-8. [Configuration Management](#configuration-management)
+7. [Data Integrity](#data-integrity)
+8. [Lens Correction](#lens-correction)
+9. [Protocol Enhancements](#protocol-enhancements)
+10. [Configuration Management](#configuration-management)
 
 ## Protocol Drivers
 
@@ -150,13 +152,13 @@ sensor = EnhancedSensorInterface(config)
 
 ## Multi-Sensor Synchronization
 
-### Class: MultiSensorSync
+### Class: MultiSensorSynchronizer
 
 Provides hardware and software synchronization for multiple sensors.
 
 ```python
 from advanced_image_sensor_interface.sensor_interface.multi_sensor_sync import (
-    MultiSensorSync, SyncConfiguration
+    MultiSensorSynchronizer, SyncConfiguration, SyncMode, TriggerMode
 )
 
 config = SyncConfiguration(
@@ -166,17 +168,17 @@ config = SyncConfiguration(
     hardware_sync_pin=18
 )
 
-sync_manager = MultiSensorSync(config)
+sync_manager = MultiSensorSynchronizer(config)
 ```
 
 **Methods:**
-- `add_sensor(sensor_id: int, sensor_config: Dict) -> bool`: Add sensor to sync group
-- `remove_sensor(sensor_id: int) -> bool`: Remove sensor from sync group
 - `start_synchronization() -> bool`: Start synchronized operation
 - `stop_synchronization() -> bool`: Stop synchronized operation
 - `capture_synchronized_frames() -> Optional[Dict[int, Tuple[np.ndarray, float]]]`: Synchronized capture
-- `get_sync_statistics() -> Dict`: Get synchronization statistics
-- `calibrate_timing() -> bool`: Calibrate sensor timing offsets
+- `get_synchronization_status() -> Dict`: Get synchronization state and statistics
+- `set_frame_callback(...) -> None`: Register synchronized-frame callback
+- `set_sync_error_callback(...) -> None`: Register synchronization error callback
+- `calibrate_sensors() -> bool`: Apply built-in geometric calibration placeholders
 
 ## Image Processing
 
@@ -217,7 +219,6 @@ from advanced_image_sensor_interface.sensor_interface.raw_processing import (
 params = RAWParameters(
     bayer_pattern=BayerPattern.RGGB,
     demosaic_method=DemosaicMethod.MALVAR,
-    white_balance_method=WhiteBalanceMethod.GRAY_WORLD,
     color_matrix=np.eye(3)
 )
 
@@ -226,10 +227,10 @@ raw_processor = RAWProcessor(params)
 
 **Methods:**
 - `process_raw_image(raw_data: np.ndarray, metadata: Optional[Dict] = None) -> np.ndarray`: Process RAW to RGB
-- `demosaic(raw_data: np.ndarray) -> np.ndarray`: Demosaic Bayer pattern
-- `white_balance(image: np.ndarray) -> np.ndarray`: Apply white balance
-- `color_correction(image: np.ndarray) -> np.ndarray`: Apply color correction
-- `gamma_correction(image: np.ndarray, gamma: float = 2.2) -> np.ndarray`: Apply gamma correction
+- `_demosaic(raw_data: np.ndarray) -> np.ndarray`: Demosaic Bayer pattern (internal)
+- `_auto_white_balance(image: np.ndarray) -> np.ndarray`: Apply white balance (internal)
+- `_apply_color_correction(image: np.ndarray) -> np.ndarray`: Apply color correction
+- `_apply_gamma_correction(image: np.ndarray) -> np.ndarray`: Apply gamma correction
 
 ### GPU Acceleration
 
@@ -251,11 +252,13 @@ gpu_accel = GPUAccelerator(config)
 ```
 
 **Methods:**
-- `process_batch(images: List[np.ndarray], operation: str, **kwargs) -> List[np.ndarray]`: Process image batch
-- `gaussian_blur(image: np.ndarray, sigma: float = 1.0) -> np.ndarray`: GPU-accelerated blur
-- `edge_detection(image: np.ndarray) -> np.ndarray`: GPU-accelerated edge detection
-- `histogram_equalization(image: np.ndarray) -> np.ndarray`: GPU-accelerated histogram equalization
+- `process_image_batch(images: List[np.ndarray], operation: str, **kwargs) -> List[np.ndarray]`: Process image batch
+- `_cpu_gaussian_blur(image: np.ndarray, sigma: float = 1.0) -> np.ndarray`: CPU-based blur
+- `_cpu_edge_detection(image: np.ndarray, **kwargs) -> np.ndarray`: Sobel edge detection
+- `_cpu_histogram_equalization(image: np.ndarray, **kwargs) -> np.ndarray`: Histogram equalization
 - `get_performance_stats() -> Dict`: Get GPU performance statistics
+- `get_device_info() -> Dict`: Get GPU device information
+- `cleanup() -> None`: Release GPU resources
 
 ## Buffer Management
 
@@ -344,42 +347,305 @@ power_manager = AdvancedPowerManager(config)
 - `get_thermal_status() -> Dict`: Get thermal monitoring status
 - `get_battery_status() -> Dict`: Get battery status (if available)
 
-## Calibration
+## Data Integrity
 
-### Camera Calibration
-
-#### Class: CameraCalibrator
+### CRCValidator
 
 ```python
-from advanced_image_sensor_interface.utils.calibration import CameraCalibrator
+from advanced_image_sensor_interface.utils.data_integrity import CRCValidator
 
-calibrator = CameraCalibrator()
+crc = CRCValidator()
+data = b"critical_image_data"
+protected = crc.append_crc(data)
+is_valid, original = crc.verify_crc(protected)
+```
+
+### ForwardErrorCorrection
+
+```python
+from advanced_image_sensor_interface.utils.data_integrity import (
+    ForwardErrorCorrection, ErrorCorrectionMode
+)
+
+fec = ForwardErrorCorrection(mode=ErrorCorrectionMode.REED_SOLOMON)
+encoded = fec.encode(data)
+decoded, errors_corrected = fec.decode(encoded)
+```
+
+### IntegrityChecker
+
+```python
+from advanced_image_sensor_interface.utils.data_integrity import IntegrityChecker
+
+checker = IntegrityChecker()
+protected = checker.protect(data)
+result, recovered, errors = checker.verify(protected)
+```
+
+## Lens Correction
+
+### LensProfile
+
+```python
+from advanced_image_sensor_interface.utils.lens_correction import (
+    LensProfile, LensCorrectionPipeline, STANDARD_PROFILES
+)
+
+profile = STANDARD_PROFILES["gopro_wide"]
+```
+
+### LensCorrectionPipeline
+
+```python
+pipeline = LensCorrectionPipeline(profile)
+result = pipeline.correct(distorted_image)
+```
+
+## Protocol Enhancements
+
+### MIPI D-PHY v2.5
+
+#### Class: DPHY25Driver
+
+```python
+from advanced_image_sensor_interface.sensor_interface.protocol.mipi import (
+    DPHY25Driver, DPHY25Config, EqualizationMode
+)
+
+config = DPHY25Config(
+    lanes=4,
+    data_rate_gbps=4.5,
+    equalization=EqualizationMode.ADAPTIVE
+)
+driver = DPHY25Driver(config)
 ```
 
 **Methods:**
-- `calibrate_camera(images: List[np.ndarray], config: Dict) -> CalibrationResult`: Calibrate single camera
-- `calibrate_stereo(left_images: List[np.ndarray], right_images: List[np.ndarray], config: Dict) -> StereoCalibrationResult`: Calibrate stereo pair
-- `assess_calibration_quality(result: CalibrationResult) -> QualityMetrics`: Assess calibration quality
-- `undistort_image(image: np.ndarray, camera_matrix: np.ndarray, distortion_coeffs: np.ndarray) -> np.ndarray`: Remove distortion
+- `connect() -> bool`: Establish D-PHY v2.5 connection
+- `disconnect() -> bool`: Disconnect from device
+- `start_streaming() -> bool`: Start continuous streaming
+- `stop_streaming() -> bool`: Stop streaming
+- `capture_frame() -> Optional[bytes]`: Capture single frame
+- `get_statistics() -> Dict`: Get link statistics and error counts
 
-### Multi-Camera Calibration
-
-#### Class: MultiCameraCalibrator
+#### Class: DPHY25Config
 
 ```python
-from advanced_image_sensor_interface.utils.calibration import MultiCameraCalibrator
+DPHY25Config(
+    lanes: int = 4,
+    data_rate_gbps: float = 2.5,
+    equalization: EqualizationMode = EqualizationMode.ADAPTIVE,
+    continuous_clock: bool = True
+)
+```
 
-multi_calibrator = MultiCameraCalibrator()
+- `lanes`: Number of data lanes (1-4)
+- `data_rate_gbps`: Data rate per lane in Gbps (up to 4.5 for D-PHY v2.5)
+- `equalization`: Adaptive equalization mode (ADAPTIVE, MANUAL, DISABLED)
+- `continuous_clock`: Enable continuous clock mode
+
+### MIPI Security Framework
+
+#### Class: MIPISecurityManager
+
+```python
+from advanced_image_sensor_interface.sensor_interface.protocol.mipi import (
+    MIPISecurityManager, SecurityCredentials, PrivilegeLevel
+)
+
+manager = MIPISecurityManager()
+
+# Register device credentials
+creds = SecurityCredentials(
+    identity="camera_01",
+    privilege_level=PrivilegeLevel.ADMIN,
+    pre_shared_key=b"secure_key_128bit"
+)
+manager.register_identity(creds)
+
+# Create authenticated session
+session = manager.create_session("camera_01", b"secure_key_128bit")
+print(f"Session ID: {session.session_id}")
 ```
 
 **Methods:**
-- `calibrate_camera_array(image_sets: List[List[np.ndarray]], config: Dict) -> ArrayCalibrationResult`: Calibrate camera array
-- `compute_relative_poses(calibration_results: List[CalibrationResult]) -> List[Pose]`: Compute relative camera poses
-- `validate_calibration(result: ArrayCalibrationResult, test_images: List[List[np.ndarray]]) -> ValidationResult`: Validate calibration
+- `register_identity(credentials: SecurityCredentials) -> bool`: Register device identity
+- `create_session(identity: str, key: bytes) -> SecuritySession`: Create authenticated session
+- `verify_session(session_id: str) -> bool`: Verify session validity
+- `revoke_session(session_id: str) -> bool`: Revoke active session
+- `encrypt_data(session_id: str, data: bytes) -> bytes`: Encrypt data with session key
+- `decrypt_data(session_id: str, data: bytes) -> bytes`: Decrypt data with session key
+
+#### Enum: PrivilegeLevel
+
+```python
+PrivilegeLevel.GUEST
+PrivilegeLevel.OPERATOR
+PrivilegeLevel.ADMIN
+PrivilegeLevel.SERVICE
+```
+
+### CoaXPress CXP-12
+
+#### Class: CXP12Driver
+
+```python
+from advanced_image_sensor_interface.sensor_interface.protocol.coaxpress import (
+    CXP12Driver, CXP12Config, CXPSpeed
+)
+
+config = CXP12Config(
+    speed=CXPSpeed.CXP_12,
+    connections=4
+)
+print(f"Aggregate bandwidth: {config.aggregate_bandwidth_gbps}Gbps")  # 50.0
+
+driver = CXP12Driver(config)
+driver.connect()
+driver.start_streaming()
+frame = driver.capture_frame()
+driver.stop_streaming()
+driver.disconnect()
+```
+
+**Methods:**
+- `connect() -> bool`: Establish CXP-12 connection with link negotiation
+- `disconnect() -> bool`: Disconnect all links
+- `start_streaming() -> bool`: Start streaming on all active links
+- `stop_streaming() -> bool`: Stop streaming
+- `capture_frame() -> Optional[bytes]`: Capture frame from aggregated links
+- `get_pocxp_status() -> PoCXPStatus`: Get Power over CoaXPress status
+- `get_link_status(link_id: int) -> CXPLinkStatus`: Get individual link status
+
+#### Enum: CXPSpeed
+
+```python
+CXPSpeed.CXP_1   # 1.25 Gbps
+CXPSpeed.CXP_2   # 2.5 Gbps
+CXPSpeed.CXP_3   # 3.125 Gbps
+CXPSpeed.CXP_5   # 5.0 Gbps
+CXPSpeed.CXP_6   # 6.25 Gbps
+CXPSpeed.CXP_10  # 10.0 Gbps
+CXPSpeed.CXP_12  # 12.5 Gbps
+```
+
+### GigE Vision RoCE Transport
+
+#### Class: RoCETransport
+
+```python
+from advanced_image_sensor_interface.sensor_interface.protocol.gige import (
+    RoCETransport, RoCEConfig, RoCEVersion
+)
+
+config = RoCEConfig(version=RoCEVersion.ROCE_V2, mtu=4096)
+transport = RoCETransport()
+transport.initialize()
+
+# Create queue pair for zero-copy transfers
+qp_num = transport.create_queue_pair()
+transport.connect_qp(qp_num, remote_qp=1, remote_gid=bytes(16))
+transport.send(qp_num, frame_data)
+
+stats = transport.get_statistics()
+print(f"Bytes sent: {stats.bytes_sent}")
+```
+
+**Methods:**
+- `initialize() -> bool`: Initialize RoCE transport
+- `create_queue_pair() -> int`: Create RDMA queue pair
+- `connect_qp(qp_num: int, remote_qp: int, remote_gid: bytes) -> bool`: Connect queue pair
+- `send(qp_num: int, data: bytes) -> bool`: Send data via RDMA
+- `post_receive(qp_num: int, buffer: bytearray) -> bool`: Post receive buffer
+- `get_statistics() -> RoCEStatistics`: Get transport statistics
+
+### USB3 Enhanced Streaming
+
+#### Class: USB3StreamingManager
+
+```python
+from advanced_image_sensor_interface.sensor_interface.protocol.usb3 import (
+    USB3StreamingManager, StreamConfig
+)
+
+config = StreamConfig(buffer_count=10, timeout_ms=5000)
+manager = USB3StreamingManager(config)
+
+manager.prepare(width=1920, height=1080, pixel_format="Mono8")
+manager.start_streaming()
+
+frame_data, frame_info = manager.get_frame()
+print(f"Frame {frame_info.frame_id}: {len(frame_data)} bytes")
+
+stats = manager.get_statistics()
+print(f"Frames captured: {stats.frames_captured}")
+```
+
+**Methods:**
+- `prepare(width: int, height: int, pixel_format: str) -> bool`: Prepare streaming buffers
+- `start_streaming() -> bool`: Start image acquisition
+- `stop_streaming() -> bool`: Stop image acquisition
+- `get_frame() -> Tuple[bytes, FrameInfo]`: Get next frame
+- `get_statistics() -> StreamingStatistics`: Get streaming statistics
+
+### USB3 Device Discovery
+
+#### Class: USB3DeviceDiscovery
+
+```python
+from advanced_image_sensor_interface.sensor_interface.protocol.usb3 import USB3DeviceDiscovery
+
+discovery = USB3DeviceDiscovery()
+devices = discovery.enumerate()
+for device in devices:
+    print(f"Found: {device.manufacturer} {device.model} ({device.serial_number})")
+
+# Filter devices
+cameras = discovery.filter_by_class("camera")
+```
+
+**Methods:**
+- `enumerate() -> List[USB3DeviceInfo]`: Enumerate all USB3 Vision devices
+- `filter_by_class(device_class: str) -> List[USB3DeviceInfo]`: Filter by device class
+- `filter_by_vendor(vendor_id: int) -> List[USB3DeviceInfo]`: Filter by vendor ID
+- `watch_hotplug(callback: Callable) -> None`: Register hot-plug callback
+
+### Protocol Selector
+
+#### Class: ProtocolSelector
+
+```python
+from advanced_image_sensor_interface.sensor_interface.protocol_selector import (
+    ProtocolSelector, ProtocolType, ProtocolRequirements
+)
+
+selector = ProtocolSelector()
+
+# Register protocol instances
+selector.register_protocol(ProtocolType.MIPI, mipi_driver, mipi_config)
+selector.register_protocol(ProtocolType.GIGE, gige_driver, gige_config)
+selector.register_protocol(ProtocolType.COAXPRESS, cxp_driver, cxp_config)
+
+# Select optimal protocol
+requirements = ProtocolRequirements(
+    bandwidth_gbps=2.0,
+    distance_m=50,
+    power_over_cable=True
+)
+optimal = selector.select_optimal_protocol(requirements)
+selector.activate_protocol(optimal)
+```
+
+**Methods:**
+- `register_protocol(protocol_type: ProtocolType, driver: ProtocolBase, config: Any) -> bool`: Register protocol
+- `select_optimal_protocol(requirements: ProtocolRequirements) -> ProtocolType`: Select best protocol
+- `activate_protocol(protocol_type: ProtocolType) -> bool`: Activate selected protocol
+- `get_current_protocol() -> Optional[ProtocolBase]`: Get active protocol driver
+- `get_protocol_capabilities(protocol_type: ProtocolType) -> ProtocolCapabilities`: Get capabilities
 
 ## Configuration Management
 
-### Class: ConfigurationManager
+### ConfigManager
 
 Centralized configuration management with environment support.
 
@@ -390,21 +656,17 @@ from advanced_image_sensor_interface.config.constants import get_config
 config = get_config()
 
 # Access configuration values
-mipi_config = config.mipi
-power_config = config.power
-processing_config = config.processing
+mipi_limits = config.mipi
+processing = config.processing
+security = config.security
 ```
 
 **Configuration Sections:**
-- `mipi`: MIPI CSI-2 protocol settings
-- `coaxpress`: CoaXPress protocol settings
-- `gige`: GigE Vision protocol settings
-- `usb3`: USB3 Vision protocol settings
-- `power`: Power management settings
-- `processing`: Image processing settings
-- `synchronization`: Multi-sensor sync settings
-- `calibration`: Calibration parameters
-- `gpu`: GPU acceleration settings
+- `mipi` (`MIPISystemLimits`): MIPI CSI-2 system limits
+- `processing` (`ProcessingConfig`): Image processing parameters
+- `security` (`SecurityConfig`): Buffer limits, power limits, timeouts
+- `timing` (`TimingConfig`): Initialization delays, optimization factors
+- `testing` (`QAConfiguration`): Test frame count, timeouts
 
 ### Environment-Specific Configuration
 
@@ -488,7 +750,7 @@ print(f"Processing time: {stats.total_time:.3f}s")
 print(f"Memory usage: {stats.peak_memory_mb:.1f}MB")
 ```
 
-This comprehensive API documentation covers all major components and features of the Advanced Image Sensor Interface v2.1.0.
+This comprehensive API documentation covers all major components and features of the Advanced Image Sensor Interface v3.0.0.
 
 Retrieves the current status of the MIPI driver.
 
@@ -909,4 +1171,4 @@ except Exception as e:
 
 ## 9. Version Compatibility
 
-This API documentation is for version 1.1.0 of the Advanced Image Sensor Interface project. Future versions will maintain backwards compatibility for major version numbers (e.g., 1.x.x).
+This API documentation is for version 3.0.0 of the Advanced Image Sensor Interface project. Future versions will maintain backwards compatibility for major version numbers.

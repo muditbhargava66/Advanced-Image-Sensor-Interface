@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 try:
-    from advanced_image_sensor_interface import MIPIConfig, MIPIDriver
+    from advanced_image_sensor_interface.sensor_interface.protocol.mipi import MIPIConfig, MIPIProtocolDriver
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")
     logger.error("Please install the package with: pip install -e .")
@@ -79,8 +79,8 @@ class MIPICSIInterface:
     def connect(self) -> bool:
         """Establish MIPI CSI-2 connection."""
         try:
-            mipi_config = MIPIConfig(lanes=self.lanes, data_rate=self.config.data_rate_mbps / 1000, channel=0)  # Convert to Gbps
-            self.mipi_driver = MIPIDriver(mipi_config)
+            mipi_config = MIPIConfig(lanes=self.lanes, data_rate_mbps=self.config.data_rate_mbps, channel=0)
+            self.mipi_driver = MIPIProtocolDriver(mipi_config)
             logger.info("✓ MIPI CSI-2 connection established")
             return True
         except Exception as e:

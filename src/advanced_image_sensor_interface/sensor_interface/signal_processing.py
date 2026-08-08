@@ -102,24 +102,18 @@ class SignalConfig:
 
 
 class SignalProcessor:
-    """
-    Processes and optimizes signals from image sensors.
+    """Processes and optimizes signals from image sensors.
 
-    Attributes
-    ----------
-        config (SignalConfig): Configuration for signal processing.
-
+    Attributes:
+        config: Configuration for signal processing.
     """
 
     def __init__(self, config: SignalConfig, timing_strategy: TimingStrategy = None):
-        """
-        Initialize the SignalProcessor with the given configuration.
+        """Initialize the SignalProcessor.
 
         Args:
-        ----
-            config (SignalConfig): Configuration for signal processing.
-            timing_strategy (TimingStrategy, optional): Strategy for timing control.
-
+            config: Configuration for signal processing.
+            timing_strategy: Optional strategy for timing control.
         """
         self.config = config
         self._timing_strategy = timing_strategy or DefaultTimingStrategy()
@@ -159,19 +153,33 @@ class SignalProcessor:
         else:
             raise ValueError(f"Unsupported bit depth: {bit_depth}")
 
-    def process_frame(self, frame: np.ndarray) -> np.ndarray:
+    def process_frame(self, frame: np.ndarray) -> np.ndarray | None:
         """
         Process a single frame of image data with comprehensive validation.
 
         Args:
-        ----
             frame (np.ndarray): Input frame data.
 
         Returns:
-        -------
-            np.ndarray: Processed frame data in original format.
+            np.ndarray | None: Processed frame data in original format,
+                or None if the frame could not be processed (e.g., empty
+                frames or unsupported dtypes that cannot be converted).
 
+        Raises:
+            TypeError: If frame is not a numpy ndarray.
+            ValueError: If frame has an unsupported number of channels.
+
+        Warning:
+            This method **silently returns None or the original frame** on
+            certain processing errors (empty frames, unsupported dtypes).
+            An ERROR-level log is emitted, but no exception is raised for
+            these cases. Callers that require failure detection MUST check
+            for None returns or check logs.
         """
+        # CQ-3: Explicit type guard before entering the try block
+        if not isinstance(frame, np.ndarray):
+            raise TypeError(f"Expected np.ndarray, got {type(frame).__name__}")
+
         try:
             # Validate input frame
             original_format = self._validator.validate_image(frame)
@@ -181,15 +189,18 @@ class SignalProcessor:
             original_format.bit_depth = self.config.bit_depth
             original_format.dtype = self._get_dtype_for_bit_depth(self.config.bit_depth)
 
-            # Update target format to match input dimensions but use configured bit depth
-            self._target_format.height = original_format.height
-            self._target_format.width = original_format.width
-            self._target_format.channels = original_format.channels
-            self._target_format.bit_depth = self.config.bit_depth
-            self._target_format.dtype = self._get_dtype_for_bit_depth(self.config.bit_depth)
+            # CQ-4: Create a per-call ImageFormat instead of mutating the
+            # shared self._target_format (avoids thread-safety issues)
+            target_format = ImageFormat(
+                height=original_format.height,
+                width=original_format.width,
+                channels=original_format.channels,
+                bit_depth=self.config.bit_depth,
+                dtype=self._get_dtype_for_bit_depth(self.config.bit_depth),
+            )
 
             # Create safe processor for this frame
-            processor = SafeImageProcessor(self._target_format)
+            processor = SafeImageProcessor(target_format)
 
             # Define processing pipeline
             def processing_pipeline(float_frame: np.ndarray) -> np.ndarray:
@@ -235,49 +246,51 @@ class SignalProcessor:
         if kernel_size % 2 == 0:
             kernel_size += 1
 
-        # Simple Gaussian blur for noise reduction
-        if frame.ndim == 2:
-            result = self._blur(frame, kernel_size, sigma)
-        else:
-            # Apply to each channel for multi-channel images
-            result = np.stack([self._blur(frame[..., i], kernel_size, sigma) for i in range(frame.shape[-1])], axis=-1)
+        # Apply Gaussian blur without mixing color channels. SciPy applies a
+        # scalar sigma to every axis, so we pin non-spatial axes to zero.
+        if sigma == 0:
+            return frame.astype(float)
 
-        return result
+        from scipy.ndimage import gaussian_filter
+
+        if frame.ndim <= 2:
+            sigma_per_axis: float | tuple[float, ...] = sigma
+        else:
+            sigma_per_axis = (sigma, sigma, *([0.0] * (frame.ndim - 2)))
+
+        return gaussian_filter(frame.astype(float), sigma=sigma_per_axis)
 
     def _blur(self, image: np.ndarray, kernel_size: int, sigma: float) -> np.ndarray:
-        """Apply a simple Gaussian-like blur."""
-        from scipy.signal import convolve2d
+        """Apply Gaussian blur using scipy.ndimage for performance.
 
-        # Handle zero sigma case to avoid division by zero
+        Deprecated: use gaussian_filter directly on the full array.
+        This method is retained only for backward compatibility.
+        """
+        from scipy.ndimage import gaussian_filter
+
         if sigma == 0:
             return image.astype(float)
 
-        # Create a 2D Gaussian kernel
-        x = np.linspace(-sigma, sigma, kernel_size)
-        y = np.linspace(-sigma, sigma, kernel_size)
-        xx, yy = np.meshgrid(x, y)
-        kernel = np.exp(-0.5 * (xx**2 + yy**2) / sigma**2)
-        kernel = kernel / np.sum(kernel)
-
-        # Apply the kernel to the image
-        if len(image.shape) == 3:
-            # For color images, apply to each channel separately
-            result = np.zeros_like(image, dtype=float)
-            for c in range(image.shape[2]):
-                result[:, :, c] = convolve2d(image[:, :, c], kernel, mode="same", boundary="symm")
-            return result
-        else:
-            # For grayscale images
-            return convolve2d(image, kernel, mode="same", boundary="symm")
+        return gaussian_filter(image.astype(float), sigma=sigma)
 
     def _apply_dynamic_range_expansion(self, frame: np.ndarray) -> np.ndarray:
-        """Apply dynamic range expansion to the frame."""
-        # For float32 processing, keep values in [0, 1] range
-        # The bit depth conversion happens in postprocessing
+        """Apply dynamic range expansion to the frame.
+
+        CQ-1 fix: For integer dtypes the expansion maps to the full dtype
+        range (e.g. 0..65535 for uint16) instead of always normalising
+        to [0, 1]. Float inputs are still mapped to [0, 1].
+        """
         if frame.min() == frame.max():
             return frame  # Avoid division by zero for constant images
-        expanded = np.interp(frame, (frame.min(), frame.max()), (0.0, 1.0))
-        return expanded.astype(frame.dtype)  # Preserve input dtype
+
+        # Determine the target range based on dtype
+        if np.issubdtype(frame.dtype, np.integer):
+            target_max = float(np.iinfo(frame.dtype).max)
+        else:
+            target_max = 1.0
+
+        expanded = np.interp(frame, (frame.min(), frame.max()), (0.0, target_max))
+        return expanded.astype(frame.dtype)
 
     def _apply_color_correction(self, frame: np.ndarray) -> np.ndarray:
         """Apply color correction to the frame."""
@@ -326,7 +339,7 @@ class AutomatedTestSuite:
         self.signal_processor = signal_processor
         self._test_cases = self._generate_test_cases()
         self._execution_time = 0.0
-        self._coverage = 0.0
+        self._pass_rate = 0.0
 
     def _generate_test_cases(self) -> list[np.ndarray]:
         """Generate a set of test cases for signal processing."""
@@ -342,8 +355,8 @@ class AutomatedTestSuite:
 
         Returns
         -------
-            Tuple[float, float]: Execution time and test coverage.
-
+            Tuple[float, float]: Execution time and pass rate (fraction
+                of tests that produced valid output).
         """
         start_time = time.time()
 
@@ -358,10 +371,10 @@ class AutomatedTestSuite:
 
         end_time = time.time()
         self._execution_time = end_time - start_time
-        self._coverage = passed_tests / len(self._test_cases)
+        self._pass_rate = passed_tests / len(self._test_cases)
 
-        logger.info(f"Test suite completed in {self._execution_time:.2f} seconds with {self._coverage:.2%} coverage")
-        return self._execution_time, self._coverage
+        logger.info(f"Test suite completed in {self._execution_time:.2f} seconds with {self._pass_rate:.2%} pass rate")
+        return self._execution_time, self._pass_rate
 
     def _validate_processed_frame(self, frame: np.ndarray) -> bool:
         """Validate a processed frame."""
@@ -379,27 +392,27 @@ if __name__ == "__main__":
 
     # Create and run initial automated test suite
     initial_test_suite = AutomatedTestSuite(processor)
-    initial_time, initial_coverage = initial_test_suite.run_tests()
+    initial_time, initial_pass_rate = initial_test_suite.run_tests()
 
     print(f"Initial test execution time: {initial_time:.2f} seconds")
-    print(f"Initial test coverage: {initial_coverage:.2%}")
+    print(f"Initial test pass rate: {initial_pass_rate:.2%}")
 
     # Optimize signal processor performance
     processor.optimize_performance()
 
     # Create and run optimized automated test suite
     optimized_test_suite = AutomatedTestSuite(processor)
-    optimized_time, optimized_coverage = optimized_test_suite.run_tests()
+    optimized_time, optimized_pass_rate = optimized_test_suite.run_tests()
 
     print(f"Optimized test execution time: {optimized_time:.2f} seconds")
-    print(f"Optimized test coverage: {optimized_coverage:.2%}")
+    print(f"Optimized test pass rate: {optimized_pass_rate:.2%}")
 
     # Calculate improvements
     time_improvement = (initial_time - optimized_time) / initial_time * 100
-    coverage_improvement = (optimized_coverage - initial_coverage) / initial_coverage * 100
+    pass_rate_improvement = (optimized_pass_rate - initial_pass_rate) / initial_pass_rate * 100
 
     print(f"Reduction in validation time: {time_improvement:.2f}%")
-    print(f"Increase in test coverage: {coverage_improvement:.2f}%")
+    print(f"Increase in test pass rate: {pass_rate_improvement:.2f}%")
 
     # Demonstrate overall system performance improvement
     initial_frame = np.random.rand(1080, 1920, 3)

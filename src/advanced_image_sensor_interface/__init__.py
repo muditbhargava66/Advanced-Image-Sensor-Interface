@@ -1,12 +1,24 @@
 """
-Advanced Image Sensor Interface v2.0.0
+Advanced Image Sensor Interface v3.0.0
 
 A high-performance simulation and interface model for next-generation camera modules.
 This package provides comprehensive sensor interface capabilities including MIPI CSI-2
 simulation, advanced signal processing, HDR imaging, RAW processing, multi-sensor
 synchronization, GPU acceleration, and advanced power management.
 
-Version 2.0.0 Features:
+Version 3.0.0 Features:
+- CoaXPress CXP-12 support (50Gbps aggregate bandwidth)
+- GigE Vision RoCE transport (RDMA over Converged Ethernet)
+- MIPI D-PHY v2.5 support (4.5Gbps per lane with adaptive equalization)
+- MIPI Security Framework (AES-GCM encryption with key management)
+- USB3 Enhanced Streaming (buffer pooling and async frame capture)
+- USB3 Device Discovery (hot-plug detection and device filtering)
+- Data Integrity module (CRC-32 validation and Reed-Solomon FEC)
+- Lens Correction Pipeline (radial and tangential distortion correction)
+- Multi-System Power Management (coordinated power budgeting for sensor arrays)
+- 328 automated tests passing in the current release workspace
+
+Previous Features (v2.0.0):
 - Enhanced sensor interface support (up to 8K resolution)
 - HDR image processing pipeline with multiple tone mapping algorithms
 - Comprehensive RAW image format support with advanced demosaicing
@@ -19,8 +31,8 @@ Note: This is a simulation and modeling framework, not a hardware driver impleme
 For hardware integration, see the documentation on interfacing with actual sensor hardware.
 
 Modules:
-    sensor_interface: Core sensor interface components with v2.0.0 enhancements
-    utils: Utility functions for performance metrics and noise reduction
+    sensor_interface: Core sensor interface components with v3.0.0 protocol enhancements
+    utils: Utility functions including data integrity, lens correction, and metrics
     test_patterns: Test pattern generation for sensor validation
 
 Legacy Example (v1.x compatibility):
@@ -28,12 +40,17 @@ Legacy Example (v1.x compatibility):
     >>> config = MIPIConfig(lanes=4, data_rate=2.5, channel=0)
     >>> driver = MIPIDriver(config)
 
-New v2.0.0 Example:
+v2.0.0 Example:
     >>> from advanced_image_sensor_interface.sensor_interface import EnhancedSensorInterface, create_8k_sensor_config
     >>> config = create_8k_sensor_config()
     >>> sensor = EnhancedSensorInterface(config)
     >>> sensor.start_streaming()
     >>> frame = sensor.capture_frame()
+
+v3.0.0 Protocol Example:
+    >>> from advanced_image_sensor_interface.sensor_interface.protocol.coaxpress import CXP12Config, CXP12Driver, CXPSpeed
+    >>> config = CXP12Config(speed=CXPSpeed.CXP_12, lanes=4)
+    >>> driver = CXP12Driver(config)
 """
 
 # Import legacy v1.x components for backward compatibility
@@ -83,7 +100,7 @@ try:
 
     V2_FEATURES_AVAILABLE = True
 
-    # Extended __all__ with v2.0.0 features
+    # Extended __all__ with v2.0.0+ features
     __all__ = [
         # Legacy v1.x exports
         "MIPIConfig",
@@ -93,7 +110,7 @@ try:
         "SignalConfig",
         "SignalProcessor",
         "AutomatedTestSuite",
-        # v2.0.0 Enhanced sensor interface
+        # Enhanced sensor interface
         "EnhancedSensorInterface",
         "SensorConfiguration",
         "SensorResolution",
@@ -101,20 +118,20 @@ try:
         "RAWFormat",
         "create_8k_sensor_config",
         "create_multi_sensor_config",
-        # v2.0.0 HDR processing
+        # HDR processing
         "HDRProcessor",
         "HDRParameters",
         "ToneMappingMethod",
         "ExposureFusionMethod",
         "create_hdr_processor_for_automotive",
-        # v2.0.0 RAW processing
+        # RAW processing
         "RAWProcessor",
         "RAWParameters",
         "BayerPattern",
         "DemosaicMethod",
         "ColorSpace",
         "create_raw_processor_for_automotive",
-        # v2.0.0 Multi-sensor synchronization
+        # Multi-sensor synchronization
         "MultiSensorSynchronizer",
         "SyncConfiguration",
         "SyncMode",
@@ -122,13 +139,13 @@ try:
         "SyncStatus",
         "create_stereo_sync_config",
         "create_multi_camera_sync_config",
-        # v2.0.0 GPU acceleration
+        # GPU acceleration
         "GPUAccelerator",
         "GPUConfiguration",
         "GPUBackend",
         "ProcessingMode",
         "create_gpu_config_for_automotive",
-        # v2.0.0 Advanced power management
+        # Advanced power management
         "AdvancedPowerManager",
         "AdvancedPowerConfiguration",
         "PowerState",
@@ -139,11 +156,11 @@ try:
     ]
 
 except ImportError as e:
-    # v2.0.0 features not available due to missing dependencies
+    # v2.0.0+ features not available due to missing dependencies
     V2_FEATURES_AVAILABLE = False
     import logging
 
-    logging.getLogger(__name__).warning(f"v2.0.0 features not available: {e}")
+    logging.getLogger(__name__).error(f"v2.0.0+ features not available: {e}")
 
     # Fallback to legacy exports only
     __all__ = ["MIPIConfig", "MIPIDriver", "PowerConfig", "PowerManager", "SignalConfig", "SignalProcessor", "AutomatedTestSuite"]

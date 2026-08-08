@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+
 from advanced_image_sensor_interface.sensor_interface.signal_processing import SignalConfig, SignalProcessor
 
 
@@ -52,6 +53,17 @@ class TestSignalProcessor:
         assert noise_reduced_frame.shape == test_frame.shape
         # Check that standard deviation decreased or remained the same
         assert np.std(noise_reduced_frame) <= np.std(test_frame)
+
+    def test_apply_noise_reduction_preserves_channels(self, signal_processor):
+        """Test that noise reduction does not blur across color channels."""
+        test_frame = np.zeros((9, 9, 3), dtype=np.uint16)
+        test_frame[4, 4, 0] = 4095
+
+        noise_reduced_frame = signal_processor._apply_noise_reduction(test_frame)
+
+        assert noise_reduced_frame[4, 4, 0] > 0
+        assert np.all(noise_reduced_frame[:, :, 1] == 0)
+        assert np.all(noise_reduced_frame[:, :, 2] == 0)
 
     def test_apply_dynamic_range_expansion(self, signal_processor):
         """Test dynamic range expansion."""
@@ -151,36 +163,40 @@ class TestSignalProcessor:
         """Test that the processing pipeline is applied in the correct order."""
         test_frame = np.random.randint(0, 4096, size=(1080, 1920, 3), dtype=np.uint16)
 
-        # Create individual mocks for each method
-        with patch.object(signal_processor, "_apply_noise_reduction", return_value=test_frame) as mock_noise:
-            with patch.object(signal_processor, "_apply_dynamic_range_expansion", return_value=test_frame) as mock_dre:
-                with patch.object(signal_processor, "_apply_color_correction", return_value=test_frame) as mock_color:
+        # Create distinct sentinel arrays so we can verify data flow order:
+        # noise -> DRE -> color correction (each receives the previous output).
+        sentinel_noise = np.full_like(test_frame, 1, dtype=np.float32)
+        sentinel_dre = np.full_like(test_frame, 2, dtype=np.float32)
+        sentinel_color = np.full_like(test_frame, 3, dtype=np.float32)
 
-                    signal_processor.process_frame(test_frame)
+        with (
+            patch.object(signal_processor, "_apply_noise_reduction", return_value=sentinel_noise) as mock_noise,
+            patch.object(signal_processor, "_apply_dynamic_range_expansion", return_value=sentinel_dre) as mock_dre,
+            patch.object(signal_processor, "_apply_color_correction", return_value=sentinel_color) as mock_color,
+        ):
 
-                    # Check each mock was called once
-                    mock_noise.assert_called_once()
-                    mock_dre.assert_called_once()
-                    mock_color.assert_called_once()
+            signal_processor.process_frame(test_frame)
 
-                    # Check the order by comparing call counts at each step
-                    # Noise reduction should be first, then DRE, then color correction
-                    calls = []
-                    calls.append(mock_noise.call_args)
-                    calls.append(mock_dre.call_args)
-                    calls.append(mock_color.call_args)
+            # Each mock must be called exactly once
+            mock_noise.assert_called_once()
+            mock_dre.assert_called_once()
+            mock_color.assert_called_once()
 
-                    # Verify they were called in order (we expect 3 calls in sequence)
-                    assert len(calls) == 3
+            # Verify the data flow chain: each step receives the
+            # output of the previous step.
+            dre_input = mock_dre.call_args[0][0]
+            np.testing.assert_array_equal(dre_input, sentinel_noise)
 
-                    # Check that each subsequent call is getting the result of the previous call
-                    # We're mocking them to return test_frame but this validates the sequence
+            color_input = mock_color.call_args[0][0]
+            np.testing.assert_array_equal(color_input, sentinel_dre)
 
     def test_error_handling(self, signal_processor):
         """Test error handling for invalid inputs."""
-        with pytest.raises(ValueError):
+        # Non-ndarray input must raise TypeError (CQ-3)
+        with pytest.raises(TypeError):
             signal_processor.process_frame("invalid input")
 
+        # Invalid channel count must raise ValueError
         with pytest.raises(ValueError):
             signal_processor.process_frame(np.random.rand(100, 100, 5))  # Invalid number of channels
 

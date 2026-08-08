@@ -1,4 +1,4 @@
-"""HDR Image Processing Pipeline for v2.0.0.
+"""HDR Image Processing Pipeline.
 
 This module provides comprehensive HDR (High Dynamic Range) image processing
 capabilities including tone mapping, exposure fusion, and HDR reconstruction.
@@ -10,7 +10,6 @@ from enum import Enum
 from typing import Optional
 
 import numpy as np
-from skimage import exposure, filters
 
 logger = logging.getLogger(__name__)
 
@@ -92,11 +91,17 @@ class HDRProcessor:
         """Process a single image with HDR techniques.
 
         Args:
-            image: Input image (can be 8-bit, 16-bit, or float)
-            exposure_value: Exposure value for the image
+            image: Input image (can be 8-bit, 16-bit, or float).
+            exposure_value: Exposure value for the image.
 
         Returns:
-            HDR processed image
+            HDR processed image in the same dtype as the input.
+
+        Warning:
+            This method **silently returns the original input image** on any
+            processing error. An ERROR-level log is emitted, but no exception
+            is raised. Callers that require failure detection MUST check logs
+            or wrap this method in a try/except block.
         """
         try:
             # Convert to float32 for processing
@@ -125,16 +130,28 @@ class HDRProcessor:
             logger.error(f"HDR processing failed: {e}")
             return image
 
-    def process_exposure_stack(self, images: list[np.ndarray], exposure_values: list[float]) -> np.ndarray:
+    def process_exposure_stack(self, images: list[np.ndarray], exposure_values: list[float] | None = None) -> np.ndarray:
         """Process a stack of images with different exposures.
 
         Args:
             images: List of input images
-            exposure_values: List of exposure values for each image
+            exposure_values: List of exposure values for each image.
+                If None, values are auto-generated as a linear ramp.
 
         Returns:
             HDR fused image
+
+        Warning:
+            This method **silently returns the middle exposure image** on any
+            processing error. An ERROR-level log is emitted, but no exception
+            is raised. Callers that require failure detection MUST check logs
+            or wrap this method in a try/except block.
         """
+        # Auto-generate exposure values if not provided
+        if exposure_values is None:
+            n = len(images)
+            exposure_values = [float(i - n // 2) for i in range(n)]
+
         if len(images) != len(exposure_values):
             raise ValueError("Number of images must match number of exposure values")
 
@@ -185,32 +202,43 @@ class HDRProcessor:
             return self._reinhard_tone_mapping(image)
 
     def _reinhard_tone_mapping(self, image: np.ndarray) -> np.ndarray:
-        """Apply Reinhard tone mapping."""
-        # Convert to luminance
+        """Apply Reinhard global tone mapping operator.
+
+        Implements Reinhard et al. (2002) "Photographic Tone Reproduction
+        for Digital Images". The operator works in three steps:
+
+        1. Compute log-average luminance: L_avg = exp(mean(log(L + epsilon)))
+           This is a geometric mean approximation that is robust to outliers.
+
+        2. Compute a scene key value that maps mid-tones:
+           key = 1.03 - 2/(2 + log10(L_avg + 1))
+           The constant 1.03 centres the key near 0.18 (photographic middle grey).
+
+        3. Apply the Reinhard operator: L_d = (key/L_avg * L) / (1 + key/L_avg * L)
+           This compressive mapping preserves detail in both highlights and shadows.
+        """
+        # Convert to luminance using Rec. 601 coefficients
         if len(image.shape) == 3:
             luminance = 0.299 * image[:, :, 0] + 0.587 * image[:, :, 1] + 0.114 * image[:, :, 2]
         else:
             luminance = image
 
-        # Calculate log average luminance
+        # Step 1: Compute log-average luminance (geometric mean)
         epsilon = 1e-6
         log_avg_lum = np.exp(np.mean(np.log(luminance + epsilon)))
 
-        # Use provided intensity or calculate automatically
+        # Step 2: Determine key value (auto or user-specified)
         if self.parameters.reinhard_intensity < 0:
             key_value = 1.03 - 2.0 / (2.0 + np.log10(log_avg_lum + 1.0))
         else:
             key_value = self.parameters.reinhard_intensity
 
-        # Scale luminance
+        # Step 3: Scale luminance and apply compressive operator
         scaled_lum = (key_value / log_avg_lum) * luminance
-
-        # Apply Reinhard operator
         tone_mapped_lum = scaled_lum / (1.0 + scaled_lum)
 
-        # Apply to color channels if RGB
+        # Apply to color channels preserving chrominance ratios
         if len(image.shape) == 3:
-            # Preserve color ratios
             result = np.zeros_like(image)
             for c in range(3):
                 result[:, :, c] = image[:, :, c] * (tone_mapped_lum / (luminance + epsilon))
@@ -219,30 +247,46 @@ class HDRProcessor:
             return np.clip(tone_mapped_lum, 0.0, 1.0)
 
     def _drago_tone_mapping(self, image: np.ndarray) -> np.ndarray:
-        """Apply Drago tone mapping."""
+        """Apply Drago logarithmic tone mapping operator.
+
+        Implements Drago et al. (2003) "Adaptive Logarithmic Mapping For
+        Displaying High Contrast Scenes". The operator uses an adaptive
+        logarithmic base that varies per-pixel:
+
+            L_d = log(1 + L) / log(1 + L_max)
+                  / log(2 + 8 * (L/L_max)^(log(bias)/log(0.5)))
+
+        Where:
+        - 2.0 is the minimum log base ensuring a non-degenerate mapping.
+        - 8.0 scales the range of the adaptive base (from 2 to 10).
+        - bias (default 0.85) controls the contrast. The exponent
+          log(bias)/log(0.5) maps bias=0.5 to exponent=1 (linear),
+          bias>0.5 compresses highlights more aggressively.
+        """
         # Convert to luminance
         if len(image.shape) == 3:
             luminance = 0.299 * image[:, :, 0] + 0.587 * image[:, :, 1] + 0.114 * image[:, :, 2]
         else:
             luminance = image
 
-        # Parameters
         bias = self.parameters.drago_bias
         max_lum = np.max(luminance)
 
         if max_lum <= 0:
             return image
 
-        # Apply Drago operator
+        # Compute adaptive logarithmic mapping
         log_lum = np.log10(luminance + 1e-6)
         log_max = np.log10(max_lum)
 
+        # Adaptive base: ranges from 2 (shadows) to 10 (highlights)
+        # The exponent log(bias)/log(0.5) controls the contrast curve
         tone_mapped_lum = (log_lum / log_max) / (
             np.log10(2.0 + 8.0 * ((luminance / max_lum) ** (np.log10(bias) / np.log10(0.5))))
         )
         tone_mapped_lum = np.clip(tone_mapped_lum, 0.0, 1.0)
 
-        # Apply to color channels if RGB
+        # Apply to color channels preserving chrominance ratios
         if len(image.shape) == 3:
             result = np.zeros_like(image)
             for c in range(3):
@@ -252,16 +296,55 @@ class HDRProcessor:
             return tone_mapped_lum
 
     def _adaptive_tone_mapping(self, image: np.ndarray) -> np.ndarray:
-        """Apply adaptive tone mapping using local adaptation."""
-        # Use adaptive histogram equalization
+        """Apply adaptive tone mapping using local adaptation.
+
+        Uses CLAHE (Contrast Limited Adaptive Histogram Equalization) from
+        scikit-image when available, falling back to a numpy-based global
+        histogram equalization for base installs.
+        """
+        try:
+            from skimage import exposure
+
+            if len(image.shape) == 3:
+                result = np.zeros_like(image)
+                for c in range(3):
+                    result[:, :, c] = exposure.equalize_adapthist(image[:, :, c], clip_limit=0.03)
+                return result
+            else:
+                return exposure.equalize_adapthist(image, clip_limit=0.03)
+
+        except ImportError:
+            # Fallback: numpy-based global histogram equalization
+            logger.info("scikit-image not available, using numpy-based histogram equalization")
+            return self._numpy_histogram_equalize(image)
+
+    def _numpy_histogram_equalize(self, image: np.ndarray) -> np.ndarray:
+        """Simple global histogram equalization using numpy.
+
+        Maps image intensities so that the output CDF is approximately uniform,
+        improving global contrast without requiring scikit-image.
+        """
         if len(image.shape) == 3:
-            # Process each channel separately
             result = np.zeros_like(image)
             for c in range(3):
-                result[:, :, c] = exposure.equalize_adapthist(image[:, :, c], clip_limit=0.03)
+                result[:, :, c] = self._equalize_channel(image[:, :, c])
             return result
         else:
-            return exposure.equalize_adapthist(image, clip_limit=0.03)
+            return self._equalize_channel(image)
+
+    @staticmethod
+    def _equalize_channel(channel: np.ndarray) -> np.ndarray:
+        """Equalize a single channel via CDF normalization."""
+        # Quantize to 256 bins for the CDF
+        quantized = (np.clip(channel, 0.0, 1.0) * 255).astype(np.uint8)
+        hist, bins = np.histogram(quantized.flatten(), bins=256, range=(0, 256))
+        cdf = hist.cumsum().astype(np.float64)
+        cdf_min = cdf[cdf > 0].min()
+        total = cdf[-1]
+        if total == cdf_min:
+            return channel
+        cdf_normalized = (cdf - cdf_min) / (total - cdf_min)
+        return cdf_normalized[quantized].reshape(channel.shape).astype(np.float32)
 
     def _gamma_tone_mapping(self, image: np.ndarray) -> np.ndarray:
         """Apply simple gamma tone mapping."""
@@ -278,17 +361,24 @@ class HDRProcessor:
             return self._mertens_fusion(images)
 
     def _mertens_fusion(self, images: list[np.ndarray]) -> np.ndarray:
-        """Apply Mertens exposure fusion algorithm."""
+        """Apply Mertens exposure fusion algorithm.
+
+        Computes per-pixel quality weights from contrast, saturation, and
+        well-exposedness, then fuses the exposure stack using normalized
+        weighted averaging. Uses a numpy Laplacian approximation instead
+        of requiring scikit-image's filters.laplace.
+        """
         weights = []
 
         for img in images:
-            # Calculate contrast weight
+            # Calculate contrast weight via Laplacian (discrete approximation)
             if len(img.shape) == 3:
                 gray = 0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]
             else:
                 gray = img
 
-            contrast = np.abs(filters.laplace(gray))
+            # Laplacian via second-order finite differences (no skimage dependency)
+            contrast = self._laplacian_abs(gray)
 
             # Calculate saturation weight
             if len(img.shape) == 3:
@@ -297,7 +387,7 @@ class HDRProcessor:
             else:
                 saturation = np.zeros_like(gray)
 
-            # Calculate well-exposedness weight
+            # Calculate well-exposedness weight (Gaussian centered at 0.5)
             sigma = 0.2
             well_exposed = np.exp(-0.5 * ((gray - 0.5) / sigma) ** 2)
 
@@ -324,6 +414,19 @@ class HDRProcessor:
                 result += img * weights[i] / total_weight
 
         return np.clip(result, 0.0, 1.0)
+
+    @staticmethod
+    def _laplacian_abs(image: np.ndarray) -> np.ndarray:
+        """Compute absolute value of the discrete Laplacian.
+
+        Uses the standard 3x3 Laplacian kernel [[0,1,0],[1,-4,1],[0,1,0]]
+        via scipy.ndimage for boundary handling. This replaces the previous
+        dependency on skimage.filters.laplace.
+        """
+        from scipy import ndimage
+
+        kernel = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=np.float64)
+        return np.abs(ndimage.convolve(image.astype(np.float64), kernel, mode="reflect"))
 
     def _weighted_average_fusion(self, images: list[np.ndarray], exposure_values: list[float]) -> np.ndarray:
         """Apply weighted average fusion based on exposure values."""

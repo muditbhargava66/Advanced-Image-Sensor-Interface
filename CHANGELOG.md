@@ -5,13 +5,82 @@ All notable changes to the Advanced Image Sensor Interface project will be docum
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-08-08
+
+### Major Release - Protocol Enhancements, Code Quality Audit Fixes, and Security Hardening
+
+This release focuses on multi-protocol camera interface enhancements, comprehensive code quality audit fixes (78% of 41 issues resolved), dependency consolidation, and maintaining strict security standards for production deployments.
+
+### Security & Dependabot Vulnerability Fixes
+
+- Added `.github/dependabot.yml` automated dependency update workflow for daily Python package and weekly GitHub Actions scans.
+- Fixed `setuptools` to `>=70.0.0` in build-system requirements to resolve CVE-2024-6345 (RCE vulnerability).
+- Fixed `Pillow` to `>=12.3.0,<13.0.0` to address CVE-2026-25990, CVE-2024-28219, and CVE-2023-50447.
+- Fixed `requests` to `>=2.33.0` to address CVE-2024-35195 (proxy credential leak).
+- Fixed `urllib3` to `>=2.7.0` to address HTTP response smuggling and header injection vulnerabilities.
+- Fixed `msgpack` to `>=1.2.1` to address memory corruption vulnerability (GHSA-6v7p-g79w-8964).
+- Fixed `click` to `>=8.3.3` to address CLI formatting vulnerabilities.
+- Fixed `marshmallow` to 3.26.2 to address CVE-2025-68480.
+- Fixed `protobuf` to `>=6.33.5` to address CVE-2026-0994.
+
+### Resolved Issues & Enhancements (Audit Fixes)
+
+- **GitHub Issue #1 (`[BUG] Missing GigEDriver & GigEConfig Classes`)**: Fully resolved and verified. Implemented `GigEProtocolDriver`, `GigEVisionConfig`, and `GigERoCEDriver` with convenience aliases `GigEDriver` and `GigEConfig` exported in `sensor_interface.protocol.gige`.
+- **Requirements File Consolidation**: Consolidated redundant `requirements.in`, `requirements-dev.txt`, and `requirements-full.txt` into `pyproject.toml` optional dependency extras (`.[full]`, `.[dev]`, `.[docs]`). Maintained minimal core `requirements.txt`.
+- **BUG-2 (Malvar Demosaicing)**: Implemented actual Malvar-He-Cutler gradient-corrected demosaicing algorithm with 5x5 kernels, replacing the bilinear fallback.
+- **CQ-2 (Pass Rate Docstring)**: Fixed `AutomatedTestSuite.run_tests()` docstring to correctly report "pass rate" instead of "test coverage".
+- **CQ-7 (Register I/O Standardization)**: Standardized `read_register`/`write_register` across all protocol drivers to use `bytes` for register I/O.
+- **PERF-3 (Noise Reduction Optimization)**: Optimized `_apply_noise_reduction` to use multi-channel `gaussian_filter` directly instead of per-channel loops.
+- **ARCH-2 (Protocol Driver De-duplication)**: Extracted shared `_get_bytes_per_pixel_common()` and `_generate_test_frame_vectorized()` to `StreamingProtocolBase`. All four protocol drivers (MIPI, GigE, CoaXPress, USB3) now delegate to base implementations.
+- **ARCH-3 (Silent Failure Documentation)**: Added prominent `Warning` sections to docstrings in `raw_processing.py`, `hdr_processing.py`, and `signal_processing.py` documenting silent-failure behavior.
+- **ARCH-4 (Thread-Safe Config)**: Added double-checked locking with `threading.Lock` to config singleton in `constants.py`.
+- **ARCH-5 (SecurityConfig Dataclass)**: Converted `SecurityConfig` to `@dataclass` with typed fields and grouped documentation.
+- **CQ-1 (Dynamic Range Expansion)**: Fixed data destruction for integer dtypes by scaling to full dtype range (`np.iinfo(frame.dtype).max`).
+- **CQ-3 (TypeError Guard)**: Added explicit `isinstance(frame, np.ndarray)` check before try block in `process_frame`.
+- **CQ-4 (Per-Call ImageFormat)**: `process_frame` now creates local `ImageFormat` per call instead of mutating shared `self._target_format`.
+- **CQ-5 (Hamming Error Correction)**: Implemented full syndrome-based correction for all 7 bit positions in Hamming(7,4).
+- **CQ-6 (Double-Counted Metrics)**: Removed duplicate `packets_corrected` increment in `IntegrityChecker.verify`.
+- **BUG-3, BUG-4 (Lazy skimage Imports)**: Moved `skimage` imports inside methods with numpy/scipy fallbacks in `raw_processing.py` and `hdr_processing.py`.
+- **BUG-5 (Class-Level JIT Methods)**: Moved JIT methods to module-level functions outside class body in `gpu_acceleration.py`.
+- **PERF-2 (Vectorized Frame Generation)**: Replaced O(n^2) Python loops with vectorized NumPy broadcasting in MIPI and GigE drivers.
+- **MISC-3 (Error Logging Level)**: Changed `__init__.py` import error logging from `warning` to `error`.
+- **TEST-1, TEST-2**: Fixed broken tests for error handling and pipeline order verification.
+- **DEP-3 (py.typed)**: Added `src/advanced_image_sensor_interface/py.typed` marker file.
+
+### Protocol Enhancements
+
+- **MIPI D-PHY v2.5**: Full support for data rates up to 4.5 Gbps per lane with adaptive equalization, de-emphasis, and lane calibration.
+- **MIPI CSI-2 Driver**: Enhanced with `MIPIConfig` dataclass and streaming support (`start_streaming()`, `stop_streaming()`, `capture_frame()`).
+- **GigE Vision Driver**: Complete implementation with `GigEVisionConfig`, `GigESpeed` enum (1G, 2.5G, 5G, 10G), GVCP/GVSP protocol modeling, zero-copy RoCE transport, and `GigEDriver`/`GigEConfig` aliases.
+- **USB3 Vision Driver**: Complete GenICam architecture implementation with `GenICamNodeMap` (25+ SFNC features), `USBTransportLayer`, and streaming manager.
+- **CoaXPress CXP-12 Driver**: Complete CXP 2.1 implementation with 50Gbps aggregate bandwidth (1-4 connections), Power over CoaXPress (`PoCXPController`), link negotiation, and hardware trigger support.
+- **Data Integrity Module**: CRC-32 packet integrity verification, Reed-Solomon, Hamming, and Parity forward error correction.
+
+### Advanced Imaging & Power Management
+
+- **Lens Correction Pipeline**: Real-time geometric distortion correction (radial barrel/pincushion and tangential distortion via Brown-Conrady model).
+- **Multi-System Power Management**: Priority-based power budgeting, synchronized power state transitions, and array-level metrics.
+
+### Test Suite Verification
+
+- Release verification: **329 / 329 tests passing** in the current v3.0.0 workspace test suite.
+- **Test Suite Refactoring**:
+  - Renamed `test_v2_protocols_coverage.py` to `test_protocols.py`
+  - Renamed `test_roadmap_features.py` to `test_imaging_features.py`
+  - Renamed `test_protocol_refactoring.py` to `test_protocol_extensions.py`
+  - Removed version numbers from test file names
+  - Updated docstrings to match current features
+- Added noise reduction algorithm tests (`test_noise_reduction_coverage.py`)
+
+---
+
 ## [2.0.1] - 2025-12-18
 
-### 🔒 Security
+### Security
 
 - Updated `fonttools` to 4.60.2 to address CVE-2025-66034 (moderate severity)
 
-### 🔧 Fixed
+### Fixed
 
 - **CI Pipeline**: Fixed ruff linting failures across all platforms (Linux, macOS, Windows)
   - Added `docs/` directory to ruff per-file-ignores for optional extension imports
@@ -19,7 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation**: Corrected MIPIConfig example in API reference to match actual class signature
   - Fixed incorrect parameters (`data_rate_mbps`, `pixel_format`) to correct ones (`lanes`, `data_rate`, `channel`)
 
-### 📦 Dependencies
+### Dependencies
 
 - Updated `Pillow` constraint from `<11.0.0` to `<12.0.0` to allow latest secure versions
 - Synchronized dependency constraints across `requirements.in`, `requirements.txt`, and `pyproject.toml`
@@ -28,11 +97,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2025-08-10
 
-### 🚀 Major Release - Multi-Protocol Camera Interface Framework
+### Major Release - Multi-Protocol Camera Interface Framework
 
 This major release transforms the Advanced Image Sensor Interface into a comprehensive multi-protocol camera interface framework with professional-grade features, advanced image processing, and production-ready quality.
 
-### ✨ New Features
+### New Features
 
 #### Multi-Protocol Support
 - **MIPI CSI-2 Protocol**: Enhanced implementation with up to 4.5 Gbps per lane
@@ -51,7 +120,7 @@ This major release transforms the Advanced Image Sensor Interface into a compreh
 #### Multi-Sensor Synchronization
 - **Hardware Synchronization**: External trigger-based synchronization
 - **Software Synchronization**: Timestamp-based frame alignment
-- **Sub-Millisecond Accuracy**: <100μs synchronization precision
+- **Sub-Millisecond Accuracy**: <100us synchronization precision
 - **Adaptive Timing**: Dynamic timing adjustment and drift correction
 - **Synchronization Monitoring**: Real-time sync quality metrics
 
@@ -89,12 +158,12 @@ This major release transforms the Advanced Image Sensor Interface into a compreh
 - **Configuration Validation**: Type-safe configuration with comprehensive validation
 - **Configuration Manager**: Centralized configuration management with caching
 
-### 🔧 Development & Quality Improvements
+### Development & Quality Improvements
 
 #### Code Quality & Linting
 - **100% Ruff Compliance**: Achieved complete linting compliance for CI/CD
 - **Comprehensive Testing**: 200+ unit tests with extensive protocol and integration testing
-- **Type Safety**: Full type annotation coverage with mypy and pyright validation
+- **Type Safety**: Expanded type annotations with mypy and pyright support
 - **Documentation Coverage**: Complete API documentation and user guides
 
 #### Performance Optimizations
@@ -109,7 +178,7 @@ This major release transforms the Advanced Image Sensor Interface into a compreh
 - **Event-Driven Architecture**: Enhanced event system for better modularity
 - **Error Recovery**: Improved error handling and recovery mechanisms
 
-### 💥 Breaking Changes
+### Breaking Changes
 
 #### API Redesign
 - **Protocol Interface Standardization**: Unified interface across all protocol implementations
@@ -122,7 +191,7 @@ This major release transforms the Advanced Image Sensor Interface into a compreh
 - **Enhanced Dependencies**: Added GPU acceleration and advanced image processing libraries
 - **Optional Dependencies**: GPU features gracefully degrade when dependencies unavailable
 
-### 🔄 Migration Guide
+### Migration Guide
 
 #### From v1.x to v2.0.0
 - **Backward Compatibility**: Core v1.x APIs continue to work with deprecation warnings
@@ -140,7 +209,7 @@ from advanced_image_sensor_interface.sensor_interface.enhanced_sensor import Enh
 from advanced_image_sensor_interface.sensor_interface.multi_sensor_sync import MultiSensorSync
 ```
 
-### 📊 Performance Metrics
+### Performance Metrics
 
 #### Throughput Improvements
 - **MIPI CSI-2**: Up to 4.5 Gbps per lane (previously 2.5 Gbps)
@@ -152,7 +221,7 @@ from advanced_image_sensor_interface.sensor_interface.multi_sensor_sync import M
 - **HDR Processing**: 30 FPS @ 4K resolution
 - **RAW Processing**: 60 FPS @ 4K resolution
 - **GPU Acceleration**: 5-10x performance improvement over CPU
-- **Multi-Sensor Sync**: <100μs synchronization accuracy
+- **Multi-Sensor Sync**: <100us synchronization accuracy
 
 #### Memory Efficiency
 - **Buffer Management**: 30% reduction in memory allocation overhead
@@ -160,7 +229,7 @@ from advanced_image_sensor_interface.sensor_interface.multi_sensor_sync import M
 - **GPU Memory**: Optimized GPU memory usage with automatic pooling
 - **Memory Footprint**: 25% reduction in base memory requirements
 
-### 🎯 Application-Specific Features
+### Application-Specific Features
 
 #### Industrial Applications
 - **CoaXPress Integration**: Professional industrial camera support
@@ -180,7 +249,7 @@ from advanced_image_sensor_interface.sensor_interface.multi_sensor_sync import M
 - **Real-Time Processing**: Low-latency processing for real-time applications
 - **Resource Optimization**: Efficient resource utilization for constrained environments
 
-### 🔗 New Documentation
+### New Documentation
 
 #### Comprehensive Guides
 - **Protocol Documentation**: Complete guides for all supported protocols
@@ -188,11 +257,11 @@ from advanced_image_sensor_interface.sensor_interface.multi_sensor_sync import M
 - **Hardware Integration**: Real hardware integration examples and best practices
 - **API Reference**: Complete API documentation with examples
 
-### 🙏 Acknowledgments
+### Acknowledgments
 
 This major release represents a significant advancement in camera interface technology, transforming the Advanced Image Sensor Interface into a comprehensive multi-protocol framework suitable for industrial, scientific, and embedded applications.
 
-### 🔗 Resources
+### Resources
 
 - **Demo Applications**: Complete examples in `examples/` directory
 - **Test Suite**: Comprehensive validation in `tests/` directory
@@ -263,6 +332,7 @@ This major release represents a significant advancement in camera interface tech
 - Performance Metrics utilities and benchmarking tools
 - Comprehensive documentation including API docs, design specs, and performance analysis
 
+[3.0.0]: https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/compare/v2.0.1...v3.0.0
 [2.0.1]: https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/compare/v1.0.1...v1.1.0
