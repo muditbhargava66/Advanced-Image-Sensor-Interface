@@ -9,8 +9,8 @@ from advanced_image_sensor_interface.config import (
     ConfigManager,
     MIPIConfig,
     ProcessingConfig,
+    QAConfiguration,
     SecurityConfig,
-    TestingConfiguration,
     TimingConfig,
     get_config,
     get_mipi_config,
@@ -110,12 +110,12 @@ class TestMIPIConfig:
         assert config.MAX_EFFICIENCY == 0.95
 
 
-class TestTestingConfiguration:
+class TestQAConfiguration:
     """Test testing configuration."""
 
     def test_default_values(self):
         """Test default test configuration values."""
-        config = TestingConfiguration()
+        config = QAConfiguration()
 
         assert config.TEST_FRAME_COUNT == 100
         assert config.DEFAULT_TEST_WIDTH == 1920
@@ -139,7 +139,7 @@ class TestConfigManager:
         assert isinstance(manager.security, SecurityConfig)
         assert isinstance(manager.processing, ProcessingConfig)
         assert isinstance(manager.mipi, MIPIConfig)
-        assert isinstance(manager.testing, TestingConfiguration)
+        assert isinstance(manager.testing, QAConfiguration)
 
     def test_testing_environment_overrides(self):
         """Test testing environment configuration overrides."""
@@ -180,13 +180,16 @@ class TestConfigManager:
 
     def test_update_from_env(self):
         """Test configuration updates from environment variables."""
-        with patch.dict(os.environ, {
-            'AISI_INIT_DELAY': '0.2',
-            'AISI_MAX_SIM_TIME': '0.5',
-            'AISI_MAX_IMAGE_SIZE': '50000000',
-            'AISI_OPERATION_TIMEOUT': '45.0',
-            'AISI_NOISE_SIGMA_MULT': '3.0'
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "AISI_INIT_DELAY": "0.2",
+                "AISI_MAX_SIM_TIME": "0.5",
+                "AISI_MAX_IMAGE_SIZE": "50000000",
+                "AISI_OPERATION_TIMEOUT": "45.0",
+                "AISI_NOISE_SIGMA_MULT": "3.0",
+            },
+        ):
             manager = ConfigManager()
             manager.update_from_env()
 
@@ -204,6 +207,7 @@ class TestGlobalConfigFunctions:
         """Test that get_config returns singleton instance."""
         # Clear any existing global instance
         import advanced_image_sensor_interface.config.constants as config_module
+
         config_module._config_manager = None
 
         config1 = get_config()
@@ -216,16 +220,18 @@ class TestGlobalConfigFunctions:
         """Test get_config with specific environment."""
         # Clear any existing global instance
         import advanced_image_sensor_interface.config.constants as config_module
+
         config_module._config_manager = None
 
         config = get_config("testing")
         assert config.environment == "testing"
 
-    @patch.dict(os.environ, {'AISI_ENVIRONMENT': 'development'})
+    @patch.dict(os.environ, {"AISI_ENVIRONMENT": "development"})
     def test_get_config_from_env_var(self):
         """Test get_config reads environment from env var."""
         # Clear any existing global instance
         import advanced_image_sensor_interface.config.constants as config_module
+
         config_module._config_manager = None
 
         config = get_config()
@@ -235,6 +241,7 @@ class TestGlobalConfigFunctions:
         """Test convenience configuration access functions."""
         # Clear any existing global instance
         import advanced_image_sensor_interface.config.constants as config_module
+
         config_module._config_manager = None
 
         timing = get_timing_config()
@@ -247,7 +254,7 @@ class TestGlobalConfigFunctions:
         assert isinstance(security, SecurityConfig)
         assert isinstance(processing, ProcessingConfig)
         assert isinstance(mipi, MIPIConfig)
-        assert isinstance(testing, TestingConfiguration)
+        assert isinstance(testing, QAConfiguration)
 
 
 class TestConfigIntegration:

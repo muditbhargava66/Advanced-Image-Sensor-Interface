@@ -6,7 +6,8 @@ replacing hardcoded magic numbers with named constants for better maintainabilit
 """
 
 import os
-from dataclasses import dataclass
+import threading
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -33,17 +34,37 @@ class TimingConfig:
     TRANSFER_TIME_PER_MB: float = 0.1
 
 
+@dataclass
 class SecurityConfig:
-    """Security and validation configuration constants."""
+    """Security and validation configuration constants.
 
-    def __init__(self):
-        """Initialize security configuration with dynamic limits."""
-        # Buffer limits
-        self.MAX_IMAGE_SIZE: int = 100 * 1024 * 1024  # 100MB
-        self.MAX_BUFFER_SIZE: int = 1024 * 1024 * 1024  # 1GB
-        self.MAX_CONCURRENT_OPERATIONS: int = 10
+    ARCH-5: Converted from plain class to dataclass with typed fields
+    and grouped attribute documentation.
+    """
 
-        # Dynamic limits based on system resources
+    # -- Buffer limits --
+    MAX_IMAGE_SIZE: int = 100 * 1024 * 1024  # 100 MB
+    MAX_BUFFER_SIZE: int = 1024 * 1024 * 1024  # 1 GB
+    MAX_CONCURRENT_OPERATIONS: int = 10
+    MAX_MEMORY_USAGE: int = field(init=False)
+
+    # -- Power limits --
+    MAX_VOLTAGE: float = 5.0
+    MIN_VOLTAGE: float = 0.0
+    MAX_CURRENT: float = 10.0
+    MAX_POWER: float = 50.0  # 50 W
+    MAX_TEMPERATURE: float = 150.0  # 150 C
+
+    # -- Communication limits --
+    MAX_FRAME_RATE: float = 1000.0  # 1000 fps
+    MAX_DATA_RATE: float = 50.0  # 50 Gbps
+
+    # -- Timeout settings --
+    OPERATION_TIMEOUT: float = 30.0  # 30 seconds
+    TRANSMISSION_TIMEOUT: float = 10.0  # 10 seconds
+
+    def __post_init__(self) -> None:
+        """Derive dynamic limits based on system resources."""
         try:
             import psutil
 
@@ -52,21 +73,6 @@ class SecurityConfig:
             self.MAX_MEMORY_USAGE = min(self.MAX_BUFFER_SIZE, system_memory // 4)
         except ImportError:
             self.MAX_MEMORY_USAGE = self.MAX_BUFFER_SIZE
-
-        # Power limits
-        self.MAX_VOLTAGE: float = 5.0
-        self.MIN_VOLTAGE: float = 0.0
-        self.MAX_CURRENT: float = 10.0
-        self.MAX_POWER: float = 50.0  # 50W
-        self.MAX_TEMPERATURE: float = 150.0  # 150°C
-
-        # Communication limits
-        self.MAX_FRAME_RATE: float = 1000.0  # 1000 fps
-        self.MAX_DATA_RATE: float = 50.0  # 50 Gbps
-
-        # Timeout settings
-        self.OPERATION_TIMEOUT: float = 30.0  # 30 seconds
-        self.TRANSMISSION_TIMEOUT: float = 10.0  # 10 seconds
 
 
 @dataclass
@@ -93,8 +99,13 @@ class ProcessingConfig:
 
 
 @dataclass
-class MIPIConfig:
-    """MIPI protocol configuration constants."""
+class MIPISystemLimits:
+    """System-wide MIPI protocol limits and thresholds.
+
+    NOTE: This is distinct from ``protocol.mipi.driver.MIPIConfig``
+    (which configures a single driver instance). This class defines
+    the global operating envelope for MIPI links.
+    """
 
     # Lane configuration
     MIN_LANES: int = 1
@@ -122,8 +133,12 @@ class MIPIConfig:
     MAX_EFFICIENCY: float = 0.95  # 95%
 
 
+# ARCH-1: Backward-compatible alias
+MIPIConfig = MIPISystemLimits
+
+
 @dataclass
-class TestingConfiguration:
+class QAConfiguration:
     """Testing configuration constants."""
 
     # Test data generation
@@ -155,8 +170,8 @@ class ConfigManager:
         self.timing = TimingConfig()
         self.security = SecurityConfig()
         self.processing = ProcessingConfig()
-        self.mipi = MIPIConfig()
-        self.testing = TestingConfiguration()
+        self.mipi = MIPISystemLimits()
+        self.testing = QAConfiguration()
 
         # Apply environment-specific overrides
         self._apply_environment_overrides()
@@ -209,13 +224,16 @@ class ConfigManager:
             self.processing.NOISE_REDUCTION_SIGMA_MULTIPLIER = float(os.environ["AISI_NOISE_SIGMA_MULT"])
 
 
-# Global configuration instance
+# ARCH-4: Lock for thread-safe lazy initialization
+_config_lock = threading.Lock()
 _config_manager = None
 
 
 def get_config(environment: str | None = None) -> ConfigManager:
     """
     Get the global configuration manager instance.
+
+    Thread-safe via double-checked locking.
 
     Args:
         environment: Environment type (only used on first call)
@@ -225,9 +243,12 @@ def get_config(environment: str | None = None) -> ConfigManager:
     """
     global _config_manager
     if _config_manager is None:
-        env = environment or os.environ.get("AISI_ENVIRONMENT", "production")
-        _config_manager = ConfigManager(env)
-        _config_manager.update_from_env()
+        with _config_lock:
+            # Double-check after acquiring the lock
+            if _config_manager is None:
+                env = environment or os.environ.get("AISI_ENVIRONMENT", "production")
+                _config_manager = ConfigManager(env)
+                _config_manager.update_from_env()
     return _config_manager
 
 
@@ -247,11 +268,11 @@ def get_processing_config() -> ProcessingConfig:
     return get_config().processing
 
 
-def get_mipi_config() -> MIPIConfig:
-    """Get MIPI configuration."""
+def get_mipi_config() -> MIPISystemLimits:
+    """Get MIPI system limits configuration."""
     return get_config().mipi
 
 
-def get_test_config() -> TestingConfiguration:
+def get_test_config() -> QAConfiguration:
     """Get test configuration."""
     return get_config().testing

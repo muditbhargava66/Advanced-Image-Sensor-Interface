@@ -1,4 +1,4 @@
-"""Advanced Power Management for v2.0.0.
+"""Advanced Power Management.
 
 This module provides advanced power management capabilities including:
 - Dynamic power state management
@@ -760,3 +760,372 @@ def create_power_config_for_mobile() -> PowerConfiguration:
         battery_critical_threshold=10.0,
         max_frequency_mhz=800.0,
     )
+
+
+# ============================================================================
+# Multi-System Power Management
+# ============================================================================
+
+
+@dataclass
+class SensorPowerProfile:
+    """Power profile for an individual sensor in an array."""
+
+    sensor_id: str
+    max_power_watts: float = 1.0
+    idle_power_watts: float = 0.1
+    priority: int = 1  # 1 = highest priority
+    can_be_disabled: bool = True
+    current_state: PowerState = PowerState.ACTIVE
+    current_power_watts: float = 0.0
+
+
+@dataclass
+class PowerBudget:
+    """Power budget configuration for multi-sensor systems."""
+
+    total_budget_watts: float = 10.0
+    reserve_watts: float = 2.0  # Reserved for critical operations
+    per_sensor_limit_watts: Optional[float] = None
+    enable_dynamic_allocation: bool = True
+    priority_based_allocation: bool = True
+
+
+class PowerBudgetAllocator:
+    """
+    Allocates power budget across multiple sensors and ISPs.
+
+    Implements priority-based power allocation with support for
+    dynamic reallocation based on workload.
+    """
+
+    def __init__(self, budget: Optional[PowerBudget] = None) -> None:
+        """
+        Initialize power budget allocator.
+
+        Args:
+            budget: Power budget configuration
+        """
+        self.budget = budget or PowerBudget()
+        self._sensors: dict[str, SensorPowerProfile] = {}
+        self._allocations: dict[str, float] = {}
+        self._lock = threading.RLock()
+
+    def register_sensor(self, profile: SensorPowerProfile) -> None:
+        """
+        Register a sensor with the power allocator.
+
+        Args:
+            profile: Sensor power profile
+        """
+        with self._lock:
+            self._sensors[profile.sensor_id] = profile
+            self._allocations[profile.sensor_id] = 0.0
+            logger.info(f"Registered sensor '{profile.sensor_id}' with power allocator")
+
+    def unregister_sensor(self, sensor_id: str) -> None:
+        """Remove a sensor from the power allocator."""
+        with self._lock:
+            if sensor_id in self._sensors:
+                del self._sensors[sensor_id]
+                del self._allocations[sensor_id]
+                logger.info(f"Unregistered sensor '{sensor_id}'")
+
+    def allocate_power(self) -> dict[str, float]:
+        """
+        Allocate power budget to all registered sensors.
+
+        Returns:
+            Dictionary mapping sensor_id to allocated power in watts
+        """
+        with self._lock:
+            available_power = self.budget.total_budget_watts - self.budget.reserve_watts
+
+            if self.budget.priority_based_allocation:
+                return self._priority_allocation(available_power)
+            else:
+                return self._equal_allocation(available_power)
+
+    def _priority_allocation(self, available_power: float) -> dict[str, float]:
+        """Allocate power based on sensor priorities."""
+        # Sort sensors by priority (lower number = higher priority)
+        sorted_sensors = sorted(self._sensors.values(), key=lambda s: s.priority)
+
+        remaining_power = available_power
+        allocations = {}
+
+        for sensor in sorted_sensors:
+            if remaining_power <= 0:
+                allocations[sensor.sensor_id] = sensor.idle_power_watts
+                continue
+
+            # Allocate up to max power or remaining budget
+            requested = sensor.max_power_watts
+            if self.budget.per_sensor_limit_watts:
+                requested = min(requested, self.budget.per_sensor_limit_watts)
+
+            allocated = min(requested, remaining_power)
+            allocations[sensor.sensor_id] = allocated
+            remaining_power -= allocated
+
+        self._allocations = allocations
+        return allocations.copy()
+
+    def _equal_allocation(self, available_power: float) -> dict[str, float]:
+        """Allocate power equally among all sensors."""
+        sensor_count = len(self._sensors)
+        if sensor_count == 0:
+            return {}
+
+        per_sensor = available_power / sensor_count
+        if self.budget.per_sensor_limit_watts:
+            per_sensor = min(per_sensor, self.budget.per_sensor_limit_watts)
+
+        allocations = {}
+        for sensor_id, profile in self._sensors.items():
+            allocations[sensor_id] = min(per_sensor, profile.max_power_watts)
+
+        self._allocations = allocations
+        return allocations.copy()
+
+    def get_current_allocations(self) -> dict[str, float]:
+        """Get current power allocations."""
+        with self._lock:
+            return self._allocations.copy()
+
+    def get_total_allocated(self) -> float:
+        """Get total allocated power."""
+        with self._lock:
+            return sum(self._allocations.values())
+
+    def get_available_power(self) -> float:
+        """Get power available for new allocations."""
+        return self.budget.total_budget_watts - self.budget.reserve_watts - self.get_total_allocated()
+
+    def request_additional_power(self, sensor_id: str, additional_watts: float) -> bool:
+        """
+        Request additional power for a sensor.
+
+        Args:
+            sensor_id: Sensor requesting power
+            additional_watts: Additional power needed
+
+        Returns:
+            True if request granted
+        """
+        with self._lock:
+            if sensor_id not in self._sensors:
+                return False
+
+            available = self.get_available_power()
+            if additional_watts <= available:
+                self._allocations[sensor_id] += additional_watts
+                logger.info(f"Granted {additional_watts}W to sensor '{sensor_id}'")
+                return True
+            else:
+                logger.warning(f"Cannot grant {additional_watts}W to '{sensor_id}', only {available}W available")
+                return False
+
+
+class SensorArrayPowerManager:
+    """
+    Power management for multi-sensor and multi-ISP arrays.
+
+    Coordinates power states across multiple sensors with support for:
+    - Synchronized power transitions
+    - Power budget enforcement
+    - Cascading power-down strategies
+    - Priority-based power allocation
+    """
+
+    def __init__(self, budget: Optional[PowerBudget] = None, config: Optional[PowerConfiguration] = None) -> None:
+        """
+        Initialize sensor array power manager.
+
+        Args:
+            budget: Power budget for the array
+            config: General power configuration
+        """
+        self.config = config or PowerConfiguration()
+        self.allocator = PowerBudgetAllocator(budget)
+        self._sensor_managers: dict[str, AdvancedPowerManager] = {}
+        self._lock = threading.RLock()
+        self._monitoring_active = False
+        self._monitoring_thread: Optional[threading.Thread] = None
+
+        logger.info("Sensor array power manager initialized")
+
+    def add_sensor(self, sensor_id: str, profile: SensorPowerProfile, manager: Optional[AdvancedPowerManager] = None) -> None:
+        """
+        Add a sensor to the array.
+
+        Args:
+            sensor_id: Unique sensor identifier
+            profile: Sensor power profile
+            manager: Optional existing power manager (creates new if None)
+        """
+        with self._lock:
+            self.allocator.register_sensor(profile)
+            self._sensor_managers[sensor_id] = manager or AdvancedPowerManager(self.config)
+            logger.info(f"Added sensor '{sensor_id}' to array")
+
+    def remove_sensor(self, sensor_id: str) -> None:
+        """Remove a sensor from the array."""
+        with self._lock:
+            self.allocator.unregister_sensor(sensor_id)
+            if sensor_id in self._sensor_managers:
+                self._sensor_managers[sensor_id].stop_monitoring()
+                del self._sensor_managers[sensor_id]
+            logger.info(f"Removed sensor '{sensor_id}' from array")
+
+    def start_monitoring(self) -> bool:
+        """Start power monitoring for all sensors."""
+        with self._lock:
+            # Allocate power budget
+            self.allocator.allocate_power()
+
+            # Start monitoring on all sensors
+            for sensor_id, manager in self._sensor_managers.items():
+                if not manager.start_monitoring():
+                    logger.error(f"Failed to start monitoring for sensor '{sensor_id}'")
+
+            self._monitoring_active = True
+            logger.info(f"Started monitoring for {len(self._sensor_managers)} sensors")
+            return True
+
+    def stop_monitoring(self) -> bool:
+        """Stop power monitoring for all sensors."""
+        with self._lock:
+            for sensor_id, manager in self._sensor_managers.items():
+                manager.stop_monitoring()
+
+            self._monitoring_active = False
+            logger.info("Stopped array power monitoring")
+            return True
+
+    def synchronized_transition(self, target_state: PowerState) -> dict[str, bool]:
+        """
+        Transition all sensors to a target state simultaneously.
+
+        Args:
+            target_state: Target power state for all sensors
+
+        Returns:
+            Dictionary mapping sensor_id to transition success
+        """
+        results = {}
+
+        with self._lock:
+            logger.info(f"Synchronized transition to {target_state.value}")
+
+            for sensor_id, manager in self._sensor_managers.items():
+                success = manager.transition_to_state(target_state, force=True)
+                results[sensor_id] = success
+
+                if not success:
+                    logger.warning(f"Sensor '{sensor_id}' failed to transition")
+
+        return results
+
+    def cascading_power_down(self, preserve_priority: int = 1) -> list[str]:
+        """
+        Power down sensors in priority order, preserving high-priority sensors.
+
+        Args:
+            preserve_priority: Sensors with this priority or higher are preserved
+
+        Returns:
+            List of sensor IDs that were powered down
+        """
+        powered_down = []
+
+        with self._lock:
+            # Get sensors sorted by priority (lowest priority first for power down)
+            sensors = sorted(self.allocator._sensors.items(), key=lambda x: x[1].priority, reverse=True)
+
+            for sensor_id, profile in sensors:
+                if profile.priority > preserve_priority and profile.can_be_disabled:
+                    manager = self._sensor_managers.get(sensor_id)
+                    if manager:
+                        manager.transition_to_state(PowerState.STANDBY)
+                        powered_down.append(sensor_id)
+                        logger.info(f"Powered down sensor '{sensor_id}' (priority {profile.priority})")
+
+        return powered_down
+
+    def get_array_metrics(self) -> dict[str, any]:
+        """
+        Get aggregated power metrics for the entire array.
+
+        Returns:
+            Dictionary with array-level metrics
+        """
+        with self._lock:
+            total_power = 0.0
+            sensor_metrics = {}
+
+            for sensor_id, manager in self._sensor_managers.items():
+                metrics = manager.get_power_metrics()
+                total_power += metrics.total_power
+                sensor_metrics[sensor_id] = {
+                    "power_watts": metrics.total_power,
+                    "temperature_c": metrics.temperature_celsius,
+                    "state": manager.current_state.value,
+                }
+
+            return {
+                "total_sensors": len(self._sensor_managers),
+                "total_power_watts": total_power,
+                "budget_watts": self.allocator.budget.total_budget_watts,
+                "available_watts": self.allocator.get_available_power(),
+                "sensors": sensor_metrics,
+            }
+
+    def set_array_power_mode(self, mode: PowerMode) -> dict[str, bool]:
+        """
+        Set power mode for all sensors in the array.
+
+        Args:
+            mode: Power mode to apply
+
+        Returns:
+            Dictionary mapping sensor_id to success status
+        """
+        results = {}
+
+        with self._lock:
+            for sensor_id, manager in self._sensor_managers.items():
+                results[sensor_id] = manager.set_power_mode(mode)
+
+        return results
+
+
+def create_power_config_for_multi_sensor() -> tuple[PowerBudget, PowerConfiguration]:
+    """Create power configuration for multi-sensor arrays.
+
+    Returns:
+        Tuple of (PowerBudget, PowerConfiguration)
+    """
+    budget = PowerBudget(
+        total_budget_watts=15.0,
+        reserve_watts=3.0,
+        per_sensor_limit_watts=3.0,
+        enable_dynamic_allocation=True,
+        priority_based_allocation=True,
+    )
+
+    config = PowerConfiguration(
+        power_mode=PowerMode.BALANCED,
+        auto_power_management=True,
+        enable_thermal_monitoring=True,
+        thermal_update_interval_ms=500.0,
+        temperature_thresholds={
+            "normal_max": 50.0,
+            "warm_max": 65.0,
+            "hot_max": 80.0,
+            "critical_max": 90.0,
+            "emergency_max": 100.0,
+        },
+    )
+
+    return budget, config

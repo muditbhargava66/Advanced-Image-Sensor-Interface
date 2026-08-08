@@ -13,46 +13,63 @@ The system supports four major camera interface protocols:
 
 ## Protocol Comparison
 
-| Feature | MIPI CSI-2 | CoaXPress | GigE Vision | USB3 Vision |
-|---------|------------|-----------|-------------|-------------|
-| **Max Bandwidth** | 4.5 Gbps | 12.5 Gbps | 1 Gbps | 5 Gbps |
-| **Cable Length** | <1m | 100m+ | 100m+ | 5m |
-| **Power over Cable** | No | Yes | Yes (PoE+) | Yes |
-| **Typical Use Case** | Mobile/Embedded | Industrial | Network/Security | Desktop/Portable |
+| Feature | MIPI CSI-2 v2.5 | CoaXPress CXP-12 | GigE Vision RoCE | USB3 Vision |
+|---------|-----------------|------------------|------------------|-------------|
+| **Max Bandwidth** | 18 Gbps (4-lane) | 50 Gbps (4-lane) | 100 Gbps | 5 Gbps |
+| **Per-Lane Rate** | 4.5 Gbps | 12.5 Gbps | N/A | 5 Gbps |
+| **Cable Length** | <1m | 35m | 100m+ | 5m |
+| **Power over Cable** | No | Yes (PoCXP) | Yes (PoE+) | Yes |
+| **Typical Use Case** | Mobile/Embedded | Industrial/Scientific | Network/Security | Desktop/Portable |
 | **Latency** | Ultra-low | Low | Medium | Low |
 | **Cost** | Low | High | Medium | Low |
+| **Security** | AES-GCM (v3.0.0) | — | — | — |
+| **Zero-Copy** | — | — | RDMA (v3.0.0) | — |
+| **Adaptive EQ** | Yes (v3.0.0) | — | — | — |
 
 ## MIPI CSI-2 (Camera Serial Interface)
 
 ### Overview
 MIPI CSI-2 is the most widely used camera interface in mobile devices and embedded systems. It provides high-speed, low-power, and low-latency image data transmission.
 
+**v3.0.0 Enhancements:**
+- D-PHY v2.5 support with 4.5 Gbps per lane
+- Adaptive equalization for signal integrity
+- Security framework with AES-GCM encryption
+
 ### Key Features
-- **High Speed**: Up to 4.5 Gbps per lane
+- **High Speed**: Up to 4.5 Gbps per lane (D-PHY v2.5)
 - **Multiple Lanes**: 1-4 data lanes supported
 - **Low Power**: Optimized for battery-powered devices
 - **Packet-Based**: Structured data packets with error correction
 - **Real-Time**: Ultra-low latency for real-time applications
+- **Security**: AES-GCM encryption with key management (v3.0.0)
 
 ### Technical Specifications
 ```python
 # MIPI CSI-2 Configuration Example
-from advanced_image_sensor_interface.sensor_interface.protocol.mipi import MIPIDriver, MIPIConfig
-
-config = MIPIConfig(
-    lanes=4,                    # Number of data lanes (1-4)
-    data_rate_mbps=2500,       # Data rate per lane in Mbps
-    pixel_format="RAW12",       # Pixel format
-    resolution=(1920, 1080),    # Image resolution
-    frame_rate=60,              # Frames per second
-    virtual_channel=0,          # Virtual channel ID (0-3)
-    continuous_clock=True,      # Continuous clock mode
-    ecc_enabled=True,          # Error correction enabled
-    crc_enabled=True           # CRC validation enabled
+from advanced_image_sensor_interface.sensor_interface.protocol.mipi import (
+    MIPIProtocolDriver, MIPIConfig
 )
 
-driver = MIPIDriver(config)
+config = MIPIConfig(
+    lanes=4,                      # Number of data lanes (1-4)
+    data_rate_mbps=2500.0,        # Data rate per lane in Mbps
+    pixel_format="RAW12",         # Pixel format
+    resolution=(1920, 1080),      # Image resolution
+    frame_rate=60.0,              # Frames per second
+    virtual_channel=0,            # Virtual channel ID (0-3)
+    continuous_clock=True,        # Continuous clock mode
+    enable_ecc=True,              # Error correction enabled
+    enable_crc=True,              # CRC validation enabled
+)
+
+driver = MIPIProtocolDriver(config)
+driver.connect()
+driver.start_streaming()
+frame = driver.capture_frame()
+stats = driver.get_statistics()
 ```
+
 
 ### Data Formats Supported
 - **RAW8**: 8-bit raw Bayer data
@@ -141,6 +158,39 @@ power_config = {
 }
 ```
 
+### Link Layer Features
+CoaXPress 2.1 includes advanced link management:
+
+```python
+# Access CXP link layer through the driver
+driver = CoaXPressDriver(config)
+driver.connect()
+
+# Get link status
+bandwidth = driver.get_total_bandwidth()  # Total Gbps across all links
+link_count = driver.link_layer.num_links  # Number of active links
+
+# Check individual link status
+for i in range(link_count):
+    status = driver.link_layer.get_link_status(i)
+    print(f"Link {i}: {status}")
+```
+
+### Hardware Triggering
+CoaXPress supports precise hardware triggering:
+
+```python
+# Configure hardware trigger
+driver.trigger_controller.configure("hardware_line0")
+
+# Or use software trigger
+driver.trigger_controller.configure("software")
+driver.trigger_controller.software_trigger()
+
+# GPIO control for external devices
+driver.trigger_controller.set_gpio_line("Line0", True)
+```
+
 ### Applications
 - **Industrial Inspection**: High-speed quality control
 - **Scientific Imaging**: Research and analysis
@@ -164,26 +214,29 @@ GigE Vision is an interface standard for industrial cameras using Gigabit Ethern
 ```python
 # GigE Vision Configuration Example
 from advanced_image_sensor_interface.sensor_interface.protocol.gige import (
-    GigEDriver, GigEConfig
+    GigEProtocolDriver, GigEVisionConfig, GigESpeed
 )
 
-config = GigEConfig(
-    ip_address="192.168.1.100",  # Camera IP address
-    subnet_mask="255.255.255.0", # Network subnet mask
-    gateway="192.168.1.1",       # Network gateway
-    port=3956,                   # GigE Vision port
-    packet_size=1500,           # Network packet size
-    packet_delay=0,             # Inter-packet delay
-    pixel_format="BayerRG8",    # Pixel format
-    resolution=(1920, 1200),    # Image resolution
-    frame_rate=25,              # Frames per second
-    trigger_mode="continuous",   # Trigger mode
-    exposure_time=10000,        # Exposure time in microseconds
-    gain=1.0                    # Analog gain
+config = GigEVisionConfig(
+    ip_address="192.168.1.100",    # Camera IP address
+    speed=GigESpeed.GIGE_10G,      # 10 GigE for max bandwidth
+    port=3956,                     # GigE Vision port
+    packet_size=9000,              # Jumbo frames
+    inter_packet_delay=0,          # No delay between packets
+    pixel_format="BayerRG8",       # Pixel format
+    resolution=(1920, 1200),       # Image resolution
+    frame_rate=25.0,               # Frames per second
+    heartbeat_timeout_ms=3000,     # Heartbeat timeout
+    enable_roce=False,             # RoCE acceleration (optional)
 )
 
-driver = GigEDriver(config)
+driver = GigEProtocolDriver(config)
+driver.connect()
+driver.start_streaming()
+frame = driver.capture_frame()
+stats = driver.get_statistics()
 ```
+
 
 ### Network Configuration
 ```python
@@ -236,26 +289,29 @@ USB3 Vision is a standard for USB 3.0-based cameras, providing high bandwidth an
 ```python
 # USB3 Vision Configuration Example
 from advanced_image_sensor_interface.sensor_interface.protocol.usb3 import (
-    USB3Driver, USB3Config
+    USB3VisionDriver, USB3VisionConfig
 )
 
-config = USB3Config(
-    device_id="USB3Vision_Device",  # Device identifier
+config = USB3VisionConfig(
+    usb_speed="SuperSpeedPlus",    # USB 3.2 - 10 Gbps
     vendor_id=0x1234,              # USB vendor ID
     product_id=0x5678,             # USB product ID
-    endpoint_address=0x81,         # Bulk transfer endpoint
-    transfer_size=1048576,         # Transfer size (1MB)
-    num_transfers=8,               # Number of concurrent transfers
     pixel_format="BayerGR8",       # Pixel format
     resolution=(1280, 1024),       # Image resolution
-    frame_rate=60,                 # Frames per second
-    trigger_mode="software",       # Trigger mode
-    exposure_auto=True,            # Auto exposure
-    gain_auto=True                 # Auto gain
+    frame_rate=60.0,               # Frames per second
+    buffer_count=10,               # Frame buffer count
+    packet_size=1024,              # Transfer packet size
+    exposure_time_us=10000.0,      # Exposure time
+    gain=1.0,                      # Analog gain
 )
 
-driver = USB3Driver(config)
+driver = USB3VisionDriver(config)
+driver.connect()
+driver.start_streaming()
+frame = driver.capture_frame()
+stats = driver.get_statistics()
 ```
+
 
 ### USB Configuration
 ```python
@@ -267,6 +323,32 @@ usb_settings = {
     "reset_on_error": True,         # Reset device on error
     "power_management": False       # Disable USB power management
 }
+```
+
+### GenICam Feature Access
+USB3 Vision implements the GenICam SFNC (Standard Features Naming Convention):
+
+```python
+# Access GenICam features through the driver
+driver = USB3VisionDriver(config)
+driver.connect()
+
+# Read features
+gain = driver.get_feature("Gain")
+exposure = driver.get_feature("ExposureTime")
+pixel_format = driver.get_feature("PixelFormat")
+
+# Write features
+driver.set_feature("Gain", 5.0)
+driver.set_feature("ExposureTime", 20000.0)  # 20ms
+driver.set_feature("TriggerMode", "On")
+
+# Available SFNC features include:
+# - Device: DeviceVendorName, DeviceModelName, DeviceSerialNumber
+# - Image: Width, Height, PixelFormat, OffsetX, OffsetY
+# - Acquisition: AcquisitionMode, AcquisitionFrameRate, ExposureTime
+# - Analog: Gain, GainAuto, BlackLevel, Gamma
+# - Trigger: TriggerMode, TriggerSource, TriggerActivation
 ```
 
 ### Performance Considerations

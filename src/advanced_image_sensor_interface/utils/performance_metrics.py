@@ -24,22 +24,19 @@ logger = logging.getLogger(__name__)
 
 
 def calculate_snr(signal: np.ndarray, noise: np.ndarray) -> float:
-    """
-    Calculate the Signal-to-Noise Ratio (SNR) in decibels.
+    """Calculate the Signal-to-Noise Ratio (SNR) in decibels.
 
     Args:
-    ----
-        signal (np.ndarray): The clean signal or reference image.
-        noise (np.ndarray): The noise component or the difference between the noisy and clean signal.
+        signal: The clean signal or reference image.
+        noise: The noise component or the difference between the noisy
+            and clean signal.
 
     Returns:
-    -------
-        float: The calculated SNR in decibels.
+        The calculated SNR in decibels, or float("inf") if noise power
+        is zero.
 
     Raises:
-    ------
         ValueError: If the shapes of signal and noise do not match.
-
     """
     if signal.shape != noise.shape:
         raise ValueError("Signal and noise must have the same shape")
@@ -56,17 +53,14 @@ def calculate_snr(signal: np.ndarray, noise: np.ndarray) -> float:
 
 
 def calculate_dynamic_range(image: np.ndarray) -> float:
-    """
-    Calculate the dynamic range of an image in decibels.
+    """Calculate the dynamic range of an image in decibels.
 
     Args:
-    ----
-        image (np.ndarray): The input image.
+        image: The input image.
 
     Returns:
-    -------
-        float: The calculated dynamic range in decibels.
-
+        The calculated dynamic range in decibels. Returns 0.0 if the
+        image contains zero-valued pixels.
     """
     # Check if the image contains any zero values
     if np.min(image) == 0:
@@ -84,24 +78,20 @@ def calculate_dynamic_range(image: np.ndarray) -> float:
 
 
 def calculate_color_accuracy(reference_colors: np.ndarray, measured_colors: np.ndarray) -> tuple[float, np.ndarray]:
-    """
-    Calculate color accuracy using a simplified Delta E formula (Euclidean distance).
-    This replaces the colormath library implementation which has compatibility issues
-    with newer NumPy versions.
+    """Calculate color accuracy using a simplified Delta E formula.
+
+    Uses Euclidean distance between normalised RGB vectors, scaled to
+    be comparable to standard Delta E values.
 
     Args:
-    ----
-        reference_colors (np.ndarray): Array of reference RGB colors, shape (N, 3).
-        measured_colors (np.ndarray): Array of measured RGB colors, shape (N, 3).
+        reference_colors: Array of reference RGB colors, shape (N, 3).
+        measured_colors: Array of measured RGB colors, shape (N, 3).
 
     Returns:
-    -------
-        Tuple[float, np.ndarray]: Mean Delta E value and array of Delta E values for each color.
+        A tuple of (mean Delta E value, per-color Delta E values).
 
     Raises:
-    ------
         ValueError: If the shapes of reference_colors and measured_colors do not match.
-
     """
     if reference_colors.shape != measured_colors.shape:
         raise ValueError("Reference and measured color arrays must have the same shape")

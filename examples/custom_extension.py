@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 try:
-    from advanced_image_sensor_interface import MIPIConfig, MIPIDriver
+    from advanced_image_sensor_interface.sensor_interface.protocol.mipi import MIPIConfig, MIPIProtocolDriver
     from advanced_image_sensor_interface.utils.noise_reduction import (
         NoiseReducer,
         NoiseReducerFactory,
@@ -36,7 +36,7 @@ except ImportError as e:
 
 
 # Example 1: Custom MIPI Driver Extension
-class HighSpeedMIPIDriver(MIPIDriver):
+class HighSpeedMIPIDriver(MIPIProtocolDriver):
     """
     Custom MIPI driver with high-speed optimizations.
 

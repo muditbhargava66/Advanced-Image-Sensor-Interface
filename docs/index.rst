@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Advanced Image Sensor Interface Documentation (v2.0.0)
+Advanced Image Sensor Interface Documentation (v3.0.0)
 ======================================================
 
 Welcome to the Advanced Image Sensor Interface documentation! This is a comprehensive Python framework for camera interface protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities.
@@ -13,13 +13,16 @@ Overview
 
 The Advanced Image Sensor Interface provides:
 
-* **Multi-Protocol Support**: MIPI CSI-2, CoaXPress, GigE Vision, and USB3 Vision protocols
+* **Multi-Protocol Support**: MIPI CSI-2 (D-PHY v2.5), CoaXPress (CXP-12), GigE Vision (RoCE), and USB3 Vision protocols
 * **Advanced Image Processing**: HDR processing, RAW image pipeline, and GPU acceleration
 * **Multi-Sensor Synchronization**: Hardware and software synchronization with sub-millisecond accuracy
 * **Professional Calibration**: Comprehensive camera calibration with distortion correction
+* **Data Integrity**: CRC-32 validation and Reed-Solomon Forward Error Correction
+* **Lens Correction**: Real-time radial and tangential distortion correction
 * **Enhanced Buffer Management**: Asynchronous buffer operations with intelligent memory pooling
-* **Power Management**: Advanced power states and thermal management
-* **Comprehensive Testing**: 200+ unit tests with extensive protocol and integration testing
+* **Power Management**: Advanced power states, thermal management, and multi-system coordination
+* **Security Framework**: MIPI AES-GCM encryption with key management
+* **Comprehensive Testing**: 328 automated tests in the current suite
 * **Production-Ready**: 100% linting compliance and robust CI/CD pipeline
 
 Quick Start
@@ -55,14 +58,12 @@ Documentation Contents
 
    design_specs.md
    api_documentation.md
-   api_reference.md
    testing_guide.md
 
 .. toctree::
    :maxdepth: 2
    :caption: Camera Protocols:
 
-   protocols_index.md
    protocol_comparison_guide.md
    protocol_mipi_csi2.md
    protocol_coaxpress.md

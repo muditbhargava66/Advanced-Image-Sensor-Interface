@@ -1,8 +1,8 @@
 """
 Type definitions and annotations for the Advanced Image Sensor Interface.
 
-This module provides comprehensive type definitions to improve type safety
-and mypy compliance across the entire project.
+This module provides shared type definitions to improve type safety across
+maintained modules in the project.
 """
 
 import asyncio

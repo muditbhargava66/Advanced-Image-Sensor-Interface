@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+
 from advanced_image_sensor_interface.sensor_interface.power_management import PowerConfig, PowerManager
 
 

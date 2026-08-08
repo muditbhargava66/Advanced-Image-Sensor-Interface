@@ -6,6 +6,7 @@ import threading
 import time
 
 import pytest
+
 from advanced_image_sensor_interface.utils.buffer_manager import (
     AsyncBufferManager,
     BufferManager,
@@ -332,6 +333,7 @@ class TestGlobalBufferManager:
         """Test that get_buffer_manager returns singleton."""
         # Clear any existing global instance
         import advanced_image_sensor_interface.utils.buffer_manager as buffer_module
+
         buffer_module._global_buffer_manager = None
 
         manager1 = get_buffer_manager()
@@ -344,6 +346,7 @@ class TestGlobalBufferManager:
         """Test getting async buffer manager."""
         # Clear any existing global instance
         import advanced_image_sensor_interface.utils.buffer_manager as buffer_module
+
         buffer_module._global_buffer_manager = None
 
         manager = get_buffer_manager(async_mode=True)
@@ -354,6 +357,7 @@ class TestGlobalBufferManager:
         """Test get_buffer_manager with custom parameters."""
         # Clear any existing global instance
         import advanced_image_sensor_interface.utils.buffer_manager as buffer_module
+
         buffer_module._global_buffer_manager = None
 
         manager = get_buffer_manager(pool_size=20, max_buffer_size=2048)

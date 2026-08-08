@@ -13,6 +13,7 @@ Usage:
 """
 
 import pytest
+
 from advanced_image_sensor_interface.sensor_interface.mipi_protocol import (
     DataType,
     LongPacket,

@@ -18,6 +18,7 @@ import time
 
 import numpy as np
 import pytest
+
 from advanced_image_sensor_interface.sensor_interface.security import BufferGuard, InputValidator, SecurityLimits, SecurityManager
 
 

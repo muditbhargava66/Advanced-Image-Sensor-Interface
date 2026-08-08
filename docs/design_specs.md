@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document outlines the design specifications for the Advanced Image Sensor Interface project (v2.0.0), a comprehensive camera interface framework supporting multiple protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities.
+This document outlines the design specifications for the Advanced Image Sensor Interface project (v3.0.0), a comprehensive camera interface framework supporting multiple protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities.
 
 ## 2. System Architecture
 
@@ -269,13 +269,13 @@ class AsyncBufferManager:
 
 ```python
 class PowerState(Enum):
-    ACTIVE = "active"          # Full performance
-    BALANCED = "balanced"      # Balanced performance/power
-    POWER_SAVE = "power_save"  # Reduced power consumption
-    SLEEP = "sleep"           # Low power sleep mode
+    ACTIVE = "active"           # Full performance
+    IDLE = "idle"              # Low activity, ready to respond
+    STANDBY = "standby"        # Reduced power, partial state
+    SLEEP = "sleep"            # Low power sleep mode
+    DEEP_SLEEP = "deep_sleep"  # Very low power, slow wake
     HIBERNATE = "hibernate"    # Minimal power hibernation
-    SHUTDOWN = "shutdown"      # Complete shutdown
-    EMERGENCY = "emergency"    # Emergency power reduction
+    OFF = "off"                # Complete power off
 ```
 
 #### 2.7.2 Thermal Management
@@ -294,22 +294,20 @@ class PowerState(Enum):
 
 ### 2.8 Calibration System Architecture
 
-#### 2.8.1 Calibration Framework
+#### 2.8.1 Calibration Architecture
 
-```python
-class CalibrationFramework:
-    """Comprehensive calibration system."""
-    
-    def __init__(self):
-        self.calibrators = {
-            CalibrationType.INTRINSIC: IntrinsicCalibrator(),
-            CalibrationType.EXTRINSIC: ExtrinsicCalibrator(),
-            CalibrationType.STEREO: StereoCalibrator(),
-            CalibrationType.MULTI_CAMERA: MultiCameraCalibrator(),
-            CalibrationType.COLOR: ColorCalibrator(),
-            CalibrationType.TEMPORAL: TemporalCalibrator()
-        }
-```
+Calibration is implemented through the following components:
+
+- **Lens Correction**: `LensProfile` and `LensCorrectionPipeline` in
+  `utils/lens_correction.py` handle radial/tangential distortion.
+- **Color Calibration**: Color correction matrices in `RAWParameters`
+  and `SignalConfig`.
+- **Multi-Sensor Sync**: `MultiSensorSynchronizer` in
+  `sensor_interface/multi_sensor_sync.py` handles temporal alignment.
+
+The calibration framework is designed to be extensible: new calibration
+types can be added by implementing the `TimingStrategy`-style protocol
+interface and registering them with the processing pipeline.
 
 #### 2.8.2 Calibration Types
 
@@ -388,7 +386,7 @@ class ConfigurationManager:
 
 - **Test Coverage**: >95% unit test coverage
 - **Linting Compliance**: 100% ruff compliance
-- **Type Safety**: Full type annotation coverage
+- **Type Safety**: Expanded type annotations across maintained modules
 - **Documentation**: Comprehensive API documentation
 
 ### 4.2 Reliability
@@ -481,12 +479,22 @@ The project includes a thorough testing framework:
 - Designed for integration with modern SoCs and microprocessors
 - Supports common voltage rails (1.2V, 1.5V, 1.8V for main and 2.5V, 2.8V, 3.3V for I/O)
 
-## 6. Scalability and Future Improvements
+## 6. Completed Milestones (v3.0.0)
 
-- Support for MIPI D-PHY v2.5 for data rates up to 4.5 Gbps per lane
+- Support for MIPI D-PHY v2.5 for data rates up to 4.5 Gbps per lane ✅
+- Multi-system power management for multiple sensors and ISPs ✅
+- Real-time lens correction and distortion compensation ✅
+- Data integrity with CRC-32 and Reed-Solomon FEC ✅
+- CoaXPress CXP-12 at 50Gbps aggregate bandwidth ✅
+- GigE Vision RoCE for zero-copy RDMA transfers ✅
+- USB3 enhanced streaming with buffer pooling ✅
+- MIPI Security Framework with AES-GCM encryption ✅
+
+### Future (v3.1+)
+
 - Integration of machine learning-based noise reduction and image enhancement
-- Expansion of power management to support multiple sensors and ISPs
-- Implementation of real-time lens correction and distortion compensation
+- AI-driven image signal processor for automatic parameter tuning
+- Native 3D / depth support for disparity maps and depth calculation
 
 ## 7. Conclusion
 

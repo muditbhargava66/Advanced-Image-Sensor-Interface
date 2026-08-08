@@ -7,7 +7,7 @@ performance metrics, and system capabilities.
 
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from enum import Enum
 from typing import Any, Optional
 
@@ -66,7 +66,7 @@ class ProtocolSelector:
     the optimal protocol for a given application.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize protocol selector."""
         self.available_protocols: dict[ProtocolType, dict[str, Any]] = {}
         self.protocol_instances: dict[ProtocolType, ProtocolBase] = {}
@@ -137,6 +137,42 @@ class ProtocolSelector:
 
         except Exception as e:
             logger.error(f"Failed to register protocol {protocol_type.value}: {e}")
+            return False
+
+    def configure_protocol(self, protocol_type: ProtocolType, config: Any) -> bool:
+        """Backward-compatible helper that instantiates and registers a driver."""
+        try:
+            protocol_instance: ProtocolBase
+            if protocol_type == ProtocolType.MIPI:
+                from .protocol.mipi import MIPIProtocolDriver
+
+                protocol_instance = MIPIProtocolDriver(config)
+            elif protocol_type == ProtocolType.GIGE:
+                from .protocol.gige import GigEProtocolDriver
+
+                protocol_instance = GigEProtocolDriver(config)
+            elif protocol_type == ProtocolType.COAXPRESS:
+                from .protocol.coaxpress import CoaXPressDriver
+
+                protocol_instance = CoaXPressDriver(config)
+            elif protocol_type == ProtocolType.USB3:
+                from .protocol.usb3 import USB3VisionDriver
+
+                protocol_instance = USB3VisionDriver(config)
+            else:
+                raise ValueError(f"Unsupported protocol type: {protocol_type}")
+
+            if isinstance(config, dict):
+                config_dict = config
+            elif is_dataclass(config) and not isinstance(config, type):
+                config_dict = asdict(config)
+            else:
+                config_dict = vars(config).copy()
+
+            return self.register_protocol(protocol_type, protocol_instance, config_dict)
+
+        except Exception as e:
+            logger.error(f"Failed to configure protocol {protocol_type.value}: {e}")
             return False
 
     def unregister_protocol(self, protocol_type: ProtocolType) -> bool:
@@ -405,7 +441,7 @@ class ProtocolSelector:
             return {"error": "No performance history available"}
 
         # Calculate statistics
-        metrics_keys = set()
+        metrics_keys: set[str] = set()
         for entry in history:
             metrics_keys.update(entry.keys())
         metrics_keys.discard("timestamp")

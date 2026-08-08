@@ -16,6 +16,7 @@ Usage:
 
 import numpy as np
 import pytest
+
 from advanced_image_sensor_interface.utils.performance_metrics import (
     calculate_color_accuracy,
     calculate_dynamic_range,

@@ -29,10 +29,10 @@ Please provide links to:
 - [ ] Sample code (if available)
 
 **Testing Environment**
-- **Platform**: [e.g. Raspberry Pi 4, NVIDIA Jetson, x86_64 PC]
-- **OS**: [e.g. Ubuntu 20.04, Raspberry Pi OS, Windows 10]
-- **Python version**: [e.g. 3.10.5]
-- **Package version**: [e.g. 2.0.0]
+ - **Platform**: [e.g. Raspberry Pi 4, NVIDIA Jetson, x86_64 PC]
+ - **OS**: [e.g. Ubuntu 20.04, Raspberry Pi OS, Windows 10]
+ - **Python version**: [e.g. 3.10.5]
+ - **Package version**: [e.g. 3.0.0]
 
 **Expected Functionality**
 Describe what functionality you expect to work with this hardware:

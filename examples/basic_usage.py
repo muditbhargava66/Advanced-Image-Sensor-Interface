@@ -4,9 +4,6 @@ Basic Usage Example for Advanced Image Sensor Interface
 
 This example demonstrates the fundamental usage patterns with proper error handling,
 input validation, and realistic parameter definitions.
-
-Author: Advanced Image Sensor Interface Team
-Version: 2.0.0
 """
 
 import argparse
@@ -236,7 +233,7 @@ def raw_processing_demo(resolution: tuple[int, int]) -> None:
 
         # Process RAW to RGB
         try:
-            rgb_image = raw_processor.process_raw_to_rgb(raw_data)
+            rgb_image = raw_processor.process_raw_image(raw_data)
             logger.info(f"✓ RAW to RGB conversion: {rgb_image.shape}, dtype: {rgb_image.dtype}")
 
             # Get processing statistics

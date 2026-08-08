@@ -16,6 +16,7 @@ Usage:
 
 import numpy as np
 import pytest
+
 from advanced_image_sensor_interface.sensor_interface.image_validation import (
     BitDepthConverter,
     ImageFormat,

@@ -8,14 +8,14 @@ This document provides comprehensive guidance on testing the Advanced Image Sens
 
 The project uses the following testing tools:
 
-- **pytest**: Main testing framework for all tests (122 tests total)
+- **pytest**: Main testing framework for the full suite (328 collected tests in the current workspace)
 - **unittest.mock**: For mocking dependencies during testing
 - **pytest-cov**: For measuring test coverage
 - **pytest-asyncio**: For async test support
 - **numpy**: For data generation and validation in tests
 - **ruff**: For code linting and quality checks
 - **black**: For code formatting
-- **mypy & pyright**: For type checking
+- **mypy & pyright**: Static-analysis support for maintained source modules
 
 ## 3. Test Structure
 
@@ -24,18 +24,30 @@ The tests are organized in the following structure:
 ```
 tests/
 ├── __init__.py
-├── test_mipi_driver.py
-├── test_power_management.py
-├── test_signal_processing.py
-└── test_performance_metrics.py
+├── conftest.py                    # Shared fixtures
+├── test_buffer_manager.py         # Buffer management tests
+├── test_config.py                 # Configuration tests
+├── test_enhanced_features.py      # HDR, RAW, multi-sensor tests
+├── test_image_validation.py       # Image validation tests
+├── test_imaging_features.py       # D-PHY, data integrity, lens correction
+├── test_integration_pipelines.py  # End-to-end integration tests
+├── test_mipi_driver.py            # MIPI driver tests
+├── test_mipi_protocol.py          # MIPI protocol tests
+├── test_noise_reduction_coverage.py # Noise reduction algorithm tests
+├── test_performance_metrics.py    # Performance metrics tests
+├── test_power_management.py       # Power management tests
+├── test_protocol_extensions.py    # Security, CXP-12, RoCE, USB3 streaming
+├── test_protocols.py              # Protocol driver coverage (MIPI, GigE, USB3, CoaXPress)
+├── test_security.py               # Security framework tests
+└── test_signal_processing.py      # Signal processing tests
 ```
 
-Each test file corresponds to a specific module in the project:
+### Test Categories by Module
 
-- `test_mipi_driver.py`: Tests for the MIPI driver implementation
-- `test_power_management.py`: Tests for the power management system
-- `test_signal_processing.py`: Tests for the signal processing pipeline
-- `test_performance_metrics.py`: Tests for the performance metrics calculations
+- **Protocol Tests**: `test_protocols.py`, `test_protocol_extensions.py`, `test_mipi_driver.py`, `test_mipi_protocol.py`
+- **Feature Tests**: `test_enhanced_features.py`, `test_imaging_features.py`
+- **Core Tests**: `test_signal_processing.py`, `test_power_management.py`, `test_buffer_manager.py`
+- **Validation Tests**: `test_image_validation.py`, `test_security.py`, `test_config.py`
 
 ## 4. Running Tests
 
@@ -147,7 +159,7 @@ Use mocks to isolate the unit being tested:
 
 Example:
 ```python
-@patch('src.sensor_interface.mipi_driver.time.sleep')
+@patch("advanced_image_sensor_interface.sensor_interface.mipi_driver.time.sleep")
 def test_transmission_simulation(self, mock_sleep, mipi_driver):
     test_data = b'0' * 1000000  # 1 MB of data
     mipi_driver.send_data(test_data)
@@ -188,19 +200,20 @@ Test performance improvements without relying on actual timing:
 
 ```python
 def test_performance_improvement(self, signal_processor):
-    # Store the original processing time and then manually set it to a higher value
-    original_time = signal_processor._processing_time
-    signal_processor._processing_time = 1.0  # Set to a large value
+    # Swap in the test timing strategy and then set a larger synthetic cost.
+    signal_processor.set_timing_strategy_for_test()
+    original_time = signal_processor._timing_strategy.get_processing_time()
+    signal_processor._timing_strategy.set_processing_time(1.0)
     
     try:
         # Optimize performance
         signal_processor.optimize_performance()
         
         # Verify processing time was reduced
-        assert signal_processor._processing_time < 1.0
+        assert signal_processor._timing_strategy.get_processing_time() < 1.0
     finally:
         # Restore the original processing time to avoid affecting other tests
-        signal_processor._processing_time = original_time
+        signal_processor._timing_strategy.set_processing_time(original_time)
 ```
 
 ## 8. Troubleshooting Common Test Issues
@@ -255,24 +268,20 @@ Keep test documentation up to date:
 - Test fixtures should be documented
 - Complex test setups should include comments
 
-## 12. Current Test Status (v1.1.0)
+## 12. Current Test Status (v3.0.0)
 
 The Advanced Image Sensor Interface project maintains a comprehensive test suite:
 
-- **122 total tests** across all modules
-- **100% passing rate** in CI/CD pipeline
-- **37% code coverage** focused on core functionality
+- **328 collected tests** verified locally for the current v3.0.0 workspace
+- **Targeted quality gates**: pytest, ruff, black, compileall, mypy, and pyright
+- **Coverage reports available on demand** via `pytest --cov=src`
 - **Multi-Python version testing** (3.10-3.13)
-- **Automated quality checks** with ruff, black, mypy, and pyright
 
 ### Test Distribution
-- **18 image validation tests** - Image processing and validation
-- **13 MIPI driver tests** - Protocol simulation and driver functionality
-- **20 MIPI protocol tests** - Packet validation and protocol compliance
-- **17 performance metrics tests** - Benchmarking and metrics calculation
-- **19 power management tests** - Power modeling and management
-- **20 security tests** - Input validation and security framework
-- **15 signal processing tests** - Image processing pipeline
+- **Protocol tests**: MIPI, GigE Vision, USB3 Vision, and CoaXPress drivers plus extension coverage
+- **Imaging tests**: HDR processing, RAW processing, lens correction, and signal-processing regressions
+- **Integration tests**: End-to-end capture and processing flows
+- **Core utility tests**: Buffer management, configuration, validation, metrics, power, and security
 
 ## 13. Conclusion
 

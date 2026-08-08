@@ -26,7 +26,7 @@ If applicable, add screenshots to help explain your problem.
 **Environment (please complete the following information):**
  - OS: [e.g. Ubuntu 20.04, Windows 10, macOS 12.0]
  - Python version: [e.g. 3.10.5]
- - Package version: [e.g. 2.0.0]
+ - Package version: [e.g. 3.0.0]
  - Hardware: [e.g. Intel i7, ARM64, GPU model if relevant]
 
 **Code to reproduce**

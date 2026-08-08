@@ -2,10 +2,10 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, version-3.0.0]
     tags: ['v*']
   pull_request:
-    branches: [main]
+    branches: [main, version-3.0.0]
 
 permissions:
   contents: read
@@ -21,15 +21,15 @@ jobs:
         exclude:
           # Exclude some combinations to reduce CI time
           - os: windows-latest
-            python-version: "3.11"
+            python-version: "3.13"
           - os: macos-latest
             python-version: "3.11"
-    
+     
     steps:
-      - uses: actions/checkout@v4
-      
+      - uses: actions/checkout@v7
+       
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -37,48 +37,52 @@ jobs:
             requirements.txt
             requirements-dev.txt
             pyproject.toml
-      
+            uv.lock
+       
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+       
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgl1 libglib2.0-0
-      
+       
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
           # Install any macOS-specific dependencies if needed
           echo "macOS system dependencies installed"
-      
+       
       - name: Install system dependencies (Windows)
         if: runner.os == 'Windows'
         run: |
           # Install any Windows-specific dependencies if needed
           echo "Windows system dependencies installed"
-      
-      - name: Install dependencies
+       
+      - name: Install dependencies with uv
         run: |
-          python -m pip install --upgrade pip wheel
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
-          pip install -e .
-      
+          uv sync --all-groups
+       
       - name: Lint with Ruff
-        run: ruff check .
-      
+        run: uv run ruff check .
+       
       - name: Check formatting with Black
-        run: black --check src/ examples/ benchmarks/ stubs/
-      
+        run: uv run black --check src/ examples/ benchmarks/ stubs/
+       
       - name: Type check with MyPy
-        run: mypy src --config-file=pyproject.toml || true
-      
+        run: uv run mypy src --config-file=pyproject.toml || true
+       
       - name: Security check with Bandit
-        run: bandit -r src/ || true
-      
+        run: uv run bandit -r src/ || true
+       
       - name: Run tests
         env:
           PYTHONWARNINGS: default
-        run: pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing --color=yes
+        run: uv run pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing --color=yes
 
   build:
     runs-on: ubuntu-latest
@@ -86,10 +90,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -109,7 +113,7 @@ jobs:
         run: twine check dist/*
       
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
@@ -120,10 +124,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -154,7 +158,7 @@ jobs:
           fi
       
       - name: Upload documentation
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: documentation
           path: docs/_build/html/
