@@ -13,7 +13,7 @@ numba>=0.58.0,<1.0.0  # JIT compilation
 opencv-contrib-python>=4.8.1,<5.0.0  # Extended OpenCV features
 scikit-image>=0.20.0,<1.0.0  # Advanced image processing algorithms
 imageio[ffmpeg]>=2.33.0,<3.0.0  # Video processing support
-rawpy>=0.18.0,<1.0.0  # RAW image processing
+rawpy>=0.27.0,<1.0.0  # RAW image processing
 
 # Machine learning and AI
 torch>=2.0.0,<3.0.0; sys_platform != "darwin"  # PyTorch for neural networks
