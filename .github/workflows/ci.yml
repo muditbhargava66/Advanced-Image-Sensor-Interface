@@ -48,6 +48,8 @@ jobs:
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
+          # Remove Microsoft repositories that cause 403 errors on Ubuntu 24.04
+          sudo rm -f /etc/apt/sources.list.d/azure-cli.list /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/microsoft-ubuntu-*.list 2>/dev/null || true
           sudo apt-get update
           sudo apt-get install -y libgl1 libglib2.0-0
        
@@ -138,6 +140,7 @@ jobs:
       
       - name: Install system dependencies
         run: |
+          sudo rm -f /etc/apt/sources.list.d/azure-cli.list /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/microsoft-ubuntu-*.list 2>/dev/null || true
           sudo apt-get update
           sudo apt-get install -y libgl1 libglib2.0-0
       
