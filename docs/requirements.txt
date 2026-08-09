@@ -21,6 +21,12 @@ sphinxcontrib-htmlhelp>=2.0.1
 sphinxcontrib-serializinghtml>=1.1.5
 sphinxcontrib-qthelp>=1.0.3
 
+# Security updates for transitive dependencies
+bleach>=6.4.0
+mistune>=3.3.0
+soupsieve>=2.8.4
+tornado>=6.5.7
+
 # Core dependencies needed for documentation build
 numpy>=1.23.5,<2.0.0
 scipy>=1.10.0,<2.0.0
