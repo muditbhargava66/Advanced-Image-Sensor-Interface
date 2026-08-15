@@ -49,7 +49,7 @@ pyzmq>=25.1.0,<26.0.0  # ZeroMQ messaging
 # Visualization enhancements
 plotly>=5.17.0,<6.0.0  # Interactive plotting
 bokeh>=3.2.0,<4.0.0  # Web-based visualization
-seaborn>=0.12.0,<1.0.0  # Statistical visualization
+seaborn>=0.13.2,<1.0.0  # Statistical visualization
 
 # Configuration and utilities
 click>=8.1.0,<9.0.0  # Command-line interface
