@@ -15,7 +15,7 @@ sphinx-copybutton>=0.5.2
 # nbsphinx>=0.9.1
 
 # Standard Sphinx contrib extensions
-sphinxcontrib-applehelp>=1.0.4
+sphinxcontrib-applehelp>=2.0.0
 sphinxcontrib-devhelp>=1.0.2
 sphinxcontrib-htmlhelp>=2.0.1
 sphinxcontrib-serializinghtml>=1.1.5
