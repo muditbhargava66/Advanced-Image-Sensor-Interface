@@ -6,7 +6,7 @@
 -r requirements.txt
 
 # GPU acceleration (optional - graceful degradation if not available)
-cupy-cuda12x>=12.0.0; sys_platform != "darwin"  # CUDA support for Linux/Windows
+cupy-cuda12x>=14.1.1; sys_platform != "darwin"  # CUDA support for Linux/Windows
 numba>=0.58.0,<1.0.0  # JIT compilation
 
 # Advanced image processing
