@@ -4,7 +4,7 @@
 
 ![Project Banner](assets/image-sensor-interface-logo.png)
 
-[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![CodeQL](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/actions/workflows/github-code-scanning/codeql)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
