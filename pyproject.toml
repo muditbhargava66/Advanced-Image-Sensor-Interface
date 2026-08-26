@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "advanced_image_sensor_interface"
-version = "3.0.0"
-description = "A high-performance interface for next-generation camera modules"
+version = "3.1.0"
+description = "A high-performance interface for next-generation camera modules with AI/ML enhancements"
 readme = "README.md"
 authors = [{ name = "Mudit Bhargava", email = "muditbhargava666@gmail.com" }]
 license = { file = "LICENSE" }
@@ -29,6 +29,7 @@ dependencies = [
     "Pillow>=12.3.0,<13.0.0",
     "tqdm>=4.66.0",
     "psutil>=5.9.0",
+    "scikit-learn>=1.3.0,<2.0.0",
 ]
 requires-python = ">=3.10"
 
@@ -45,14 +46,60 @@ core = [
 
 # Full feature set with optional dependencies
 full = [
-    "opencv-python>=4.8.1",
-    "pandas>=2.1.0",
-    "scikit-learn>=1.3.0",
-    "scikit-image>=0.20.0",
+    "opencv-python>=4.8.1,<5.0.0",
+    "pandas>=2.1.0,<3.0.0",
+    "scikit-image>=0.20.0,<1.0.0",
     "requests>=2.33.0",
     "urllib3>=2.7.0",
     "msgpack>=1.2.1",
     "click>=8.3.3",
+    # GPU acceleration (optional - graceful degradation if not available)
+    "cupy-cuda12x>=12.0.0; sys_platform != 'darwin'",
+    "numba>=0.58.0,<1.0.0",
+    # Advanced image processing
+    "imageio[ffmpeg]>=2.33.0,<3.0.0",
+    "rawpy>=0.18.0,<1.0.0",
+    # Machine learning and AI
+    "torch>=2.0.0,<3.0.0; sys_platform != 'darwin'",
+    "torchvision>=0.15.0,<1.0.0; sys_platform != 'darwin'",
+    "tensorflow>=2.13.0,<3.0.0; sys_platform != 'darwin'",
+    # Scientific computing enhancements
+    "sympy>=1.12.0,<2.0.0",
+    "astropy>=5.3.0,<6.0.0",
+    "photutils>=1.9.0,<2.0.0",
+    # Hardware interface simulation
+    "pyserial>=3.5.0,<4.0.0",
+    "pyusb>=1.2.0,<2.0.0",
+    "smbus2>=0.4.0,<1.0.0; sys_platform == 'linux'",
+    # Performance monitoring
+    "memory-profiler>=0.61.0,<1.0.0",
+    "line-profiler>=4.1.0,<5.0.0",
+    "py-spy>=0.3.0,<1.0.0",
+    # Data formats and serialization
+    "h5py>=3.8.0,<4.0.0",
+    "zarr>=2.16.0,<3.0.0",
+    "msgpack>=1.0.0,<2.0.0",
+    "protobuf>=5.29.6",
+    # Networking and protocols
+    "requests>=2.31.0,<3.0.0",
+    "websockets>=11.0.0,<12.0.0",
+    "pyzmq>=26.0.0,<27.0.0",
+    # Visualization enhancements
+    "plotly>=5.17.0,<6.0.0",
+    "bokeh>=3.2.0,<4.0.0",
+    "seaborn>=0.12.0,<1.0.0",
+    # Configuration and utilities
+    "click>=8.1.0,<9.0.0",
+    "rich>=13.6.0,<14.0.0",
+    "typer>=0.9.0,<1.0.0",
+    "pydantic>=2.4.0,<3.0.0",
+    # Development and debugging
+    "icecream>=2.1.0,<3.0.0",
+    "loguru>=0.7.0,<1.0.0",
+    "colorama>=0.4.0,<1.0.0",
+    # Optional GUI support
+    "tkinter-tooltip>=2.1.0,<3.0.0",
+    "pillow-simd>=9.5.0.post2,<10.0.0; sys_platform != 'darwin'",
 ]
 
 # Development dependencies
@@ -60,12 +107,14 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "pytest>=9.0.3",
     "pytest-cov>=4.1.0",
+    "pytest-mock>=3.14.0",
     "mypy>=1.6.0",
     "ruff>=0.4.0",
     "black>=23.10.0",
     "pyright>=1.1.320",
     "tox>=4.0.0",
     "ipython>=8.18.0",
+    "pre-commit>=3.0.0",
 ]
 
 # Documentation dependencies
@@ -78,6 +127,8 @@ docs = [
     "sphinxcontrib-mermaid>=0.9.2",
     "sphinx-design>=0.5.0",
     "nbsphinx>=0.9.0",
+    # Pin pyzmq to version compatible with Python 3.13 (25.1.2 has build issues)
+    "pyzmq>=26.0.0",
     # Security updates for transitive dependencies
     "bleach>=6.4.0",
     "mistune>=3.3.0",

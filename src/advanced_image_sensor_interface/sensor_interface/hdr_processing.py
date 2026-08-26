@@ -97,7 +97,7 @@ class HDRProcessor:
         Returns:
             HDR processed image in the same dtype as the input.
 
-        Warning:
+        **WARNING: SILENT FAILURE BEHAVIOR**
             This method **silently returns the original input image** on any
             processing error. An ERROR-level log is emitted, but no exception
             is raised. Callers that require failure detection MUST check logs
@@ -141,7 +141,7 @@ class HDRProcessor:
         Returns:
             HDR fused image
 
-        Warning:
+        **WARNING: SILENT FAILURE BEHAVIOR**
             This method **silently returns the middle exposure image** on any
             processing error. An ERROR-level log is emitted, but no exception
             is raised. Callers that require failure detection MUST check logs

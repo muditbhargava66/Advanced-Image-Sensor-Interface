@@ -1,0 +1,701 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="2670" viewBox="0 0 1600 2670" role="img" aria-labelledby="svg-title svg-desc" preserveAspectRatio="xMidYMin meet">
+  <style type="text/css">
+  :root { color-scheme: light; }
+  svg { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .section-label { font-size: 13px; font-weight: 600; fill: #64748b; text-anchor: middle; }
+  .card-title { font-size: 14px; font-weight: 700; text-anchor: middle; }
+  .body-text { font-size: 9px; text-anchor: middle; }
+  .small-text { font-size: 10px; text-anchor: middle; }
+  .flow-line { fill: none; stroke: #475569; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  .feedback-line { fill: none; stroke-width: 1.5; stroke-dasharray: 6 3; vector-effect: non-scaling-stroke; }
+  .divider { fill: none; stroke-width: 0.5; vector-effect: non-scaling-stroke; }
+  .panel { vector-effect: non-scaling-stroke; }
+</style><title id="svg-title">Advanced Image Sensor Interface v3.1.0 System Architecture</title><desc id="svg-desc">Layered architecture diagram covering sensor input, multi-protocol transport, cross-cutting integrity and security, AI/ML enhancement, calibration, signal processing, multi-sensor synchronization, GPU acceleration, power and performance management, outputs, and testing.</desc><defs>
+    <!-- Arrowhead marker -->
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#475569"/>
+    </marker>
+
+    <!-- Layer Gradients -->
+    <linearGradient id="sensorGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fef9c3"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+    <linearGradient id="protocolGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#dbeafe"/>
+      <stop offset="100%" stop-color="#bfdbfe"/>
+    </linearGradient>
+    <linearGradient id="aiGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f3e8ff"/>
+      <stop offset="100%" stop-color="#e9d5ff"/>
+    </linearGradient>
+    <linearGradient id="processingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#dcfce7"/>
+      <stop offset="100%" stop-color="#bbf7d0"/>
+    </linearGradient>
+    <linearGradient id="syncGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e0f2fe"/>
+      <stop offset="100%" stop-color="#bae6fd"/>
+    </linearGradient>
+    <linearGradient id="gpuGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ecfdf5"/>
+      <stop offset="100%" stop-color="#d1fae5"/>
+    </linearGradient>
+    <linearGradient id="neuralGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f3e8ff"/>
+      <stop offset="100%" stop-color="#e9d5ff"/>
+    </linearGradient>
+    <linearGradient id="powerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+    <linearGradient id="integrityGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fce7f3"/>
+      <stop offset="100%" stop-color="#fbcfe8"/>
+    </linearGradient>
+    <linearGradient id="securityGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffe4e6"/>
+      <stop offset="100%" stop-color="#fecdd3"/>
+    </linearGradient>
+    <linearGradient id="outputGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f3e8ff"/>
+      <stop offset="100%" stop-color="#e9d5ff"/>
+    </linearGradient>
+    <linearGradient id="foundationGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="aiAccentGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </linearGradient>
+
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#00000020"/>
+    </filter>
+
+    <!-- Glow filter for AI elements -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="2670" rx="12" fill="#f8fafc"/>
+
+  <!-- ============================================================
+       HEADER
+       ============================================================ -->
+  <rect x="0" y="0" width="1600" height="90" fill="url(#aiAccentGrad)" rx="12"/>
+  <rect x="0" y="60" width="1600" height="30" fill="url(#aiAccentGrad)"/>
+  <text x="800" y="38" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="700" fill="white" text-anchor="middle">Advanced Image Sensor Interface v3.1.0 — System Architecture</text>
+  <text x="800" y="68" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#e0e7ff" text-anchor="middle">Multi-Protocol AI/ML Camera Interface Framework │ MIPI CSI-2 · CoaXPress CXP-12 · GigE Vision RoCE · USB3 Vision</text>
+
+  <!-- ============================================================
+       LAYER 0: SENSOR INPUT &amp; TEST PATTERNS (TOP ROW)
+       ============================================================ -->
+  <text x="800" y="115" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Layer 0: Sensor Input &amp; Test Patterns ──</text>
+
+  <!-- Image Sensor -->
+  <rect x="40" y="135" width="220" height="150" rx="10" fill="url(#sensorGrad)" stroke="#ca8a04" stroke-width="1.5" filter="url(#shadow)" id="image-sensor" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="150" y="170" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="700" fill="#854d0e" text-anchor="middle">Image Sensor</text>
+  <line x1="60" y1="185" x2="240" y2="185" stroke="#ca8a04" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="150" y="210" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#713f12" text-anchor="middle">Up to 8K (7680×4320)</text>
+  <text x="150" y="230" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#713f12" text-anchor="middle">8–20 bit RAW output</text>
+  <text x="150" y="250" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#713f12" text-anchor="middle">Multi-sensor arrays (×8)</text>
+  <text x="150" y="270" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#713f12" text-anchor="middle">Bayer: RGGB/BGGR/GRGB/GBRG</text>
+
+  <!-- Test Patterns -->
+  <rect x="290" y="135" width="220" height="150" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)" id="test-patterns" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="400" y="170" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#713f12" text-anchor="middle">Test Patterns</text>
+  <line x1="310" y1="185" x2="490" y2="185" stroke="#eab308" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="400" y="210" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">Checkerboard / Grid / Random</text>
+  <text x="400" y="230" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">Color Bars / Zone Plate</text>
+  <text x="400" y="250" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">Motion / Temporal Patterns</text>
+  <text x="400" y="270" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">pattern_generator.py</text>
+
+  <!-- Calibration Patterns -->
+  <rect x="540" y="135" width="220" height="150" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)" id="calibration-patterns" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="650" y="170" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#713f12" text-anchor="middle">Calibration Patterns</text>
+  <line x1="560" y1="185" x2="740" y2="185" stroke="#eab308" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="650" y="210" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">Chessboard (9×6, 25mm)</text>
+  <text x="650" y="230" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">Circles Grid / Asymmetric</text>
+  <text x="650" y="250" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">Charuco / ArUco Markers</text>
+  <text x="650" y="270" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">CalibrationPattern class</text>
+
+  <!-- Sensor Array Config -->
+  <rect x="790" y="135" width="220" height="150" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)" id="sensor-array-config" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="900" y="170" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#713f12" text-anchor="middle">Sensor Array Config</text>
+  <line x1="810" y1="185" x2="990" y2="185" stroke="#eab308" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="900" y="210" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">Up to 8 synchronized sensors</text>
+  <text x="900" y="230" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">Stereo / Multi-camera</text>
+  <text x="900" y="250" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">HW / SW / Hybrid sync modes</text>
+  <text x="900" y="270" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">create_multi_sensor_config()</text>
+
+  <!-- Lens Profiles -->
+  <rect x="1040" y="135" width="220" height="150" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)" id="lens-profiles" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="1150" y="170" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#713f12" text-anchor="middle">Lens Profiles</text>
+  <line x1="1060" y1="185" x2="1240" y2="185" stroke="#eab308" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1150" y="210" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">STANDARD_PROFILES</text>
+  <text x="1150" y="230" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">gopro_wide / industrial_cs</text>
+  <text x="1150" y="250" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">Barrel / Pincushion / Fisheye</text>
+  <text x="1150" y="270" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#854d0e" text-anchor="middle">LensProfile / Pipeline</text>
+
+  <!-- Layer 0 Arrows -->
+  <line x1="260" y1="210" x2="290" y2="210" stroke="#475569" stroke-width="2" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <text x="275" y="203" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">RAW</text>
+
+  <line x1="510" y1="210" x2="540" y2="210" stroke="#475569" stroke-width="2" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <text x="525" y="203" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">Pattern</text>
+
+  <line x1="760" y1="210" x2="790" y2="210" stroke="#475569" stroke-width="2" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <text x="775" y="203" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">Config</text>
+
+  <line x1="1010" y1="210" x2="1040" y2="210" stroke="#475569" stroke-width="2" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <text x="1025" y="203" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">Lens</text>
+
+  <!-- Down arrows from Layer 0 to Layer 1 -->
+  <line x1="150" y1="285" x2="150" y2="325" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <line x1="400" y1="285" x2="400" y2="325" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <line x1="650" y1="285" x2="650" y2="325" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <line x1="900" y1="285" x2="900" y2="325" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <line x1="1150" y1="285" x2="1150" y2="325" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+
+  <!-- ============================================================
+       LAYER 1: MULTI-PROTOCOL TRANSPORT LAYER
+       ============================================================ -->
+  <text x="800" y="340" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Layer 1: Multi-Protocol Transport Layer (ProtocolSelector → ProtocolBase → StreamingProtocolBase) ──</text>
+
+  <rect x="120" y="355" width="1340" height="220" rx="10" fill="url(#protocolGrad)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" id="transport-layer" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="800" y="390" font-family="Inter, system-ui, sans-serif" font-size="17" font-weight="700" fill="#1e3a5f" text-anchor="middle">Multi-Protocol Transport Layer (ProtocolSelector → ProtocolBase → StreamingProtocolBase)</text>
+  <line x1="200" y1="403" x2="1400" y2="403" stroke="#3b82f6" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+
+  <!-- MIPI sub-box -->
+  <rect x="200" y="415" width="280" height="150" rx="8" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+  <text x="340" y="445" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="700" fill="#1d4ed8" text-anchor="middle">MIPI CSI-2 D-PHY v2.5</text>
+  <line x1="215" y1="455" x2="465" y2="455" stroke="#3b82f6" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="340" y="475" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">4.5 Gbps/lane · 1-4 lanes · 18 Gbps max</text>
+  <text x="340" y="495" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">Virtual channels (0-3) · ECC/CRC</text>
+  <text x="340" y="515" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">Adaptive EQ · De-emphasis</text>
+  <text x="340" y="535" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#ef4444" text-anchor="middle">✦ AES-GCM · PRE_SHARED_KEY · Key Mgmt</text>
+
+  <!-- CoaXPress sub-box -->
+  <rect x="500" y="415" width="280" height="150" rx="8" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+  <text x="640" y="445" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="700" fill="#1d4ed8" text-anchor="middle">CoaXPress CXP-12</text>
+  <line x1="515" y1="455" x2="765" y2="455" stroke="#3b82f6" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="640" y="475" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">12.5 Gbps/lane · 1-4 connections</text>
+  <text x="640" y="495" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">50 Gbps aggregate · 100 m reach</text>
+  <text x="640" y="515" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">PoCXP · HW Trigger · Link negotiation</text>
+  <text x="640" y="535" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#f59e0b" text-anchor="middle">✦ PoCXP · CXPSpeed enum (1-12)</text>
+
+  <!-- GigE Vision sub-box -->
+  <rect x="800" y="415" width="280" height="150" rx="8" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+  <text x="940" y="445" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="700" fill="#1d4ed8" text-anchor="middle">GigE Vision RoCE v2</text>
+  <line x1="815" y1="455" x2="1065" y2="455" stroke="#3b82f6" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="940" y="475" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">10-100 Gbps · RDMA zero-copy</text>
+  <text x="940" y="495" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">GVCP/GVSP · Jumbo frames (9KB)</text>
+  <text x="940" y="515" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">100 m reach · Packet resend</text>
+  <text x="940" y="535" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0284c7" text-anchor="middle">✦ RDMA · RoCE v1/v2 · Queue Pairs</text>
+
+  <!-- USB3 Vision sub-box -->
+  <rect x="1100" y="415" width="280" height="150" rx="8" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+  <text x="1240" y="445" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="700" fill="#1d4ed8" text-anchor="middle">USB3 Vision</text>
+  <line x1="1115" y1="455" x2="1365" y2="455" stroke="#3b82f6" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1240" y="475" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">USB 3.2 Gen 2 · 10 Gbps · 5m</text>
+  <text x="1240" y="495" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">GenICam SFNC · 25+ features</text>
+  <text x="1240" y="515" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#1d4ed8" text-anchor="middle">Hot-plug · Streaming · Discovery</text>
+  <text x="1240" y="535" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#7c3aed" text-anchor="middle">✦ AI/ML Scene-Aware · Hot-plug</text>
+
+  <!-- Protocol Selector (center bottom of protocol layer) -->
+  <rect x="635" y="585" width="330" height="70" rx="8" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="1.5" filter="url(#shadow)" id="protocol-selector" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="800" y="610" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="700" fill="#0c4a6e" text-anchor="middle">Protocol Selector</text>
+  <text x="800" y="630" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#0369a1" text-anchor="middle">Dynamic selection by: bandwidth · distance · power · latency</text>
+  <text x="800" y="645" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0284c7" text-anchor="middle">ProtocolRequirements → select_optimal_protocol() → activate_protocol()</text>
+
+  <!-- Down arrows from Layer 1 to Layer 2/3 -->
+  <line x1="340" y1="565" x2="225" y2="695" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <line x1="610" y1="565" x2="610" y2="695" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <line x1="985" y1="565" x2="985" y2="695" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <line x1="1240" y1="565" x2="1385" y2="695" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+
+  <!-- ============================================================
+       LAYER 2: CROSS-CUTTING CONCERNS (Data Integrity, Security, Config, Error Handling)
+       ============================================================ -->
+  <text x="800" y="675" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Layer 2: Cross-Cutting Concerns (Data Integrity · Security · Configuration · Error Handling) ──</text>
+
+  <!-- Data Integrity -->
+  <rect x="40" y="695" width="370" height="180" rx="10" fill="url(#integrityGrad)" stroke="#ec4899" stroke-width="1.5" filter="url(#shadow)" id="data-integrity" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="225" y="725" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#831843" text-anchor="middle">Data Integrity</text>
+  <line x1="55" y1="738" x2="395" y2="738" stroke="#ec4899" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="225" y="765" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#831843" text-anchor="middle">• CRC-32 validation (Castagnoli)</text>
+  <text x="225" y="785" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#831843" text-anchor="middle">• Reed-Solomon FEC (32-byte redundancy)</text>
+  <text x="225" y="805" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#831843" text-anchor="middle">• Hamming(7,4) syndrome correction</text>
+  <text x="225" y="825" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#831843" text-anchor="middle">• IntegrityChecker (protect/verify)</text>
+  <text x="225" y="845" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#831843" text-anchor="middle">• End-to-end frame integrity</text>
+  <text x="225" y="865" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#831843" text-anchor="middle">• Error detection &amp; recovery</text>
+
+  <!-- Security Framework -->
+  <rect x="430" y="695" width="370" height="180" rx="10" fill="url(#securityGrad)" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow)" id="security-framework" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="615" y="725" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#7f1d1d" text-anchor="middle">Security Framework (v3.0.0+)</text>
+  <line x1="445" y1="738" x2="785" y2="738" stroke="#ef4444" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="615" y="765" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#7f1d1d" text-anchor="middle">• AES-GCM encryption (128/256-bit)</text>
+  <text x="615" y="785" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#7f1d1d" text-anchor="middle">• PRE_SHARED_KEY authentication</text>
+  <text x="615" y="805" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#7f1d1d" text-anchor="middle">• Key management (PBKDF2 · HKDF)</text>
+  <text x="615" y="825" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#7f1d1d" text-anchor="middle">• Session control (create/verify/revoke)</text>
+  <text x="615" y="845" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#7f1d1d" text-anchor="middle">• Identity &amp; privilege (3-tier)</text>
+  <text x="615" y="865" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#ef4444" text-anchor="middle">✦ MIPISecurityManager · PRE_SHARED_KEY</text>
+
+  <!-- Configuration Management -->
+  <rect x="820" y="695" width="370" height="180" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)" id="configuration-management" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="1005" y="725" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#78350f" text-anchor="middle">Configuration Management</text>
+  <line x1="835" y1="738" x2="1175" y2="738" stroke="#f59e0b" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1005" y="765" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#78350f" text-anchor="middle">• Env-aware: dev / test / prod</text>
+  <text x="1005" y="785" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#78350f" text-anchor="middle">• ConfigManager · Dynamic reload</text>
+  <text x="1005" y="805" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#78350f" text-anchor="middle">• Type-safe validation (pydantic-like)</text>
+  <text x="1005" y="825" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#78350f" text-anchor="middle">• Thread-safe singleton (double-check)</text>
+  <text x="1005" y="845" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#78350f" text-anchor="middle">• Migration / MigrationManager</text>
+  <text x="1005" y="865" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#78350f" text-anchor="middle">constants.py · SecurityConfig · TimingConfig</text>
+
+  <!-- Error Handling Framework -->
+  <rect x="1210" y="695" width="350" height="180" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)" id="error-handling" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="1385" y="725" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#713f12" text-anchor="middle">Error Handling Framework</text>
+  <line x1="1225" y1="738" x2="1545" y2="738" stroke="#eab308" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1385" y="765" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#713f12" text-anchor="middle">• SensorError hierarchy (Protocol/Buffer/Power/Security)</text>
+  <text x="1385" y="785" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#713f12" text-anchor="middle">• Circuit Breaker (state: closed/open/half-open)</text>
+  <text x="1385" y="805" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#713f12" text-anchor="middle">• Retry Logic (exponential backoff &amp; jitter)</text>
+  <text x="1385" y="825" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#713f12" text-anchor="middle">• Monitoring &amp; Alerting (error rates)</text>
+  <text x="1385" y="845" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#713f12" text-anchor="middle">• Recovery strategies (graceful degradation)</text>
+  <text x="1385" y="865" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#713f12" text-anchor="middle">• Silent Failure docs in all processors</text>
+
+  <!-- ============================================================
+       LAYER 3: AI/ML ENHANCEMENT PIPELINE (v3.1.0 CORE)
+       ============================================================ -->
+  <text x="800" y="895" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Layer 3: AI/ML Enhancement Pipeline (v3.1.0 Core) ──</text>
+
+  <!-- AIEnhancedProcessor (large central box) -->
+  <rect x="40" y="915" width="1520" height="340" rx="12" fill="url(#aiGrad)" stroke="#7c3aed" stroke-width="2" filter="url(#glow)" id="ai-enhancement-pipeline" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="800" y="945" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="#5b21b6" text-anchor="middle">AIEnhancedProcessor — AI/ML Enhancement Pipeline (v3.1.0)</text>
+  <line x1="60" y1="960" x2="1540" y2="960" stroke="#7c3aed" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+
+  <!-- SceneClassifier -->
+  <rect x="60" y="975" width="350" height="260" rx="8" fill="white" stroke="#a855f7" stroke-width="1.2" filter="url(#shadow)" vector-effect="non-scaling-stroke"/>
+  <text x="235" y="1005" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">SceneClassifier</text>
+  <line x1="75" y1="1015" x2="375" y2="1015" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="235" y="1040" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Feature-based scene classification</text>
+  <text x="235" y="1058" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">  (color variance, brightness analysis)</text>
+  <text x="235" y="1076" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Output: portrait / landscape / night</text>
+  <text x="235" y="1094" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">  sports / macro / document / general</text>
+  <text x="235" y="1112" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• analyze_hdr_scene() → high_contrast/low_light</text>
+  <text x="235" y="1130" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• HDR parameter optimization</text>
+  <text x="235" y="1148" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• classify_scene(image) → scene_type</text>
+  <text x="235" y="1166" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Feature extraction: color variance +</text>
+  <text x="235" y="1184" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">  brightness &amp; gradient analysis</text>
+
+  <!-- NoisePredictor -->
+  <rect x="430" y="975" width="350" height="260" rx="8" fill="white" stroke="#a855f7" stroke-width="1.2" filter="url(#shadow)" vector-effect="non-scaling-stroke"/>
+  <text x="605" y="1005" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">NoisePredictor</text>
+  <line x1="445" y1="1015" x2="765" y2="1015" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="605" y="1040" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Noise level estimation via Laplacian</text>
+  <text x="605" y="1058" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">  variance &amp; local variance analysis</text>
+  <text x="605" y="1076" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Scene-aware parameter prediction</text>
+  <text x="605" y="1094" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">  (strength, kernel_size per scene)</text>
+  <text x="605" y="1112" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• _estimate_noise_level() using</text>
+  <text x="605" y="1130" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">  Laplacian &amp; local variance &amp; gradient</text>
+  <text x="605" y="1148" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• predict_parameters(image, scene_type)</text>
+  <text x="605" y="1166" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">  → {strength, kernel_size}</text>
+  <text x="605" y="1184" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Scene adjustments: portrait(0.7)/night(1.2)</text>
+
+  <!-- QualityAssessor -->
+  <rect x="800" y="975" width="350" height="260" rx="8" fill="white" stroke="#a855f7" stroke-width="1.2" filter="url(#shadow)" vector-effect="non-scaling-stroke"/>
+  <text x="975" y="1005" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">QualityAssessor</text>
+  <line x1="815" y1="1015" x2="1135" y2="1015" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="975" y="1040" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Sharpness: Laplacian variance</text>
+  <text x="975" y="1058" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Noise level: high-freq content (0-1)</text>
+  <text x="975" y="1076" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Color accuracy: channel balance</text>
+  <text x="975" y="1094" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Overall quality: weighted (0.4S+0.3N+0.3C)</text>
+  <text x="975" y="1112" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Improvement potential: 1.0 - quality</text>
+  <text x="975" y="1130" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• assess_improvement(orig, processed)</text>
+  <text x="975" y="1148" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Predictive quality &amp; improvement pot.</text>
+
+  <!-- AdaptiveHDRProcessor -->
+  <rect x="1170" y="975" width="350" height="260" rx="8" fill="white" stroke="#a855f7" stroke-width="1.2" filter="url(#shadow)" vector-effect="non-scaling-stroke"/>
+  <text x="1345" y="1005" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">AdaptiveHDRProcessor</text>
+  <line x1="1185" y1="1015" x2="1505" y2="1015" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1345" y="1040" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Scene-aware tone mapping selection</text>
+  <text x="1345" y="1058" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">  (Reinhard/Adaptive/Gamma/Mertens)</text>
+  <text x="1345" y="1076" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• analyze_hdr_scene() → high_contrast/low_light</text>
+  <text x="1345" y="1094" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• _optimize_hdr_parameters(scene_info)</text>
+  <text x="1345" y="1112" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• GPU-accelerated exposure stack</text>
+  <text x="1345" y="1130" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">  (GPUAccelerator backend)</text>
+  <text x="1345" y="1148" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• GPU/CPU fallback with performance stats</text>
+  <text x="1345" y="1166" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• adaptive_processing_pipeline()</text>
+  <text x="1345" y="1184" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">  → (processed, stats: scene, quality, time)</text>
+
+  <!-- ============================================================
+       LAYER 3B: CUSTOM EXTENSION FRAMEWORK (right side, below AI pipeline)
+       ============================================================ -->
+  <text x="800" y="1270" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Layer 3B: Custom Extension Framework (examples/custom_extension.py) ──</text>
+
+  <!-- AINoiseReducer -->
+  <rect x="40" y="1285" width="500" height="180" rx="8" fill="white" stroke="#a855f7" stroke-width="1.2" filter="url(#shadow)" id="ai-noise-reducer" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="290" y="1315" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">AINoiseReducer (scikit-learn based)</text>
+  <line x1="55" y1="1325" x2="525" y2="1325" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="290" y="1345" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• AI-based denoising with Gaussian filter &amp; adaptive strength</text>
+  <text x="290" y="1363" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• _ai_denoise(): channel-specific adaptive Gaussian filtering</text>
+  <text x="290" y="1381" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• _ai_edge_preservation(): Sobel edge detection &amp; adaptive alpha blending</text>
+  <text x="290" y="1399" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• estimate_noise_level(): Laplacian &amp; local variance &amp; gradient (3 features)</text>
+  <text x="290" y="1417" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• train_on_image(): online learning with clean/noisy pairs</text>
+  <text x="290" y="1435" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• _update_model(): simulated model update every 10 samples</text>
+  <text x="290" y="1453" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#7c3aed" text-anchor="middle">✦ NoiseReducerFactory.register_reducer(GAUSSIAN, AINoiseReducer)</text>
+
+  <!-- AdaptiveColorCorrector -->
+  <rect x="550" y="1285" width="500" height="180" rx="8" fill="white" stroke="#a855f7" stroke-width="1.2" filter="url(#shadow)" id="adaptive-color-corrector" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="800" y="1315" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">AdaptiveColorCorrector</text>
+  <line x1="565" y1="1325" x2="1035" y2="1325" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="800" y="1345" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Online color matrix adaptation (3×3 matrix with EMA)</text>
+  <text x="800" y="1363" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• set_reference_colors(): ColorChecker patches (N×3)</text>
+  <text x="800" y="1381" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• _adapt_color_matrix(): measured vs reference color diff</text>
+  <text x="800" y="1399" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• adaptation_matrix: diagonal adjustment per channel</text>
+  <text x="800" y="1417" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• EMA update: C_new = (1-α)C_old &amp; αC_adapt (α=0.1-0.2)</text>
+  <text x="800" y="1435" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• get_adaptation_stats(): count, rate, matrix, det()</text>
+  <text x="800" y="1453" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#7c3aed" text-anchor="middle">✦ Online adaptation with measured color patches</text>
+
+  <!-- HighSpeedMIPIDriver -->
+  <rect x="1080" y="1285" width="480" height="180" rx="8" fill="white" stroke="#60a5fa" stroke-width="1.2" filter="url(#shadow)" id="high-speed-mipi-driver" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="1320" y="1315" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#1d4ed8" text-anchor="middle">HighSpeedMIPIDriver (custom extension)</text>
+  <line x1="1095" y1="1325" x2="1545" y2="1325" stroke="#60a5fa" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1320" y="1345" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1d4ed8" text-anchor="middle">• extend MIPIProtocolDriver with optimization_level (1-3)</text>
+  <text x="1320" y="1363" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1d4ed8" text-anchor="middle">• enable_burst_mode(): +25% throughput via optimized registers</text>
+  <text x="1320" y="1381" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1d4ed8" text-anchor="middle">• enable_compression(ratio=0.7): runtime data compression</text>
+  <text x="1320" y="1399" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1d4ed8" text-anchor="middle">• send_data(): burst &amp; compression &amp; transfer time sim</text>
+  <text x="1320" y="1417" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1d4ed8" text-anchor="middle">• get_enhanced_status(): opt_level, burst, compression, ratio</text>
+  <text x="1320" y="1435" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1d4ed8" text-anchor="middle">• NoiseReducerFactory.register_reducer(GAUSSIAN, AINoiseReducer)</text>
+  <text x="1320" y="1453" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#60a5fa" text-anchor="middle">✦ Custom driver extension pattern for MIPI</text>
+
+  <!-- ============================================================
+       LAYER 4: NEURAL CALIBRATION TUNER &amp; SIGNAL PROCESSING
+       ============================================================ -->
+  <text x="800" y="1490" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Layer 4: Neural Calibration Tuner &amp; Signal Processing (v3.1.0) ──</text>
+
+  <!-- NeuralCalibrationTuner -->
+  <rect x="40" y="1505" width="750" height="280" rx="10" fill="url(#neuralGrad)" stroke="#a855f7" stroke-width="2" filter="url(#glow)" id="neural-calibration-tuner" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="415" y="1535" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="700" fill="#5b21b6" text-anchor="middle">NeuralCalibrationTuner — scikit-learn MLPRegressor Calibration Optimization</text>
+  <line x1="55" y1="1550" x2="775" y2="1550" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+
+  <!-- Feature Extraction -->
+  <rect x="55" y="1560" width="220" height="210" rx="8" fill="white" stroke="#a855f7" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="165" y="1590" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#5b21b6" text-anchor="middle">Feature Extraction</text>
+  <line x1="70" y1="1600" x2="255" y2="1600" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="165" y="1620" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Edge: Sobel gradient stats (mean,std,p95)</text>
+  <text x="165" y="1638" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Corner: Harris response (mean,std,count)</text>
+  <text x="165" y="1656" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Pattern: 2D FFT regularity on checkerboard</text>
+  <text x="165" y="1674" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Noise: Laplacian variance estimation</text>
+  <text x="165" y="1692" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Feature vector: [edge,corner,pattern,noise]</text>
+  <text x="165" y="1710" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• StandardScaler normalization</text>
+  <text x="165" y="1728" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• sessions: [images, points, CalibrationResult]</text>
+
+  <!-- MLP Architecture -->
+  <rect x="290" y="1560" width="220" height="210" rx="8" fill="white" stroke="#a855f7" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="400" y="1590" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#5b21b6" text-anchor="middle">MLPRegressor Architecture</text>
+  <line x1="305" y1="1600" x2="495" y2="1600" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="400" y="1620" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Input: feature vector (N features)</text>
+  <text x="400" y="1638" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Hidden: [128, 64, 32] (configurable)</text>
+  <text x="400" y="1656" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Activation: ReLU</text>
+  <text x="400" y="1674" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Output: 1 (quality score 0-1)</text>
+  <text x="400" y="1692" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Loss: MSE &amp; L2 regularization (λ=0.01)</text>
+  <text x="400" y="1710" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Solver: Adam · early_stopping=True</text>
+  <text x="400" y="1728" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• scikit-learn fallback (no TF/PyTorch)</text>
+
+  <!-- Training &amp; Inference -->
+  <rect x="525" y="1560" width="245" height="210" rx="8" fill="white" stroke="#a855f7" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="647" y="1590" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#5b21b6" text-anchor="middle">Training &amp; Inference</text>
+  <line x1="540" y1="1600" x2="750" y2="1600" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="647" y="1620" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• train(sessions): extract features</text>
+  <text x="647" y="1638" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">  from images &amp; corner points</text>
+  <text x="647" y="1656" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• MLP.fit() with validation_fraction=0.2</text>
+  <text x="647" y="1674" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Early stopping: n_iter_no_change=10</text>
+  <text x="647" y="1692" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• predict_calibration_quality(images,pts)</text>
+  <text x="647" y="1710" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• optimize_calibration_parameters(params)</text>
+  <text x="647" y="1728" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Gradient-based param optimization</text>
+  <text x="647" y="1746" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• No TF/PyTorch deps (pure sklearn)</text>
+
+  <!-- Signal Processing (HDR, RAW, Lens) -->
+  <rect x="810" y="1505" width="750" height="280" rx="10" fill="url(#processingGrad)" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)" id="signal-processing-pipeline" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="1185" y="1535" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="700" fill="#14532d" text-anchor="middle">Signal Processing Pipeline</text>
+  <line x1="825" y1="1550" x2="1545" y2="1550" stroke="#22c55e" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+
+  <!-- HDR Processing -->
+  <rect x="825" y="1560" width="220" height="210" rx="8" fill="white" stroke="#22c55e" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="935" y="1590" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#14532d" text-anchor="middle">HDR Processing</text>
+  <line x1="840" y1="1600" x2="1025" y2="1600" stroke="#22c55e" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="935" y="1620" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• Reinhard / Drago / Adaptive / Gamma</text>
+  <text x="935" y="1638" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• Exposure Fusion: Mertens &amp; Weighted</text>
+  <text x="935" y="1656" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• process_exposure_stack(images, EVs)</text>
+  <text x="935" y="1674" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• tone_map(): Reinhard/Adaptive/Gamma</text>
+  <text x="935" y="1692" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• GPU-accelerated (GPUAccelerator)</text>
+  <text x="935" y="1710" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• 14+ stops DR · &lt;1 s (640×480)</text>
+  <text x="935" y="1728" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• HDRParameters · ToneMappingMethod</text>
+
+  <!-- RAW Processing -->
+  <rect x="1065" y="1560" width="220" height="210" rx="8" fill="white" stroke="#22c55e" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="1175" y="1590" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#14532d" text-anchor="middle">RAW Processing</text>
+  <line x1="1080" y1="1600" x2="1265" y2="1600" stroke="#22c55e" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1175" y="1620" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• Demosaicing: Bilinear / Malvar / AHD / VNG</text>
+  <text x="1175" y="1638" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• Malvar-He-Cutler (gradient-corrected)</text>
+  <text x="1175" y="1656" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• Bayer: RGGB/BGGR/GRBG/GBRG</text>
+  <text x="1175" y="1674" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• Auto WB: Gray-world / White-patch</text>
+  <text x="1175" y="1692" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• Color matrix · Gamma correction</text>
+  <text x="1175" y="1710" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• 8-20 bit · RGGB/BGGR/GRBG/GBRG</text>
+  <text x="1175" y="1728" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#14532d" text-anchor="middle">• RAWParameters · RAWProcessor</text>
+
+  <!-- Lens Correction -->
+  <rect x="1305" y="1560" width="225" height="210" rx="8" fill="white" stroke="#ec4899" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="1417" y="1590" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#831843" text-anchor="middle">Lens Correction</text>
+  <line x1="1320" y1="1600" x2="1510" y2="1600" stroke="#ec4899" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1417" y="1620" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#831843" text-anchor="middle">• Brown-Conrady model (k1,k2,k3,p1,p2)</text>
+  <text x="1417" y="1638" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#831843" text-anchor="middle">• Radial: k1·r² &amp; k2·r⁴ &amp; k3·r⁶</text>
+  <text x="1417" y="1656" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#831843" text-anchor="middle">• Tangential: p1·2xy &amp; p2(r²+2x²)</text>
+  <text x="1417" y="1692" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#831843" text-anchor="middle">• LensProfile · LensCorrectionPipeline</text>
+  <text x="1417" y="1710" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#831843" text-anchor="middle">• STANDARD_PROFILES (gopro_wide, etc.)</text>
+  <text x="1417" y="1728" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#831843" text-anchor="middle">• Interpolation: nearest / bilinear</text>
+
+  <!-- ============================================================
+       LAYER 5: MULTI-SENSOR SYNC &amp; GPU ACCELERATION
+       ============================================================ -->
+  <text x="800" y="1810" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Layer 5: Multi-Sensor Synchronization &amp; GPU Acceleration ──</text>
+
+  <!-- Multi-Sensor Sync -->
+  <rect x="40" y="1825" width="750" height="240" rx="10" fill="url(#syncGrad)" stroke="#0ea5e9" stroke-width="1.5" filter="url(#shadow)" id="multi-sensor-sync" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="415" y="1855" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="700" fill="#0c4a6e" text-anchor="middle">MultiSensorSynchronizer</text>
+  <line x1="55" y1="1870" x2="775" y2="1870" stroke="#0ea5e9" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+
+  <!-- Sync modes -->
+  <rect x="55" y="1880" width="220" height="170" rx="8" fill="white" stroke="#0ea5e9" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="165" y="1910" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#0c4a6e" text-anchor="middle">Sync Modes &amp; Config</text>
+  <line x1="70" y1="1920" x2="395" y2="1920" stroke="#0ea5e9" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="165" y="1940" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• SyncMode: SOFTWARE / HARDWARE / HYBRID</text>
+  <text x="165" y="1958" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• MASTER_SLAVE / TRIGGER_MODES</text>
+  <text x="165" y="1976" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• sync_tolerance_us: ~1ms (sim)</text>
+  <text x="165" y="1994" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• create_stereo_sync_config()</text>
+  <text x="165" y="2012" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• create_multi_camera_sync_config(n)</text>
+  <text x="165" y="2030" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• SyncConfiguration: tolerance, timeout</text>
+
+  <!-- Alignment Algorithms -->
+  <rect x="290" y="1880" width="220" height="170" rx="8" fill="white" stroke="#0ea5e9" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="400" y="1910" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#0c4a6e" text-anchor="middle">Alignment Algorithms</text>
+  <line x1="305" y1="1920" x2="490" y2="1920" stroke="#0ea5e9" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="400" y="1940" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• _align_frames_by_features():</text>
+  <text x="400" y="1958" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">  ORB &amp; RANSAC homography (OpenCV)</text>
+  <text x="400" y="1976" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• _align_frames_by_correlation():</text>
+  <text x="400" y="1994" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">  Phase Correlation &amp; FFT (sub-pixel)</text>
+  <text x="400" y="2012" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">  parabolic fit for sub-pixel</text>
+  <text x="400" y="2030" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• _validate_sensor_states() health checks</text>
+  <text x="400" y="2048" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• _check_sensor_synchronization() timeout</text>
+
+  <!-- Calibration Integration -->
+  <rect x="520" y="1880" width="250" height="170" rx="8" fill="white" stroke="#0ea5e9" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="645" y="1910" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#0c4a6e" text-anchor="middle">Calibration Integration</text>
+  <line x1="535" y1="1920" x2="755" y2="1920" stroke="#0ea5e9" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="645" y="1940" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• calibrate_sensors() placeholder</text>
+  <text x="645" y="1958" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">  (OpenCV chessboard detection)</text>
+  <text x="645" y="1976" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• Temporal calibration (frame timing)</text>
+  <text x="645" y="1994" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• Spatial calibration (stereo/array)</text>
+  <text x="645" y="2012" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• Color calibration (cross-camera)</text>
+  <text x="645" y="2030" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0c4a6e" text-anchor="middle">• get_synchronization_status() stats</text>
+
+  <!-- GPU Acceleration -->
+  <rect x="810" y="1825" width="750" height="240" rx="10" fill="url(#gpuGrad)" stroke="#10b981" stroke-width="1.5" filter="url(#shadow)" id="gpu-accelerator" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="1185" y="1855" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="700" fill="#064e3b" text-anchor="middle">GPUAccelerator</text>
+  <line x1="825" y1="1870" x2="1545" y2="1870" stroke="#10b981" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+
+  <!-- GPU Backends -->
+  <rect x="825" y="1880" width="220" height="170" rx="8" fill="white" stroke="#10b981" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="935" y="1910" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#064e3b" text-anchor="middle">Backends &amp; Config</text>
+  <line x1="840" y1="1920" x2="1025" y2="1920" stroke="#10b981" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="935" y="1940" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• GPUBackend: CUDA / OPENCL / CPU_FALLBACK</text>
+  <text x="935" y="1958" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• GPUConfiguration: device_id, pool_size</text>
+  <text x="935" y="1976" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• create_gpu_config_for_automotive()</text>
+  <text x="935" y="1994" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Memory pool &amp; device info</text>
+  <text x="935" y="2012" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• CPU fallback (Numba JIT / CuPy)</text>
+  <text x="935" y="2030" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Graceful degradation if unavailable</text>
+
+  <!-- Batch Operations -->
+  <rect x="1065" y="1880" width="220" height="170" rx="8" fill="white" stroke="#10b981" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="1175" y="1910" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#064e3b" text-anchor="middle">Batch Operations</text>
+  <line x1="1080" y1="1920" x2="1265" y2="1920" stroke="#10b981" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1175" y="1940" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• process_image_batch(images, op, **kw)</text>
+  <text x="1175" y="1958" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Ops: gaussian_blur, edge_detection,</text>
+  <text x="1175" y="1976" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">  histogram_equalization, noise_reduction</text>
+  <text x="1175" y="1994" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• 5-10× speedup on GPU vs CPU</text>
+  <text x="1175" y="2012" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• get_performance_stats() / get_device_info()</text>
+  <text x="1175" y="2030" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• GPU memory pooling &amp; cleanup()</text>
+
+  <!-- GPU Integration -->
+  <rect x="1305" y="1880" width="225" height="170" rx="8" fill="white" stroke="#10b981" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="1417" y="1910" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#064e3b" text-anchor="middle">Integration &amp; Fallback</text>
+  <line x1="1320" y1="1920" x2="1510" y2="1920" stroke="#10b981" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1417" y="1940" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• AI pipeline: adaptive HDR on GPU</text>
+  <text x="1417" y="1958" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• CUDA (CuPy) / OpenCL / Numba JIT</text>
+  <text x="1417" y="1976" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Auto CPU fallback if GPU unavailable</text>
+  <text x="1417" y="1994" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• get_device_info(): backend, name, memory</text>
+  <text x="1417" y="2012" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• create_gpu_config_for_automotive()</text>
+  <text x="1417" y="2030" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Optional deps: cupy-cuda12x, numba</text>
+
+  <!-- ============================================================
+       LAYER 6: POWER MGMT &amp; PERFORMANCE &amp; NEURAL CAL &amp; BUFFER
+       ============================================================ -->
+  <text x="800" y="2090" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Layer 6: Power Management · Performance · Neural Calibration · Buffer Mgmt ──</text>
+
+  <!-- Power Management -->
+  <rect x="40" y="2105" width="390" height="220" rx="10" fill="url(#powerGrad)" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)" id="power-management" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="235" y="2135" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#78350f" text-anchor="middle">AdvancedPowerManager</text>
+  <line x1="55" y1="2148" x2="415" y2="2148" stroke="#f59e0b" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="235" y="2173" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#78350f" text-anchor="middle">• 7 Power States: ACTIVE→IDLE→STANDBY</text>
+  <text x="235" y="2191" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#78350f" text-anchor="middle">  →SLEEP→DEEP_SLEEP→HIBERNATE→OFF</text>
+  <text x="235" y="2209" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#78350f" text-anchor="middle">• ThermalMonitor: NORMAL→WARM→HOT</text>
+  <text x="235" y="2227" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#78350f" text-anchor="middle">  →CRITICAL→EMERGENCY (DVFS)</text>
+  <text x="235" y="2245" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#78350f" text-anchor="middle">• Multi-system: budgeting · sync transitions</text>
+  <text x="235" y="2263" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#78350f" text-anchor="middle">  array-level metrics · priority-based</text>
+  <text x="235" y="2281" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#78350f" text-anchor="middle">• Component control: sensor/proc/mem/IO</text>
+  <text x="235" y="2299" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#78350f" text-anchor="middle">• PowerMode: PERF/BAL/SAVER/ULTRA_LOW</text>
+  <text x="235" y="2317" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#f59e0b" text-anchor="middle">✦ &lt;500mW@4K/60fps · &lt;2W@8K/30fps</text>
+
+  <!-- Performance Monitoring -->
+  <rect x="450" y="2105" width="390" height="220" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5" filter="url(#shadow)" id="performance-monitoring" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="645" y="2135" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#064e3b" text-anchor="middle">Performance Monitoring</text>
+  <line x1="465" y1="2148" x2="825" y2="2148" stroke="#10b981" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="645" y="2173" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Profiler: timing &amp; memory &amp; CPU%</text>
+  <text x="645" y="2191" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Cache: LRU &amp; TTL &amp; size limits</text>
+  <text x="645" y="2209" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Optimizer: autotune params (ML-based)</text>
+  <text x="645" y="2227" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Metrics: SNR / DR / Color Acc / Throughput</text>
+  <text x="645" y="2245" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Pipeline parallelism (threading/async)</text>
+  <text x="645" y="2263" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Async pipeline &amp; frame_stream()</text>
+  <text x="645" y="2281" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• Metrics: SNR / DR / ΔE / FPS / Power</text>
+  <text x="645" y="2299" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#064e3b" text-anchor="middle">• SNR improvement: 30%+ (verified)</text>
+
+  <!-- Neural Calibration Tuner (summary) -->
+  <rect x="860" y="2105" width="390" height="220" rx="10" fill="url(#neuralGrad)" stroke="#a855f7" stroke-width="1.5" filter="url(#glow)" id="neural-calibration-summary" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="1055" y="2135" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5b21b6" text-anchor="middle">NeuralCalibrationTuner (Summary)</text>
+  <line x1="875" y1="2148" x2="1235" y2="2148" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1055" y="2173" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Feature Extraction: Sobel &amp; Harris &amp; FFT &amp; Laplacian</text>
+  <text x="1055" y="2191" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• MLPRegressor: [128,64,32] · ReLU · Adam</text>
+  <text x="1055" y="2209" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Loss: MSE &amp; L2 · Adam &amp; EarlyStop(10)</text>
+  <text x="1055" y="2227" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• train(sessions) · predict_quality()</text>
+  <text x="1055" y="2245" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• optimize_calibration_parameters(params)</text>
+  <text x="1055" y="2263" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• Gradient-based param optimization</text>
+  <text x="1055" y="2281" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#5b21b6" text-anchor="middle">• sklearn MLPRegressor (no TF/PyTorch)</text>
+  <text x="1055" y="2299" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#a855f7" text-anchor="middle">✦ neural_tuner.py · CalibrationResult · CalibrationDB</text>
+
+  <!-- Buffer Management -->
+  <rect x="1270" y="2105" width="290" height="220" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)" id="buffer-management" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="1425" y="2135" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#713f12" text-anchor="middle">Buffer Management</text>
+  <line x1="1285" y1="2148" x2="1565" y2="2148" stroke="#eab308" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1425" y="2173" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• BufferManager: pool &amp; async ops</text>
+  <text x="1425" y="2191" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• AsyncBufferManager: async/await</text>
+  <text x="1425" y="2209" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• Memory pooling · LRU · Backpressure</text>
+  <text x="1425" y="2227" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• ManagedBuffer context manager</text>
+  <text x="1425" y="2245" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• Thread-safe · Lock-free where possible</text>
+  <text x="1425" y="2263" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• Statistics: hits/misses/memory/latency</text>
+  <text x="1425" y="2281" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• pool_optimize() · resize_pool()</text>
+  <text x="1425" y="2299" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#eab308" text-anchor="middle">✦ get_buffer_manager() · ManagedBuffer</text>
+
+  <!-- ============================================================
+       LAYER 7: OUTPUT · CALIBRATION DB · METRICS · TESTING
+       ============================================================ -->
+  <text x="800" y="2350" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Layer 7: Output · Calibration DB · Performance Metrics · Testing ──</text>
+
+  <!-- Processed Output -->
+  <rect x="40" y="2365" width="390" height="165" rx="10" fill="url(#outputGrad)" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)" id="processed-output" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="235" y="2395" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#581c87" text-anchor="middle">Processed Output</text>
+  <line x1="55" y1="2408" x2="415" y2="2408" stroke="#a855f7" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="235" y="2433" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#581c87" text-anchor="middle">• 8K @ 30fps / 4K @ 120fps (simulation)</text>
+  <text x="235" y="2451" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#581c87" text-anchor="middle">• Multi-sensor fused output (RGB/Bayer)</text>
+  <text x="235" y="2469" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#581c87" text-anchor="middle">• RAW → RGB pipeline (demosaic+WB+CCM)</text>
+  <text x="235" y="2487" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#581c87" text-anchor="middle">• HDR tone-mapped · Lens corrected</text>
+  <text x="235" y="2505" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#a855f7" text-anchor="middle">✦ Simulation framework (not HW driver)</text>
+
+  <!-- Calibration Database -->
+  <rect x="450" y="2365" width="390" height="165" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)" id="calibration-database" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="645" y="2395" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#713f12" text-anchor="middle">Calibration Database</text>
+  <line x1="465" y1="2408" x2="825" y2="2408" stroke="#eab308" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="645" y="2433" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• CalibrationDatabase: store/list/export</text>
+  <text x="645" y="2451" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• CalibrationResult: K, D, R, T, RMS, size</text>
+  <text x="645" y="2469" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• StereoCalibrationResult: R, T, E, F</text>
+  <text x="645" y="2487" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• CalibrationQualityMetrics: RMS, coverage</text>
+  <text x="645" y="2505" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• CalibrationPattern: checkerboard/circles</text>
+  <text x="645" y="2523" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#eab308" text-anchor="middle">✦ models.py · database.py · neural_tuner.py</text>
+
+  <!-- Performance Metrics -->
+  <rect x="860" y="2365" width="390" height="165" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)" id="performance-metrics" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="1055" y="2395" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#1e3a5f" text-anchor="middle">Performance Metrics</text>
+  <line x1="875" y1="2408" x2="1235" y2="2408" stroke="#3b82f6" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1055" y="2433" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1e3a5f" text-anchor="middle">• calculate_snr() · calculate_dynamic_range()</text>
+  <text x="1055" y="2451" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1e3a5f" text-anchor="middle">• calculate_color_accuracy() (ΔE simplified)</text>
+  <text x="1055" y="2469" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1e3a5f" text-anchor="middle">• SNR: 30% improvement (verified 35–100%)</text>
+  <text x="1055" y="2487" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1e3a5f" text-anchor="middle">• ΔE &lt; 0.5 (sim) · Target &lt; 2.0 (HW)</text>
+  <text x="1055" y="2505" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1e3a5f" text-anchor="middle">• 329 tests passing · 60% coverage</text>
+  <text x="1055" y="2523" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#3b82f6" text-anchor="middle">✦ performance_metrics.py · benchmarks/</text>
+
+  <!-- Testing &amp; Validation -->
+  <rect x="1270" y="2365" width="290" height="165" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)" id="testing-validation" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="1425" y="2395" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#713f12" text-anchor="middle">Testing &amp; Validation</text>
+  <line x1="1285" y1="2408" x2="1565" y2="2408" stroke="#eab308" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+  <text x="1425" y="2433" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• 329 tests passing (pytest/asyncio)</text>
+  <text x="1425" y="2451" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• ruff &amp; black &amp; pyright &amp; mypy (CI)</text>
+  <text x="1425" y="2469" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• AI/ML tests: noise, quality, neural tuner</text>
+  <text x="1425" y="2487" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• Protocol: MIPI/CXP/GigE/USB3 &amp; ext</text>
+  <text x="1425" y="2505" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• Benchmarks: speed/noise/buffer perf</text>
+  <text x="1425" y="2523" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#eab308" text-anchor="middle">✦ tests/ · benchmarks/ · scripts/</text>
+
+  <!-- ============================================================
+       FEEDBACK LOOPS &amp; CROSS-CUTTING
+       ============================================================ -->
+  <text x="800" y="2550" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Feedback Loops &amp; Cross-Cutting Concerns ──</text>
+
+  <!-- Feedback arrows (using paths) -->
+  <!-- Performance Feedback: Metrics → Signal Processing -->
+  <path d="M 1200 2345 H 1580 V 1480 H 1540 V 1505" fill="none" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <!-- Small vertical continuation below the arrowhead -->
+<line
+  x1="1200"
+  y1="2345"
+  x2="1200"
+  y2="2390"
+  stroke="#0284c7"
+  stroke-width="1.5"
+  stroke-dasharray="6,3"
+  vector-effect="non-scaling-stroke"
+/>
+  <text x="1470" y="1820" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#0284c7" text-anchor="middle" transform="rotate(-90 1470 1700)">Optimization Feedback</text>
+
+  <!-- Power Control: Power → Protocol -->
+  <path d="M 105 2130 H 18 V 400 H 180" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <text x="60" y="2120" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#d97706" text-anchor="middle">Power Control</text>
+
+  <!-- Optimization: Cache → Signal Processing -->
+  <path d="M 645 2105 H 800 V 1470 H 1185 V 1505" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowhead)" vector-effect="non-scaling-stroke"/>
+  <text x="1090" y="1480" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#047857" text-anchor="middle">Cache Optimization</text>
+
+  <!-- Error Handling Documentation Box -->
+  <rect x="40" y="2560" width="1520" height="50" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" id="error-behavior" class="panel" vector-effect="non-scaling-stroke"/>
+  <text x="800" y="2580" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#7f1d1d" text-anchor="middle">⚠ SILENT FAILURE BEHAVIOR: SignalProcessor/HDRProcessor/RAWProcessor return None/fallback on errors — check logs for ERROR level</text>
+  <text x="800" y="2600" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#7f1d1d" text-anchor="middle">ErrorHandling: SensorError hierarchy · Circuit Breaker · Retry &amp; Jitter · Monitoring · Recovery</text>
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <rect x="0" y="2610" width="1600" height="60" rx="0" fill="#1e293b"/>
+  <text x="200" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">Python 3.10–3.13</text>
+  <text x="450" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">NumPy · SciPy · OpenCV · scikit-learn</text>
+  <text x="700" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">MIT License</text>
+  <text x="950" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">329 Tests · All Passing</text>
+  <text x="1200" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">ruff · black · pyright · AI/ML Ready</text>
+  <text x="800" y="2660" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">© 2026 Mudit Bhargava — Simulation Framework for Algorithm Development &amp; Validation</text>
+
+</svg>

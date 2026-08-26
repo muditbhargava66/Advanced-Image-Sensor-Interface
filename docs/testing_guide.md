@@ -8,7 +8,7 @@ This document provides comprehensive guidance on testing the Advanced Image Sens
 
 The project uses the following testing tools:
 
-- **pytest**: Main testing framework for the full suite (328 collected tests in the current workspace)
+- **pytest**: Main testing framework for the full suite (329 collected tests in the current workspace)
 - **unittest.mock**: For mocking dependencies during testing
 - **pytest-cov**: For measuring test coverage
 - **pytest-asyncio**: For async test support
@@ -48,6 +48,7 @@ tests/
 - **Feature Tests**: `test_enhanced_features.py`, `test_imaging_features.py`
 - **Core Tests**: `test_signal_processing.py`, `test_power_management.py`, `test_buffer_manager.py`
 - **Validation Tests**: `test_image_validation.py`, `test_security.py`, `test_config.py`
+- **AI/ML Tests**: `test_ai_ml_enhancements.py`, `test_neural_tuner.py`, `test_custom_extensions.py`
 
 ## 4. Running Tests
 
@@ -268,11 +269,11 @@ Keep test documentation up to date:
 - Test fixtures should be documented
 - Complex test setups should include comments
 
-## 12. Current Test Status (v3.0.0)
+## 12. Current Test Status (v3.1.0)
 
 The Advanced Image Sensor Interface project maintains a comprehensive test suite:
 
-- **328 collected tests** verified locally for the current v3.0.0 workspace
+- **329 collected tests** verified locally for the current v3.1.0 workspace
 - **Targeted quality gates**: pytest, ruff, black, compileall, mypy, and pyright
 - **Coverage reports available on demand** via `pytest --cov=src`
 - **Multi-Python version testing** (3.10-3.13)
@@ -282,6 +283,7 @@ The Advanced Image Sensor Interface project maintains a comprehensive test suite
 - **Imaging tests**: HDR processing, RAW processing, lens correction, and signal-processing regressions
 - **Integration tests**: End-to-end capture and processing flows
 - **Core utility tests**: Buffer management, configuration, validation, metrics, power, and security
+- **AI/ML tests**: Scene classification, noise prediction, quality assessment, neural calibration tuning, custom extensions
 
 ## 13. Conclusion
 

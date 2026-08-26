@@ -3,6 +3,8 @@ Neural network-based calibration parameter tuning.
 
 This module provides AI-based optimization of calibration parameters using
 neural networks to improve calibration accuracy and robustness.
+
+Uses scikit-learn MLPRegressor as a fallback for TensorFlow/PyTorch.
 """
 
 import logging
@@ -10,6 +12,8 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPRegressor
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +57,7 @@ class NeuralCalibrationTuner:
             "geometric_features": self._extract_geometric_features,
         }
 
+        self.scaler = StandardScaler()
         logger.info("Neural calibration tuner initialized")
 
     def _extract_image_statistics(self, image: np.ndarray) -> np.ndarray:
@@ -270,45 +275,55 @@ class NeuralCalibrationTuner:
             raise ValueError("No training data available")
 
         # Normalize features
-        self.feature_mean = np.mean(X, axis=0)
-        self.feature_std = np.std(X, axis=0) + 1e-8  # Avoid division by zero
-        X_normalized = (X - self.feature_mean) / self.feature_std
+        self.scaler.fit(X)
+        X_normalized = self.scaler.transform(X)
 
-        # Simple neural network simulation (placeholder for real implementation)
-        # In a real implementation, this would use TensorFlow/PyTorch
-        self.model = self._create_simple_model(X_normalized.shape[1], y.shape[1])
+        # Create and train MLPRegressor model
+        self.model = MLPRegressor(
+            hidden_layer_sizes=tuple(self.config.hidden_layers),
+            activation="relu",
+            solver="adam",
+            alpha=0.0001,
+            batch_size=self.config.batch_size,
+            learning_rate="adaptive",
+            learning_rate_init=self.config.learning_rate,
+            max_iter=self.config.epochs,
+            early_stopping=True,
+            validation_fraction=self.config.validation_split,
+            n_iter_no_change=self.config.early_stopping_patience,
+            random_state=42,
+            verbose=False,
+        )
 
-        # Simulate training
-        training_history = {"loss": [], "val_loss": [], "epochs": self.config.epochs}
+        # Train the model
+        logger.info("Training MLPRegressor model...")
+        self.model.fit(X_normalized, y)
 
-        # Simulate training progress
-        for epoch in range(self.config.epochs):
-            # Simulate loss decrease
-            loss = 1.0 * np.exp(-epoch / 50) + 0.1 * np.random.random()
-            val_loss = loss + 0.05 * np.random.random()
-
-            training_history["loss"].append(loss)
-            training_history["val_loss"].append(val_loss)
-
-            if epoch % 10 == 0:
-                logger.info(f"Epoch {epoch}/{self.config.epochs}, Loss: {loss:.4f}, Val Loss: {val_loss:.4f}")
+        # Record training history
+        self.training_history = {"loss": self.model.loss_curve_, "epochs": self.config.epochs}
 
         self.is_trained = True
-        self.training_history = training_history
 
         logger.info("Neural calibration tuner training completed")
-        return training_history
+        return {"loss": self.model.loss_curve_, "epochs": self.config.epochs}
 
-    def _create_simple_model(self, input_dim: int, output_dim: int) -> dict[str, Any]:
-        """Create a simple model representation (placeholder)."""
-        # This is a placeholder for a real neural network model
-        # In practice, this would create a TensorFlow/PyTorch model
-        return {
-            "input_dim": input_dim,
-            "output_dim": output_dim,
-            "hidden_layers": self.config.hidden_layers,
-            "weights": [np.random.randn(input_dim, self.config.hidden_layers[0])],  # Placeholder weights
-        }
+    def _create_simple_model(self, input_dim: int, output_dim: int) -> MLPRegressor:
+        """Create the MLPRegressor model."""
+        return MLPRegressor(
+            hidden_layer_sizes=tuple(self.config.hidden_layers),
+            activation="relu",
+            solver="adam",
+            alpha=0.0001,
+            batch_size=self.config.batch_size,
+            learning_rate="adaptive",
+            learning_rate_init=self.config.learning_rate,
+            max_iter=self.config.epochs,
+            early_stopping=True,
+            validation_fraction=self.config.validation_split,
+            n_iter_no_change=self.config.early_stopping_patience,
+            random_state=42,
+            verbose=False,
+        )
 
     def predict_calibration_quality(self, images: list[np.ndarray], image_points: list[np.ndarray]) -> dict[str, float]:
         """Predict calibration quality using the trained model."""
@@ -319,11 +334,13 @@ class NeuralCalibrationTuner:
         features = self.extract_features(images, image_points)
 
         # Normalize features
-        (features - self.feature_mean) / self.feature_std
+        features_normalized = self.scaler.transform(features)
 
-        # Make prediction (simplified)
-        # In a real implementation, this would use the trained neural network
-        predicted_rms = np.mean([0.5 + 0.3 * np.random.random() for _ in range(len(features))])
+        # Make prediction
+        predictions = self.model.predict(features_normalized)
+
+        # Extract predictions
+        predicted_rms = np.mean(predictions[:, 0])
         predicted_coverage = min(1.0, len(image_points) / 20.0)  # Assume 20 is optimal
 
         return {
@@ -361,8 +378,8 @@ class NeuralCalibrationTuner:
 
         optimized_params = initial_params.copy()
 
-        # Simulate parameter optimization
-        # In a real implementation, this would use gradient-based optimization
+        # Use neural network predictions to guide parameter optimization
+        # This is a gradient-free optimization guided by neural network predictions
 
         # Example optimizations based on learned patterns
         if "num_images" in optimized_params:

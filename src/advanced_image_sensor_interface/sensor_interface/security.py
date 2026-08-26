@@ -57,6 +57,7 @@ class SecurityLimits:
 
     def __init__(
         self,
+        *,
         max_image_size: int | None = None,
         max_buffer_size: int | None = None,
         max_frame_rate: float | None = None,

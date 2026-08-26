@@ -66,6 +66,7 @@
   <rect x="315" y="158" width="150" height="44" rx="6" fill="#eff6ff" stroke="#60a5fa" stroke-width="1" />
   <text x="390" y="176" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#1d4ed8" text-anchor="middle">MIPI D-PHY v2.5</text>
   <text x="390" y="194" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#3b82f6" text-anchor="middle">4.5 Gbps/lane · 4 lanes</text>
+  <text x="390" y="208" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#ef4444" text-anchor="middle">AES-GCM · PRE_SHARED_KEY</text>
 
   <!-- CoaXPress sub-box -->
   <rect x="475" y="158" width="150" height="44" rx="6" fill="#eff6ff" stroke="#60a5fa" stroke-width="1" />
@@ -81,6 +82,7 @@
   <rect x="475" y="210" width="150" height="44" rx="6" fill="#eff6ff" stroke="#60a5fa" stroke-width="1" />
   <text x="550" y="228" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#1d4ed8" text-anchor="middle">USB3 Vision</text>
   <text x="550" y="246" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#3b82f6" text-anchor="middle">Hot-plug · Streaming</text>
+  <text x="550" y="260" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#7c3aed" text-anchor="middle">AI/ML Scene-Aware</text>
 
   <!-- Signal Processing -->
   <rect x="700" y="120" width="220" height="140" rx="10" fill="url(#processingGrad)" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)" />
@@ -113,12 +115,12 @@
   <!-- ═══════════════════ ROW 2: Multi-Sensor Sync · GPU Acceleration · Lens Correction ═══════════════════ -->
   <text x="700" y="306" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#64748b" text-anchor="middle">── Processing Enhancements ──</text>
 
-  <!-- Multi-Sensor Sync -->
+<!-- Multi-Sensor Sync -->
   <rect x="40" y="325" width="280" height="120" rx="10" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="1.5" filter="url(#shadow)" />
   <text x="180" y="355" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#0c4a6e" text-anchor="middle">Multi-Sensor Sync</text>
   <line x1="60" y1="368" x2="300" y2="368" stroke="#0ea5e9" stroke-width="0.5" />
   <text x="180" y="390" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#0369a1" text-anchor="middle">Up to 8 sensors synchronized</text>
-  <text x="180" y="410" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#0369a1" text-anchor="middle">&lt;100μs timing accuracy</text>
+  <text x="180" y="410" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#0369a1" text-anchor="middle">~1ms timing accuracy (sim)</text>
   <text x="180" y="430" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#0369a1" text-anchor="middle">HW/SW/Hybrid/Master-Slave</text>
 
   <!-- GPU Acceleration -->
@@ -174,6 +176,7 @@
   <text x="840" y="595" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#991b1b" text-anchor="middle">Key management (PBKDF2)</text>
   <text x="840" y="615" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#991b1b" text-anchor="middle">Identity &amp; session control</text>
   <text x="840" y="635" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#991b1b" text-anchor="middle">Privilege levels (3-tier)</text>
+  <text x="840" y="650" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#ef4444" text-anchor="middle">PRE_SHARED_KEY authentication</text>
 
   <!-- Performance Metrics -->
   <rect x="1030" y="510" width="200" height="130" rx="10" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.5" filter="url(#shadow)" />
@@ -199,8 +202,8 @@
 
   <!-- Testing -->
   <rect x="800" y="705" width="300" height="70" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)" />
-  <text x="950" y="732" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#334155" text-anchor="middle">Testing (322 tests)</text>
-  <text x="950" y="755" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#475569" text-anchor="middle">60% coverage · ruff · black · mypy · pyright</text>
+  <text x="950" y="732" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#334155" text-anchor="middle">Testing (329 tests)</text>
+  <text x="950" y="755" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#475569" text-anchor="middle">ruff · black · pyright · AI/ML ready</text>
 
   <!-- ═══════════════════ Vertical data-flow arrows (Row 1 → Row 2) ═══════════════════ -->
   <line x1="470" y1="270" x2="470" y2="325" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead)" />
@@ -227,6 +230,6 @@
   <text x="250" y="825" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">Python 3.10–3.13</text>
   <text x="500" y="825" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">NumPy · SciPy · OpenCV</text>
   <text x="750" y="825" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">MIT License</text>
-  <text x="1000" y="825" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">322 Tests · 60% Coverage</text>
+  <text x="1000" y="825" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">329 Tests · All Passing</text>
   <text x="700" y="860" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">© 2026 Mudit Bhargava — Simulation Framework for Algorithm Development &amp; Validation</text>
 </svg>

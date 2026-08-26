@@ -89,7 +89,22 @@ class SecurityConfig:
     nonce_size: int = 12  # GCM nonce size in bytes
 
     def __post_init__(self) -> None:
-        """Validate configuration."""
+        """Validate and convert configuration values."""
+        # Convert security_level string to enum if needed
+        if isinstance(self.security_level, str):
+            self.security_level = SecurityLevel[self.security_level.upper()]
+        elif not isinstance(self.security_level, SecurityLevel):
+            raise TypeError(f"security_level must be SecurityLevel enum or string, got {type(self.security_level).__name__}")
+
+        # Convert encryption string to enum if needed
+        if isinstance(self.encryption, str):
+            self.encryption = EncryptionAlgorithm[self.encryption.upper()]
+
+        # Convert authentication string to enum if needed
+        if isinstance(self.authentication, str):
+            self.authentication = AuthenticationMethod[self.authentication.upper()]
+
+        # Validate configuration
         if self.key_size not in (128, 256):
             raise ValueError("Key size must be 128 or 256 bits")
 

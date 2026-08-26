@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project (v3.0.0). It covers all supported protocols, advanced image processing, multi-sensor synchronization, calibration, and buffer management interfaces.
+This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project (v3.1.0). It covers all supported protocols, advanced image processing, multi-sensor synchronization, calibration, AI/ML enhancements, and buffer management interfaces.
 
 ## Table of Contents
 
@@ -684,6 +684,74 @@ prod_config = get_config(environment="production")
 - `testing`: Testing configuration with mock backends
 - `production`: Production settings optimized for performance
 
+## AI/ML Enhancements (v3.1.0)
+
+### Neural Calibration Tuner
+
+```python
+from advanced_image_sensor_interface.sensor_interface.calibration.neural_tuner import NeuralCalibrationTuner
+
+tuner = NeuralCalibrationTuner()
+
+# Train on calibration sessions
+tuner.train(sessions)
+
+# Predict calibration quality
+quality = tuner.predict_calibration_quality(images, image_points)
+
+# Optimize calibration parameters
+params = tuner.optimize_calibration_parameters({"num_images": 10, "calibration_flags": 0})
+```
+
+**Methods:**
+- `train(sessions: List[Dict]) -> bool`: Train neural network on calibration data
+- `predict_calibration_quality(images: List[np.ndarray], image_points: List[np.ndarray]) -> Dict`: Predict quality metrics
+- `optimize_calibration_parameters(params: Dict) -> Dict`: Optimize calibration configuration
+
+### Scene Classifier
+
+```python
+from advanced_image_sensor_interface.examples.ai_ml_enhancements import SceneClassifier
+
+classifier = SceneClassifier()
+scene = classifier.classify(image)
+# Returns: 'portrait', 'landscape', 'night', 'sports', 'macro', 'document'
+```
+
+### Noise Predictor
+
+```python
+from advanced_image_sensor_interface.examples.ai_ml_enhancements import NoisePredictor
+
+predictor = NoisePredictor()
+noise_level = predictor.predict(image)
+# Returns estimated noise standard deviation
+```
+
+### Quality Assessor
+
+```python
+from advanced_image_sensor_interface.examples.ai_ml_enhancements import QualityAssessor
+
+assessor = QualityAssessor()
+metrics = assessor.assess(image)
+# Returns: sharpness, noise_level, color_accuracy, overall_quality
+```
+
+### Custom Extensions
+
+```python
+from advanced_image_sensor_interface.examples.custom_extension import AINoiseReducer, AdaptiveColorCorrector
+
+# AI-based noise reduction with scikit-learn
+noise_reducer = AINoiseReducer()
+denoised = noise_reducer.process(noisy_image)
+
+# Adaptive color correction
+color_corrector = AdaptiveColorCorrector()
+corrected = color_corrector.process(image)
+```
+
 ## Error Handling
 
 ### Exception Hierarchy
@@ -763,7 +831,7 @@ Retrieves the current status of the MIPI driver.
   - `total_data_sent`: Total bytes sent
   - `total_time`: Total time spent sending data
 
-##### optimize_performance
+#### optimize_performance
 
 ```python
 optimize_performance() -> None

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Advanced Image Sensor Interface (AISI) v2.0.0 provides a comprehensive Python framework for interfacing with high-performance image sensors across multiple protocols including MIPI CSI-2, CoaXPress, and GigE Vision.
+The Advanced Image Sensor Interface (AISI) v3.1.0 provides a comprehensive Python framework for interfacing with high-performance image sensors across multiple protocols including MIPI CSI-2, CoaXPress, and GigE Vision with AI/ML enhancements, multi-sensor synchronization, and neural calibration tuning.
 
 ## Core Components
 
@@ -413,6 +413,142 @@ async def test_async_pipeline():
     
     assert len(frames) == 10
     await sensor.stop_streaming_async()
+```
+
+## AI/ML Enhancements (v3.1.0)
+
+### Neural Calibration Tuner
+
+```python
+from advanced_image_sensor_interface.sensor_interface.calibration.neural_tuner import NeuralCalibrationTuner
+from advanced_image_sensor_interface.sensor_interface.calibration.models import CalibrationResult
+
+tuner = NeuralCalibrationTuner()
+
+# Train on calibration sessions
+sessions = [
+    {
+        "images": [calibration_images],
+        "image_points": [detected_corners],
+        "calibration_result": CalibrationResult(...)
+    }
+]
+tuner.train(sessions)
+
+# Predict calibration quality
+quality = tuner.predict_calibration_quality(images, image_points)
+print(f"Predicted quality: {quality}")
+
+# Optimize calibration parameters
+params = tuner.optimize_calibration_parameters({"num_images": 10, "calibration_flags": 0})
+```
+
+### Scene Classification
+
+```python
+from examples.ai_ml_enhancements import SceneClassifier
+
+classifier = SceneClassifier()
+
+# Classify scene type
+image = np.random.randint(0, 255, (1080, 1920, 3), dtype=np.uint8)
+scene_type = classifier.classify_scene(image)
+# Returns: 'portrait', 'landscape', 'night', 'sports', 'general'
+
+# Analyze HDR scene
+hdr_scene_info = classifier.analyze_hdr_scene(exposure_stack)
+```
+
+### Noise Prediction
+
+```python
+from examples.ai_ml_enhancements import NoisePredictor
+
+predictor = NoisePredictor()
+
+# Predict optimal noise reduction parameters
+params = predictor.predict_parameters(image, scene_type="portrait")
+# Returns: {"strength": 0.5, "kernel_size": 3}
+
+# Estimate noise level
+noise_level = predictor._estimate_noise_level(image)
+```
+
+### Quality Assessment
+
+```python
+from examples.ai_ml_enhancements import QualityAssessor
+
+assessor = QualityAssessor()
+
+# Predict quality metrics
+sharpness = assessor.predict_sharpness(image)
+noise_level = assessor.predict_noise_level(image)
+color_accuracy = assessor.predict_color_accuracy(image)
+overall_quality = assessor.predict_overall_quality(image)
+improvement_potential = assessor.predict_improvement_potential(image)
+
+# Assess improvement between original and processed
+improvement = assessor.assess_improvement(original_image, processed_image)
+```
+
+### AI-Enhanced Processing Pipeline
+
+```python
+from examples.ai_ml_enhancements import AIEnhancedProcessor
+
+processor = AIEnhancedProcessor()
+
+# Intelligent noise reduction with scene-aware processing
+denoised = processor.intelligent_noise_reduction(noisy_image, scene_type="auto")
+
+# Adaptive HDR processing with scene analysis
+hdr_result = processor.adaptive_hdr_processing(exposure_stack, scene_analysis=True)
+
+# Predictive quality assessment
+quality_metrics = processor.predictive_quality_assessment(image)
+
+# Full adaptive processing pipeline
+processed_image, stats = processor.adaptive_processing_pipeline(image)
+print(f"Quality improvement: {stats['quality_improvement']:.3f}")
+```
+
+### Custom AI Extensions
+
+```python
+from examples.custom_extension import AINoiseReducer, AdaptiveColorCorrector
+from advanced_image_sensor_interface.utils.noise_reduction import (
+    NoiseReducerFactory, NoiseReductionConfig, NoiseType
+)
+
+# Register and use AI-based noise reducer
+NoiseReducerFactory.register_reducer(NoiseType.GAUSSIAN, AINoiseReducer)
+
+config = NoiseReductionConfig(noise_type=NoiseType.GAUSSIAN, strength=0.5, 
+                              preserve_edges=True, adaptive=True)
+ai_reducer = NoiseReducerFactory.create_reducer(config)
+
+# Process with AI denoising
+denoised = ai_reducer.process(noisy_image)
+
+# AI-based noise level estimation
+noise_level = ai_reducer.estimate_noise_level(image)
+
+# Online learning - train on clean/noisy pairs
+ai_reducer.train_on_image(clean_image, noisy_image)
+
+# Adaptive color correction
+color_corrector = AdaptiveColorCorrector(adaptation_rate=0.2)
+
+# Set reference colors (color checker patches)
+reference_colors = np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255]], dtype=np.uint8)
+color_corrector.set_reference_colors(reference_colors)
+
+# Process with automatic adaptation
+corrected = color_corrector.process_image(image, measured_colors=reference_colors)
+
+# Get adaptation statistics
+stats = color_corrector.get_adaptation_stats()
 ```
 
 ## Best Practices

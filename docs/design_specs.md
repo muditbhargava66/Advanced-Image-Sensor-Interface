@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document outlines the design specifications for the Advanced Image Sensor Interface project (v3.0.0), a comprehensive camera interface framework supporting multiple protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities.
+This document outlines the design specifications for the Advanced Image Sensor Interface project (v3.1.0), a comprehensive camera interface framework supporting multiple protocols with advanced image processing, multi-sensor synchronization, AI/ML enhancements, and professional-grade calibration capabilities.
 
 ## 2. System Architecture
 
@@ -19,7 +19,7 @@ The system consists of eight main components:
 7. **Calibration System**: Comprehensive camera calibration framework
 8. **Configuration Management**: Environment-aware configuration system
 
-```mermaid
+```text
 graph TD
     A[Camera Hardware] --> B[Protocol Layer]
     B --> C[Enhanced Sensor Interface]
@@ -152,6 +152,20 @@ class SyncMode(Enum):
 - **Color Calibration**: Cross-camera color consistency
 - **Validation Framework**: Synchronization quality assessment
 
+**Mathematical Background:**
+
+- **Phase Correlation (Sub-pixel FFT)**: 
+  $$R(u,v) = \mathcal{F}^{-1}\left\{\frac{\mathcal{F}(I_1) \cdot \mathcal{F}(I_2)^*}{|\mathcal{F}(I_1) \cdot \mathcal{F}(I_2)^*|}\right\}$$
+  Peak location gives translation $(t_x, t_y)$. Sub-pixel refinement via parabolic fit:
+  $$t_{sub} = t_{int} + \frac{R(t_{int}-1) - R(t_{int}+1)}{2(R(t_{int}-1) - 2R(t_{int}) + R(t_{int}+1))}$$
+
+- **Feature-based Alignment (ORB + RANSAC)**: 
+  1. Detect ORB keypoints and compute binary descriptors
+  2. Match descriptors using Hamming distance
+  3. Estimate homography $H$ via RANSAC:
+     $$x' = H x = \begin{bmatrix} h_{11} & h_{12} & h_{13} \\ h_{21} & h_{22} & h_{23} \\ h_{31} & h_{32} & h_{33} \end{bmatrix} \begin{bmatrix} x \\ y \\ 1 \end{bmatrix}$$
+  4. RANSAC: Randomly sample 4 point pairs, compute $H$, count inliers with threshold $\epsilon$
+
 ### 2.5 Advanced Image Processing
 
 #### 2.5.1 HDR Processing Pipeline
@@ -180,6 +194,25 @@ class HDRProcessor:
 - **Dynamic Range**: Support for 14+ stops dynamic range
 - **Real-Time Processing**: Optimized for real-time HDR generation
 
+**Mathematical Background:**
+
+- **Reinhard Tone Mapping**: 
+  $$L_d(x,y) = \frac{L(x,y)}{1 + L(x,y)}$$
+  where $L$ is the luminance and $L_d$ is the display luminance. Extended version with key value $a$:
+  $$L_d(x,y) = \frac{L(x,y) \cdot (1 + \frac{L(x,y)}{L_{white}^2})}{1 + L(x,y)}$$
+
+- **Drago Tone Mapping** (logarithmic compression):
+  $$L_d(x,y) = \frac{\log(1 + L(x,y))}{\log(1 + L_{max})}$$
+  Preserves contrast in dark regions while compressing highlights.
+
+- **Adaptive Tone Mapping**: Computes local adaptation luminance $L_{local}$ using bilateral filtering:
+  $$L_d(x,y) = \frac{L(x,y)}{L_{local}(x,y) + \epsilon} \cdot L_{target}$$
+  where $L_{local}$ is the local mean luminance.
+
+- **Exposure Fusion (Mertens)**: Weighted combination of multiple exposures:
+  $$I_f(x,y) = \frac{\sum_k w_k(x,y) I_k(x,y)}{\sum_k w_k(x,y)}$$
+  Weights $w_k = w_c \cdot w_s \cdot w_e$ combine contrast, saturation, and well-exposedness measures.
+
 #### 2.5.2 RAW Image Processing
 
 ```python
@@ -200,6 +233,24 @@ class RAWProcessor:
 - **Advanced Demosaicing**: Multiple high-quality algorithms
 - **Bit Depth Flexibility**: 8-20 bit RAW format support
 - **Color Pipeline**: White balance, color correction, gamma
+
+**Mathematical Background:**
+
+- **Bilinear Demosaicing**: Simple linear interpolation of missing color channels:
+  $$G_{i,j} = \frac{1}{4}(G_{i-1,j} + G_{i+1,j} + G_{i,j-1} + G_{i,j+1})$$
+  For red/blue channels at green positions, average diagonal neighbors.
+
+- **Malvar-He-Cutler (Gradient-Corrected)**: Uses 5×5 kernels with gradient correction:
+  $$\hat{G}_{i,j} = \sum_{m,n} h_{m,n} \cdot I_{i+m,j+n} + \alpha \cdot \nabla^2 I_{i,j}$$
+  where $h_{m,n}$ are the Malvar filter coefficients and $\alpha$ adapts to local gradient magnitude.
+
+- **AHD (Adaptive Homogeneity-Directed)**: Computes homogeneity measures in 8 directions:
+  $$H_d = \sum_{k} |I_{k} - I_{k+d}|$$
+  Selects interpolation direction with minimum homogeneity (maximum edge alignment).
+
+- **VNG (Variable Number of Gradients)**: Computes color differences along gradients:
+  $$\Delta_{RB} = \frac{1}{N}\sum (R_i - B_i)$$
+  Uses local gradient information to weight color difference interpolation.
 
 #### 2.5.3 GPU Acceleration
 
@@ -324,6 +375,26 @@ interface and registering them with the processing pipeline.
 - **Real-World Testing**: 3D accuracy validation
 - **Quality Metrics**: Comprehensive quality assessment
 - **Automated Testing**: Continuous calibration validation
+
+**Mathematical Background:**
+
+- **Brown-Conrady Lens Distortion Model** (Radial + Tangential):
+  $$x_{distorted} = x(1 + k_1 r^2 + k_2 r^4 + k_3 r^6) + [2p_1 xy + p_2(r^2 + 2x^2)]$$
+  $$y_{distorted} = y(1 + k_1 r^2 + k_2 r^4 + k_3 r^6) + [p_1(r^2 + 2y^2) + 2p_2 xy]$$
+  where $r^2 = x^2 + y^2$, $k_1,k_2,k_3$ are radial coefficients, $p_1,p_2$ are tangential coefficients.
+
+- **Neural Calibration Tuner** (scikit-learn MLPRegressor):
+  Feature vector $\phi = [\phi_{edge}, \phi_{corner}, \phi_{pattern}, \phi_{noise}]$ where:
+  - $\phi_{edge}$: Sobel gradient magnitude statistics
+  - $\phi_{corner}$: Harris corner response statistics  
+  - $\phi_{pattern}$: Checkerboard regularity (Fourier analysis)
+  - $\phi_{noise}$: Laplacian variance noise estimate
+  
+  MLP architecture: $\phi \to W_1 \to \sigma \to W_2 \to \hat{q}$ where $\hat{q}$ is predicted calibration quality.
+  
+  Loss: $\mathcal{L} = \frac{1}{N}\sum ||\hat{q}_i - q_i||^2 + \lambda ||W||^2$ (MSE + L2 regularization)
+  
+  Training: Adam optimizer with early stopping on validation loss.
 
 ### 2.9 Configuration Management
 

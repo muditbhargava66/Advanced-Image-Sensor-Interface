@@ -21,6 +21,8 @@ python:
     - requirements: docs/requirements.txt  # Install documentation dependencies
     - method: pip
       path: .
+      extra_requirements:
+        - docs
 
 # Optionally, define additional formats to build (e.g., PDF, ePub)
 formats:

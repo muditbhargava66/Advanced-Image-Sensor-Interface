@@ -39,8 +39,12 @@ from advanced_image_sensor_interface.utils.performance_metrics import (
 )
 
 
-def generate_synthetic_frame(width: int, height: int, noise_level: float) -> np.ndarray:
-    """Generate a synthetic frame with realistic image characteristics and noise."""
+def generate_synthetic_frame(width: int, height: int, noise_level: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Generate a synthetic frame with realistic image characteristics and noise.
+
+    Returns:
+        tuple: (clean_image, noise, noisy_image)
+    """
     # Create a base image with gradient and pattern
     x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
     base_image = np.sin(2 * np.pi * x) * np.sin(2 * np.pi * y) * 0.5 + 0.5
@@ -53,13 +57,13 @@ def generate_synthetic_frame(width: int, height: int, noise_level: float) -> np.
         base_image[mask] = np.random.uniform(0.2, 0.8)
 
     # Convert to 12-bit range
-    image = (base_image * 4095).astype(np.uint16)
+    clean_image = (base_image * 4095).astype(np.uint16)
 
     # Add noise
-    noise = np.random.normal(0, noise_level * 4095, image.shape).astype(np.int16)
-    noisy_image = np.clip(image.astype(np.int32) + noise, 0, 4095).astype(np.uint16)
+    noise = np.random.normal(0, noise_level * 4095, clean_image.shape).astype(np.int16)
+    noisy_image = np.clip(clean_image.astype(np.int32) + noise, 0, 4095).astype(np.uint16)
 
-    return noisy_image
+    return clean_image, noise.astype(np.uint16), noisy_image
 
 
 def simulate_pipeline(width: int, height: int, num_frames: int, noise_level: float) -> dict[str, Any]:
@@ -90,19 +94,19 @@ def simulate_pipeline(width: int, height: int, num_frames: int, noise_level: flo
     print(f"Simulating {num_frames} frames at {width}x{height}...")
 
     for i in range(num_frames):
-        # Generate synthetic frame
-        raw_frame = generate_synthetic_frame(width, height, noise_level)
+        # Generate synthetic frame (returns clean, noise, noisy)
+        clean_frame, noise_frame, raw_frame = generate_synthetic_frame(width, height, noise_level)
 
         # Process frame
         start_time = time.time()
         processed_frame = signal_processor.process_frame(raw_frame)
         processing_time = time.time() - start_time
 
-        # Calculate metrics
-        noise_estimate = raw_frame.astype(np.float32) - processed_frame.astype(np.float32)
+        # Calculate metrics using proper noise estimate
+        noise_estimate = clean_frame.astype(np.float32) - processed_frame.astype(np.float32)
         snr = calculate_snr(processed_frame, noise_estimate.astype(np.uint16))
         dr = calculate_dynamic_range(processed_frame)
-        color_accuracy, _ = calculate_color_accuracy(raw_frame, processed_frame)
+        color_accuracy, _ = calculate_color_accuracy(clean_frame, processed_frame)
         power_status = power_manager.get_power_status()
 
         metrics["snr"].append(snr)
@@ -120,12 +124,17 @@ def simulate_pipeline(width: int, height: int, num_frames: int, noise_level: flo
     # Calculate average metrics
     result: dict[str, Any] = {}
     for key, values in metrics.items():
-        result[key] = {
-            "mean": float(np.mean(values)),
-            "std": float(np.std(values)),
-            "min": float(np.min(values)),
-            "max": float(np.max(values)),
-        }
+        # Filter out inf values for mean calculation
+        filtered = [v for v in values if np.isfinite(v)]
+        if filtered:
+            result[key] = {
+                "mean": float(np.mean(filtered)),
+                "std": float(np.std(filtered)),
+                "min": float(np.min(filtered)),
+                "max": float(np.max(filtered)),
+            }
+        else:
+            result[key] = {"mean": 0.0, "std": 0.0, "min": 0.0, "max": 0.0}
 
     # Add throughput calculations
     total_time = sum(metrics["processing_time"])

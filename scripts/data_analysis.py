@@ -32,13 +32,35 @@ def load_data(file_path: str) -> dict[str, Any]:
         return json.load(f)
 
 
+def flatten_dict(data: dict[str, Any], prefix: str = "") -> dict[str, Any]:
+    """Flatten a nested dictionary structure."""
+    flat = {}
+    for key, value in data.items():
+        new_key = f"{prefix}_{key}" if prefix else key
+        if isinstance(value, dict) and "mean" in value:
+            # Handle nested structure with mean/std/min/max
+            flat[f"{new_key}_mean"] = value["mean"]
+            flat[f"{new_key}_std"] = value.get("std", 0)
+            flat[f"{new_key}_min"] = value.get("min", 0)
+            flat[f"{new_key}_max"] = value.get("max", 0)
+        elif isinstance(value, dict):
+            # Recursively flatten nested dicts
+            flat.update(flatten_dict(value, new_key))
+        elif isinstance(value, list):
+            flat[new_key] = value
+        else:
+            flat[new_key] = value
+    return flat
+
+
 def analyze_data(data: dict[str, Any]) -> dict[str, Any]:
     """Perform statistical analysis on the input data."""
+    flat_data = flatten_dict(data)
     analysis = {}
-    for key, value in data.items():
+    for key, value in flat_data.items():
         if isinstance(value, (int, float)):
             analysis[key] = {"value": value, "unit": get_unit(key)}
-        elif isinstance(value, list):
+        elif isinstance(value, list) and len(value) > 0:
             analysis[key] = {
                 "mean": np.mean(value),
                 "std": np.std(value),
@@ -51,8 +73,24 @@ def analyze_data(data: dict[str, Any]) -> dict[str, Any]:
 
 def get_unit(metric: str) -> str:
     """Return the appropriate unit for a given metric."""
-    units = {"snr": "dB", "dynamic_range": "dB", "color_accuracy": "Delta E", "power_consumption": "W", "processing_time": "s"}
-    return units.get(metric, "")
+    units = {
+        "snr": "dB",
+        "dynamic_range": "dB",
+        "color_accuracy": "Delta E",
+        "power_consumption": "W",
+        "processing_time": "s",
+        "throughput_fps": "fps",
+        "throughput_total_frames": "frames",
+        "throughput_total_time_s": "s",
+    }
+    # Check for exact match first
+    if metric in units:
+        return units[metric]
+    # Check for prefix matches (for flattened keys like snr_mean, snr_std, etc.)
+    for prefix, unit in units.items():
+        if metric.startswith(prefix + "_"):
+            return unit
+    return ""
 
 
 def plot_data(data: dict[str, Any], output_prefix: str):
@@ -70,14 +108,27 @@ def plot_data(data: dict[str, Any], output_prefix: str):
 def compare_data(data_list: list[dict[str, Any]]) -> dict[str, Any]:
     """Compare multiple datasets and compute relative improvements."""
     comparison = {}
+    if len(data_list) < 2:
+        return comparison
     baseline = data_list[0]
     for i, data in enumerate(data_list[1:], 1):
         comparison[f"comparison_{i}"] = {}
         for key in baseline.keys():
             if key in data:
-                baseline_value = baseline[key]["mean"] if isinstance(baseline[key], dict) else baseline[key]
-                current_value = data[key]["mean"] if isinstance(data[key], dict) else data[key]
-                improvement = (current_value - baseline_value) / baseline_value * 100
+                baseline_value = (
+                    baseline[key]["mean"]
+                    if isinstance(baseline[key], dict) and "mean" in baseline[key]
+                    else baseline[key]["value"] if isinstance(baseline[key], dict) else baseline[key]
+                )
+                current_value = (
+                    data[key]["mean"]
+                    if isinstance(data[key], dict) and "mean" in data[key]
+                    else data[key]["value"] if isinstance(data[key], dict) else data[key]
+                )
+                if baseline_value != 0:
+                    improvement = (current_value - baseline_value) / baseline_value * 100
+                else:
+                    improvement = 0.0
                 comparison[f"comparison_{i}"][key] = {
                     "baseline": baseline_value,
                     "current": current_value,
@@ -105,9 +156,9 @@ def main():
         print(f"Analysis for {file_path}:")
         for key, value in analysis.items():
             if isinstance(value, dict) and "mean" in value:
-                print(f"{key}: Mean = {value['mean']:.2f} ± {value['std']:.2f} {value['unit']}")
+                print(f"  {key}: Mean = {value['mean']:.2f} ± {value['std']:.2f} {value['unit']}")
             else:
-                print(f"{key}: {value['value']} {value['unit']}")
+                print(f"  {key}: {value['value']} {value['unit']}")
         print()
 
     if args.plot:
@@ -122,7 +173,7 @@ def main():
             print(f"\n{comp_key}:")
             for key, value in comp_data.items():
                 print(
-                    f"{key}: Improvement = {value['improvement']:.2f}% ({value['baseline']:.2f} -> {value['current']:.2f} {value['unit']})"
+                    f"  {key}: Improvement = {value['improvement']:.2f}% ({value['baseline']:.2f} -> {value['current']:.2f} {value['unit']})"
                 )
 
         results.append({"comparison": comparison})

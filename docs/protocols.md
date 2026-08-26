@@ -10,6 +10,10 @@ The system supports four major camera interface protocols:
 - **CoaXPress**: High-speed coaxial cable interface for industrial cameras
 - **GigE Vision**: Ethernet-based interface for network cameras
 - **USB3 Vision**: USB 3.0-based interface for consumer and professional cameras
+- AI/ML scene classification and adaptive processing
+- Neural calibration tuning for camera calibration optimization
+- MIPI Security Framework with PRE_SHARED_KEY authentication
+- Complete multi-sensor synchronization with ORB+RANSAC and Phase Correlation
 
 ## Protocol Comparison
 
@@ -30,6 +34,11 @@ The system supports four major camera interface protocols:
 
 ### Overview
 MIPI CSI-2 is the most widely used camera interface in mobile devices and embedded systems. It provides high-speed, low-power, and low-latency image data transmission.
+
+**v3.1.0 Enhancements:**
+- PRE_SHARED_KEY authentication support in SecurityConfig
+- Fixed string-to-enum conversion for SecurityConfig fields
+- AI/ML scene-aware processing integration
 
 **v3.0.0 Enhancements:**
 - D-PHY v2.5 support with 4.5 Gbps per lane
@@ -358,6 +367,11 @@ driver.set_feature("TriggerMode", "On")
 - **Power Management**: Disable for consistent performance
 - **Cable Quality**: Use high-quality USB 3.0 cables
 
+**v3.1.0 Enhancements:**
+- AI/ML scene-aware processing for USB3 cameras
+- Neural calibration tuning for USB3 camera calibration
+- USB3 streaming integration with multi-sensor synchronization
+
 ## Protocol Selection
 
 ### Choosing the Right Protocol
@@ -427,7 +441,16 @@ selector.activate_protocol(optimal_protocol)
 
 ## Future Enhancements
 
-### Planned Features
+### v3.1.0 Completed (Released 2026-08-21)
+- **AI/ML Integration Complete**: Neural Calibration Tuner with scikit-learn MLPRegressor fallback
+- **AI/ML Enhancements**: SceneClassifier, NoisePredictor, QualityAssessor with scene-aware processing
+- **Custom Extensions**: AINoiseReducer with scikit-learn denoising, AdaptiveColorCorrector
+- **Complete Multi-Sensor Synchronization**: Feature-based alignment (ORB+RANSAC), Phase Correlation (sub-pixel FFT)
+- **MIPI Security Framework Update**: PRE_SHARED_KEY authentication method support in SecurityConfig
+- **All TODOs Completed**: Neural tuner, multi-sensor sync, custom extensions, AI/ML enhancements
+- **Scripts & Benchmarks Fixed**: simulation.py, data_analysis.py, noise_analysis.py, benchmarks/__init__.py
+
+### Planned Features (v3.2+)
 - **Camera Link**: Support for Camera Link interface
 - **Thunderbolt**: High-speed Thunderbolt connectivity
 - **Wireless Protocols**: Wi-Fi and 5G camera interfaces
