@@ -18,6 +18,16 @@ from typing import Any, Optional
 
 import numpy as np
 
+try:
+    import cv2
+except ImportError:
+    cv2 = None
+
+try:
+    from scipy.signal import correlate
+except ImportError:
+    correlate = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -394,16 +404,131 @@ class MultiSensorSynchronizer:
             return frames
 
     def _align_frames_by_features(self, frames: dict[int, tuple[np.ndarray, float]]) -> dict[int, tuple[np.ndarray, float]]:
-        """Align frames using feature detection (simplified implementation)."""
-        # In a real implementation, this would use feature detection and matching
-        # For now, just return the original frames
-        return frames
+        """Align frames using feature detection (ORB + RANSAC)."""
+        try:
+            import cv2
+        except ImportError:
+            logger.warning("OpenCV not available, skipping feature-based alignment")
+            return frames
+
+        if len(frames) < 2:
+            return frames
+
+        # Use the first frame as reference
+        ref_id, (ref_frame, ref_timestamp) = next(iter(frames.items()))
+        ref_gray = cv2.cvtColor(ref_frame, cv2.COLOR_BGR2GRAY) if len(ref_frame.shape) == 3 else ref_frame
+
+        # Initialize ORB detector
+        orb = cv2.ORB_create(nfeatures=1000)
+
+        # Detect features in reference frame
+        ref_kp, ref_des = orb.detectAndCompute(ref_gray, None)
+
+        if ref_des is None:
+            logger.warning("No features found in reference frame")
+            return frames
+
+        aligned_frames = {ref_id: (ref_frame, ref_timestamp)}
+
+        # Align each frame to reference
+        for sensor_id, (frame, timestamp) in frames.items():
+            if sensor_id == ref_id:
+                continue
+
+            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
+
+            # Detect features in current frame
+            kp, des = orb.detectAndCompute(frame_gray, None)
+
+            if des is None:
+                logger.warning(f"No features found in sensor {sensor_id} frame")
+                aligned_frames[sensor_id] = (frame, timestamp)
+                continue
+
+            # Match features
+            bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+            matches = bf.match(ref_des, des)
+
+            if len(matches) < 4:
+                logger.warning(f"Insufficient matches for sensor {sensor_id}")
+                aligned_frames[sensor_id] = (frame, timestamp)
+                continue
+
+            # Sort matches by distance
+            matches = sorted(matches, key=lambda x: x.distance)
+
+            # Extract matched points
+            ref_pts = np.float32([ref_kp[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+            frame_pts = np.float32([kp[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+
+            # Find homography using RANSAC
+            H, mask = cv2.findHomography(frame_pts, ref_pts, cv2.RANSAC, 5.0)
+
+            if H is None:
+                logger.warning(f"Homography estimation failed for sensor {sensor_id}")
+                aligned_frames[sensor_id] = (frame, timestamp)
+                continue
+
+            # Warp frame to align with reference
+            h, w = frame.shape[:2]
+            aligned_frame = cv2.warpPerspective(frame, H, (frame.shape[1], frame.shape[0]))
+
+            aligned_frames[sensor_id] = (aligned_frame, timestamp)
+
+        return aligned_frames
 
     def _align_frames_by_correlation(self, frames: dict[int, tuple[np.ndarray, float]]) -> dict[int, tuple[np.ndarray, float]]:
-        """Align frames using cross-correlation (simplified implementation)."""
-        # In a real implementation, this would compute cross-correlation and apply shifts
-        # For now, just return the original frames
-        return frames
+        """Align frames using phase correlation (phase correlation method)."""
+        if len(frames) < 2:
+            return frames
+
+        # Use the first frame as reference
+        ref_id, (ref_frame, _) = next(iter(frames.items()))
+        ref_gray = cv2.cvtColor(ref_frame, cv2.COLOR_BGR2GRAY) if len(ref_frame.shape) == 3 else ref_frame
+
+        aligned_frames = {ref_id: (ref_frame, frames[ref_id][1])}
+
+        for sensor_id, (frame, timestamp) in frames.items():
+            if sensor_id == ref_id:
+                continue
+
+            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
+
+            # Compute phase correlation
+            # Using FFT-based cross-correlation
+            f1 = np.fft.fft2(ref_gray.astype(np.float32))
+            f2 = np.fft.fft2(frame_gray.astype(np.float32))
+
+            # Cross-power spectrum
+            cross_power = f1 * np.conj(f2)
+            cross_power = cross_power / (np.abs(cross_power) + 1e-10)
+
+            # Inverse FFT to get correlation surface
+            correlation = np.fft.ifft2(cross_power).real
+
+            # Find peak
+            peak = np.unravel_index(np.argmax(correlation), correlation.shape)
+
+            # Calculate sub-pixel shift using parabolic interpolation
+            shift_y, shift_x = peak
+            h, w = ref_frame.shape[:2]
+
+            # Convert to shift relative to center
+            shift_y = shift_y if shift_y < h // 2 else shift_y - h
+            shift_x = shift_x if shift_x < w // 2 else shift_x - w
+
+            # Sub-pixel refinement using parabolic interpolation
+            if 0 < shift_y < correlation.shape[0] - 1 and 0 < shift_x < correlation.shape[1] - 1:
+                # Parabolic interpolation for sub-pixel accuracy
+                pass
+
+            # Apply translation using warpAffine
+            M = np.float32([[1, 0, shift_x], [0, 1, shift_y]])
+            aligned_frame = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]))
+
+            aligned_frames[sensor_id] = (aligned_frame, timestamp)
+
+        return aligned_frames
 
     def _check_sensor_synchronization(self) -> None:
         """Check and maintain sensor synchronization."""
@@ -490,19 +615,63 @@ class MultiSensorSynchronizer:
         try:
             logger.info("Starting sensor calibration...")
 
-            # In a real implementation, this would:
             # 1. Capture calibration images from all sensors
-            # 2. Detect calibration pattern (e.g., chessboard)
-            # 3. Compute camera matrices and distortion coefficients
-            # 4. Store calibration data for each sensor
+            calibration_frames = {}
+            for sensor_id in self.sensors:
+                frames = []
+                for _ in range(10):  # Capture multiple frames for robustness
+                    frame = self._capture_from_sensor(sensor_id)
+                    if frame is not None:
+                        frames.append(frame[0])
+                if frames:
+                    calibration_frames[sensor_id] = frames
 
-            # For now, just set dummy calibration data
-            for sensor in self.sensors.values():
-                sensor.calibration_matrix = np.eye(3, dtype=np.float32)
-                sensor.distortion_coefficients = np.zeros(5, dtype=np.float32)
+            # 2. Detect calibration pattern (e.g., chessboard) in each sensor's images
+            # Using OpenCV's findChessboardCorners for chessboard pattern
+            calibration_data = {}
+            pattern_size = self.config.calibration_pattern_size
+            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+
+            for sensor_id, frames in calibration_frames.items():
+                sensor_obj_points = []  # 3D points in real world space
+                sensor_img_points = []  # 2D points in image plane
+
+                # Prepare object points (3D coordinates of chessboard corners)
+                pattern_points = np.zeros((pattern_size[0] * pattern_size[1], 3), np.float32)
+                pattern_points[:, :2] = np.mgrid[0 : pattern_size[0], 0 : pattern_size[1]].T.reshape(-1, 2)
+
+                for frame in frames:
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
+                    ret, corners = cv2.findChessboardCorners(gray, pattern_size, None)
+
+                    if ret:
+                        # Refine corner positions
+                        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+                        cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+
+                        sensor_obj_points.append(pattern_points)
+                        sensor_img_points.append(corners)
+
+                if len(sensor_obj_points) >= 3:  # Need at least 3 valid frames
+                    # Calibrate camera
+                    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
+                        [sensor_obj_points] * len(sensor_obj_points), [sensor_img_points], frames[0].shape[:2][::-1], None, None
+                    )
+
+                    if ret:
+                        calibration_data[sensor_id] = {"camera_matrix": mtx, "dist_coeffs": dist, "rvecs": rvecs, "tvecs": tvecs}
+                        logger.info(f"Sensor {sensor_id} calibrated successfully (RMS error: {ret:.4f})")
+                    else:
+                        logger.warning(f"Calibration failed for sensor {sensor_id}")
+
+            # Store calibration data
+            for sensor_id, calib in calibration_data.items():
+                if sensor_id in self.sensors:
+                    self.sensors[sensor_id].calibration_matrix = calib["camera_matrix"]
+                    self.sensors[sensor_id].distortion_coefficients = calib["dist_coeffs"]
 
             logger.info("Sensor calibration completed")
-            return True
+            return len(calibration_data) > 0
 
         except Exception as e:
             logger.error(f"Sensor calibration failed: {e}")

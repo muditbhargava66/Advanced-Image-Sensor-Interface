@@ -54,6 +54,7 @@ class SensorError(Exception):
     def __init__(
         self,
         message: str,
+        *,
         severity: ErrorSeverity = ErrorSeverity.MEDIUM,
         category: ErrorCategory = ErrorCategory.SOFTWARE,
         error_code: Optional[str] = None,

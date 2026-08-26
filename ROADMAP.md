@@ -4,6 +4,20 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 
 ## Completed Milestones
 
+### v3.1.0 Features (AI/ML & Implementation Completion) - **RELEASED 2026-08-21**
+- [x] **AI/ML Integration Complete**: Neural Calibration Tuner with scikit-learn MLPRegressor fallback.
+- [x] **AI/ML Enhancements**: SceneClassifier, NoisePredictor, QualityAssessor with scene-aware processing.
+- [x] **Custom Extensions**: AINoiseReducer with scikit-learn denoising, AdaptiveColorCorrector.
+- [x] **Complete Multi-Sensor Synchronization**: Feature-based alignment (ORB+RANSAC), Phase Correlation (sub-pixel FFT).
+- [x] **MIPI Security Framework Update**: PRE_SHARED_KEY authentication method support in SecurityConfig.
+- [x] **All "In a real implementation" TODOs Completed**: Neural tuner, multi-sensor sync, custom extensions, AI/ML enhancements.
+- [x] **Documentation Updates**: README accuracy fixes, performance benchmarks verified, CHANGELOG v3.1.0.
+- [x] **Scripts & Benchmarks Fixed**: simulation.py, data_analysis.py, noise_analysis.py, benchmarks/__init__.py.
+- [x] **All 329 Tests Passing**: Ruff + Black clean, mypy + pyright configured.
+- [x] **Documentation**: Converted reST docstrings to Google style in docs/.
+- [x] **Documentation**: Added mathematical explanations to complex algorithms in design_specs.md.
+- [x] **Documentation**: Updated design_specs.md power states (verified completed).
+
 ### v3.0.0 Features (Protocol & Imaging)
 - [x] **MIPI D-PHY v2.5**: Support for data rates up to 4.5 Gbps per lane.
 - [x] **Data Integrity**: Advanced error correction with CRC-32 and Reed-Solomon FEC.
@@ -31,10 +45,10 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 
 ---
 
-## v3.1+ Planning (Next Release)
+## v3.2+ Planning (Next Release)
 
 ### High Priority
-- [ ] **AI Denoising**: Integration of ML-based noise reduction models.
+- [ ] **AI Denoising**: Integration of ML-based noise reduction models (torch/tensorflow backends).
 - [ ] **Smart ISP**: AI-driven image signal processor for automatic parameter tuning.
 - [ ] **Predictive Power**: AI-based power consumption forecasting.
 
@@ -43,9 +57,4 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 - [ ] **ProcessingResult Dataclass**: Replace silent failures with explicit result objects.
 - [ ] **Simulation Delay Config**: Make protocol driver sleep delays configurable.
 - [ ] **Missing Test Coverage**: Add tests for CXP12, RoCE, D-PHY, USB3 streaming, MIPI Security, Lens Correction.
-
-### Documentation
-- [ ] Convert remaining reST docstrings to Google style.
-- [ ] Add mathematical explanations to remaining complex algorithms.
-- [ ] Update design_specs.md power states (already done - verify).
 

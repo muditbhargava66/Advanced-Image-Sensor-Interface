@@ -294,7 +294,7 @@ class USB3DeviceDiscovery:
         return simulated_devices
 
     def _create_simulated_device(
-        self, vendor_id: int, product_id: int, serial: str, manufacturer: str, product: str, usb_speed: USBSpeed
+        self, vendor_id: int, product_id: int, serial: str, manufacturer: str, product: str, *, usb_speed: USBSpeed
     ) -> DeviceInfo:
         """Create a simulated device for testing."""
         descriptor = DeviceDescriptor(

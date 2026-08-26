@@ -136,7 +136,7 @@ class RAWProcessor:
         Returns:
             Processed RGB image in the configured output bit depth.
 
-        Warning:
+        **WARNING: SILENT FAILURE BEHAVIOR**
             This method **silently returns a zero-filled fallback image** on any
             processing error (e.g., invalid input, memory errors, missing
             dependencies). An ERROR-level log is emitted, but no exception is

@@ -169,7 +169,7 @@ class SignalProcessor:
             TypeError: If frame is not a numpy ndarray.
             ValueError: If frame has an unsupported number of channels.
 
-        Warning:
+        **WARNING: SILENT FAILURE BEHAVIOR**
             This method **silently returns None or the original frame** on
             certain processing errors (empty frames, unsupported dtypes).
             An ERROR-level log is emitted, but no exception is raised for

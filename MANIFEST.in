@@ -2,8 +2,7 @@
 include README.md
 include CHANGELOG.md
 include LICENSE
-include CI_CD_SUMMARY.md
-include COMPLETION_SUMMARY.md
+include CITATION.cff
 
 # Include configuration files
 include pyproject.toml

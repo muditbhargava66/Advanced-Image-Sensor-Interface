@@ -542,7 +542,7 @@ class USBTransportLayer:
         return True
 
     def control_transfer(
-        self, request_type: int, request: int, value: int, index: int, data: Optional[bytes] = None, length: int = 0
+        self, request_type: int, request: int, value: int, index: int, *, data: Optional[bytes] = None, length: int = 0
     ) -> USBTransferResult:
         """
         Perform USB control transfer.

@@ -1,42 +1,30 @@
 """
 MIPI CSI-2 Simulation for Advanced Image Sensor Interface
 
-This module implements a MIPI CSI-2 protocol simulation and interface model for CMOS
-image sensors. This is NOT a hardware driver but a high-level simulation for development,
-testing, and validation purposes.
-
-IMPORTANT: This module simulates MIPI CSI-2 behavior and does not interface with actual
-hardware. Performance metrics are simulation targets, not measured hardware results.
-
-Classes:
-    MIPIConfig: Configuration parameters for MIPI simulation.
-    MIPIDriver: Main class for MIPI protocol simulation operations.
-
-Limitations:
-    - Pure Python simulation, not a kernel driver or hardware PHY
-    - Performance numbers are theoretical/simulated
-    - No actual MIPI CSI-2 packet handling or hardware integration
-    - For hardware integration, see documentation on V4L2/libcamera bindings
+This module provides the legacy MIPI CSI-2 driver for backward compatibility.
+For new code, use the protocol.mipi.driver.MIPIProtocolDriver instead.
 """
 
 import asyncio
 import logging
 import threading
 import time
+import warnings
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Protocol, runtime_checkable
 
-from ..config import get_mipi_config, get_processing_config, get_security_config, get_timing_config
-from ..utils.buffer_manager import ManagedBuffer, get_buffer_manager
+from ..config import get_processing_config, get_security_config, get_timing_config
+from ..utils.buffer_manager import get_buffer_manager, ManagedBuffer
 from .mipi_protocol import MIPIProtocolValidator
-from .security import SecurityLimits, SecurityManager, ValidationResult
+from .security import SecurityManager, SecurityLimits, ValidationResult
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+from .protocol.mipi.driver import MIPIConfig as NewMIPIConfig
+
 logger = logging.getLogger(__name__)
 
 
+# Protocol interfaces for dependency injection
 @runtime_checkable
 class SecurityManagerInterface(Protocol):
     """Interface for security manager dependency injection."""
@@ -44,6 +32,28 @@ class SecurityManagerInterface(Protocol):
     @abstractmethod
     def validate_mipi_data(self, data: bytes) -> "ValidationResult":
         """Validate MIPI data."""
+        ...
+
+    @property
+    def validator(self):
+        """Get the validator."""
+        ...
+
+    @property
+    def buffer_guard(self):
+        """Get the buffer guard."""
+        ...
+
+    def start_operation(self, operation_id: str) -> bool:
+        """Start a timed operation."""
+        ...
+
+    def end_operation(self, operation_id: str) -> None:
+        """End a timed operation."""
+        ...
+
+    def check_operation_timeout(self, operation_id: str) -> bool:
+        """Check if operation timed out."""
         ...
 
 
@@ -55,6 +65,71 @@ class ProtocolValidatorInterface(Protocol):
     def validate_packet(self, packet: bytes) -> bool:
         """Validate MIPI packet."""
         ...
+
+    def get_statistics(self) -> dict:
+        """Get validator statistics."""
+        ...
+
+
+logger = logging.getLogger(__name__)
+
+
+# Backward compatibility alias with deprecation warning
+class MIPIConfig:
+    """Deprecated: Use sensor_interface.protocol.mipi.driver.MIPIConfig instead."""
+
+    def __init__(self, lanes: int, data_rate: float, channel: int):
+        warnings.warn(
+            "MIPIConfig in mipi_driver is deprecated. " "Use sensor_interface.protocol.mipi.driver.MIPIConfig instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        # Convert to new MIPIConfig format
+        self._new_config = NewMIPIConfig(
+            lanes=lanes, data_rate_mbps=data_rate * 1000, virtual_channel=channel  # Convert Gbps to Mbps
+        )
+
+    @property
+    def data_rate(self) -> float:
+        """Data rate in Gbps (deprecated, use data_rate_mbps)."""
+        return self._new_config.data_rate_mbps / 1000
+
+    @data_rate.setter
+    def data_rate(self, value: float):
+        self._new_config.data_rate_mbps = value * 1000
+
+    @property
+    def channel(self) -> int:
+        """Virtual channel ID (deprecated, use virtual_channel)."""
+        return self._new_config.virtual_channel
+
+    @channel.setter
+    def channel(self, value: int):
+        self._new_config.virtual_channel = value
+
+    def __getattr__(self, name):
+        return getattr(self._new_config, name)
+
+    def __setattr__(self, name, value):
+        if name in ("_new_config",):
+            super().__setattr__(name, value)
+        elif name == "data_rate":
+            self._new_config.data_rate_mbps = value * 1000
+        elif name == "channel":
+            self._new_config.virtual_channel = value
+        else:
+            setattr(self._new_config, name, value)
+
+
+logger = logging.getLogger(__name__)
+
+
+# Get MIPI config constants
+def get_mipi_config():
+    """Get MIPI configuration constants."""
+    from ..config.constants import get_config
+
+    return get_config().mipi
 
 
 @dataclass
@@ -68,58 +143,44 @@ class OperationResult:
     execution_time: float = 0.0
 
 
+@dataclass
 class ErrorStatistics:
-    """Track error statistics for deterministic behavior."""
+    """Statistics for tracking MIPI driver errors."""
 
-    def __init__(self):
-        """Initialize error statistics."""
-        self._error_count = 0
-        self._total_operations = 0
-        self._lock = threading.Lock()
+    total_errors: int = 0
+    transmission_errors: int = 0
+    timeout_errors: int = 0
+    validation_errors: int = 0
+    total_operations: int = 0
+    successful_operations: int = 0
 
     def record_operation(self, success: bool):
         """Record an operation result."""
-        with self._lock:
-            self._total_operations += 1
-            if not success:
-                self._error_count += 1
+        self.total_operations += 1
+        if success:
+            self.successful_operations += 1
+        else:
+            self.total_errors += 1
+
+    def record_error(self, error_type: str) -> None:
+        """Record an error of the specified type."""
+        self.total_errors += 1
+        if error_type == "transmission":
+            self.transmission_errors += 1
+        elif error_type == "timeout":
+            self.timeout_errors += 1
+        elif error_type == "validation":
+            self.validation_errors += 1
 
     def get_rate(self) -> float:
         """Get current error rate."""
-        with self._lock:
-            if self._total_operations == 0:
-                return 0.0
-            return self._error_count / self._total_operations
-
-    def reset(self):
-        """Reset statistics."""
-        with self._lock:
-            self._error_count = 0
-            self._total_operations = 0
+        if self.total_operations == 0:
+            return 0.0
+        return self.total_errors / self.total_operations
 
 
-@dataclass
-class MIPIConfig:
-    """Configuration parameters for MIPI communication."""
-
-    lanes: int  # Number of data lanes (1-4)
-    data_rate: float  # Data rate in Gbps per lane
-    channel: int  # Virtual channel ID (0-3)
-
-    def __post_init__(self):
-        """Validate configuration parameters."""
-        mipi_config = get_mipi_config()
-
-        if self.lanes < mipi_config.MIN_LANES or self.lanes > mipi_config.MAX_LANES:
-            raise ValueError(f"Number of lanes must be between {mipi_config.MIN_LANES} and {mipi_config.MAX_LANES}")
-
-        if self.data_rate < mipi_config.MIN_DATA_RATE or self.data_rate > mipi_config.MAX_DATA_RATE:
-            raise ValueError(f"Data rate must be between {mipi_config.MIN_DATA_RATE} and {mipi_config.MAX_DATA_RATE} Gbps")
-
-        if self.channel < mipi_config.MIN_CHANNEL or self.channel > mipi_config.MAX_CHANNEL:
-            raise ValueError(f"Channel must be between {mipi_config.MIN_CHANNEL} and {mipi_config.MAX_CHANNEL}")
-
-
+# Legacy MIPIDriver class for backward compatibility with tests
+# This implements the old interface but delegates to new driver where possible
 class MIPIDriver:
     """
     High-performance MIPI CSI-2 driver for image sensor communication.
