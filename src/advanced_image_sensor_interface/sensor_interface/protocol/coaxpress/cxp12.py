@@ -10,8 +10,9 @@ Key Features:
 - Enhanced triggering with sub-microsecond precision
 - Multi-connection load balancing
 - Power delivery over coax
+- Configurable simulation delays for realistic hardware behavior
 
-Version: 3.0.0
+Version: 3.2.0
 """
 
 import logging
@@ -21,6 +22,8 @@ from enum import Enum
 from typing import Any, Optional
 
 import numpy as np
+
+from advanced_image_sensor_interface.types import SimulationDelayConfig
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +79,7 @@ class CXP12Config:
         trigger_mode: Trigger mode for acquisition
         packet_size: Maximum packet size in bytes
         power_over_coax: Enable power delivery
+        simulation_delays: Optional configurable simulation delays
     """
 
     speed: CXPSpeed = CXPSpeed.CXP_12
@@ -97,6 +101,9 @@ class CXP12Config:
     enable_link_aggregation: bool = True
     discovery_timeout_s: float = 5.0
 
+    # Simulation delay configuration (v3.2.0+)
+    simulation_delays: Optional[SimulationDelayConfig] = None
+
     def __post_init__(self) -> None:
         """Validate configuration."""
         if not 1 <= self.lanes <= 4:
@@ -107,6 +114,9 @@ class CXP12Config:
 
         if self.master_connection >= self.lanes:
             raise ValueError("Master connection must be less than lane count")
+
+        if self.simulation_delays is None:
+            self.simulation_delays = SimulationDelayConfig()
 
     @property
     def aggregate_bandwidth_gbps(self) -> float:
@@ -385,7 +395,10 @@ class CXP12Driver:
         try:
             logger.info("Connecting to CXP-12 device...")
 
-            # Discover device
+            # Discover device with configurable delay
+            delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.device_discovery_delay)
+            time.sleep(delay)
+
             if not self._discover_device():
                 return False
 
@@ -414,6 +427,10 @@ class CXP12Driver:
         if self.is_streaming:
             self.stop_streaming()
 
+        # Apply streaming teardown delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.streaming_teardown_delay)
+        time.sleep(delay)
+
         self.link_manager.shutdown_links()
         self.is_connected = False
         logger.info("CXP-12 disconnected")
@@ -432,6 +449,11 @@ class CXP12Driver:
 
         self.trigger_controller.arm()
         self.is_streaming = True
+
+        # Apply streaming setup delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.streaming_setup_delay)
+        time.sleep(delay)
+
         logger.info("CXP-12 streaming started")
         return True
 
@@ -444,6 +466,11 @@ class CXP12Driver:
         """
         self.trigger_controller.disarm()
         self.is_streaming = False
+
+        # Apply streaming teardown delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.streaming_teardown_delay)
+        time.sleep(delay)
+
         logger.info("CXP-12 streaming stopped")
         return True
 
@@ -462,6 +489,10 @@ class CXP12Driver:
             # Trigger if in software mode
             if self.config.trigger_mode == TriggerMode.SOFTWARE:
                 self.trigger_controller.software_trigger()
+
+            # Simulate frame capture with configurable delay
+            delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.frame_capture_delay)
+            time.sleep(delay)
 
             # Simulate frame capture
             width, height = 4096, 3072
@@ -491,6 +522,10 @@ class CXP12Driver:
         if not self.is_connected:
             return False
 
+        # Apply command transfer delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.command_transfer_delay)
+        time.sleep(delay)
+
         # Distribute across links
         distribution = self.link_manager.distribute_data(data)
         logger.debug(f"Sent command to address 0x{address:08X}, {len(data)} bytes")
@@ -509,6 +544,10 @@ class CXP12Driver:
         """
         if not self.is_connected:
             return None
+
+        # Apply register read delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.register_read_delay)
+        time.sleep(delay)
 
         # Simulate register read
         return bytes(size)
@@ -536,9 +575,10 @@ class CXP12Driver:
 
     def _discover_device(self) -> bool:
         """Discover CXP-12 device."""
-        # Simulate device discovery
+        # Simulate device discovery with configurable delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.device_discovery_delay)
+        time.sleep(delay)
         logger.debug("Discovering CXP-12 devices...")
-        time.sleep(0.1)  # Simulated discovery delay
         return True
 
     def _read_device_info(self) -> None:

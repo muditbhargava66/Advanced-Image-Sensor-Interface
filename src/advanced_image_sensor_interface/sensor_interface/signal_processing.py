@@ -20,6 +20,7 @@ import numpy as np
 
 from ..config import get_processing_config, get_test_config, get_timing_config
 from .image_validation import ImageFormat, ImageValidator, SafeImageProcessor, SupportedDType
+from ..types import ProcessingMetrics, SignalProcessingResult
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -153,7 +154,7 @@ class SignalProcessor:
         else:
             raise ValueError(f"Unsupported bit depth: {bit_depth}")
 
-    def process_frame(self, frame: np.ndarray) -> np.ndarray | None:
+    def process_frame(self, frame: np.ndarray) -> SignalProcessingResult:
         """
         Process a single frame of image data with comprehensive validation.
 
@@ -161,24 +162,28 @@ class SignalProcessor:
             frame (np.ndarray): Input frame data.
 
         Returns:
-            np.ndarray | None: Processed frame data in original format,
-                or None if the frame could not be processed (e.g., empty
-                frames or unsupported dtypes that cannot be converted).
+            SignalProcessingResult: Result object containing processed data,
+                success status, error info, warnings, and metrics.
 
         Raises:
             TypeError: If frame is not a numpy ndarray.
             ValueError: If frame has an unsupported number of channels.
-
-        **WARNING: SILENT FAILURE BEHAVIOR**
-            This method **silently returns None or the original frame** on
-            certain processing errors (empty frames, unsupported dtypes).
-            An ERROR-level log is emitted, but no exception is raised for
-            these cases. Callers that require failure detection MUST check
-            for None returns or check logs.
         """
+        start_time = time.perf_counter()
+        warnings = []
+        metrics = ProcessingMetrics(algorithm_name="SignalProcessor")
+        noise_reduction_applied = False
+        dynamic_range_expanded = False
+        color_correction_applied = False
+        snr_improvement_db = 0.0
+
         # CQ-3: Explicit type guard before entering the try block
         if not isinstance(frame, np.ndarray):
-            raise TypeError(f"Expected np.ndarray, got {type(frame).__name__}")
+            return SignalProcessingResult(
+                success=False,
+                error=f"Expected np.ndarray, got {type(frame).__name__}",
+                metrics=ProcessingMetrics(processing_time_ms=(time.perf_counter() - start_time) * 1000),
+            )
 
         try:
             # Validate input frame
@@ -202,35 +207,121 @@ class SignalProcessor:
             # Create safe processor for this frame
             processor = SafeImageProcessor(target_format)
 
+            # Track original frame for SNR calculation
+            original_frame = frame.astype(float)
+
             # Define processing pipeline
             def processing_pipeline(float_frame: np.ndarray) -> np.ndarray:
-                processed = self._apply_noise_reduction(float_frame)
-                processed = self._apply_dynamic_range_expansion(processed)
-                processed = self._apply_color_correction(processed)
+                nonlocal noise_reduction_applied, dynamic_range_expanded, color_correction_applied
+
+                # Apply noise reduction
+                if self.config.noise_reduction_strength > 0:
+                    processed = self._apply_noise_reduction(float_frame)
+                    noise_reduction_applied = True
+                else:
+                    processed = float_frame
+
+                # Apply dynamic range expansion
+                if processed.min() != processed.max():
+                    processed = self._apply_dynamic_range_expansion(processed)
+                    dynamic_range_expanded = True
+
+                # Apply color correction
+                if processed.ndim == 3 and processed.shape[2] == 3:
+                    processed = self._apply_color_correction(processed)
+                    color_correction_applied = True
+
                 return processed
 
             # Process safely
-            return processor.safe_process(frame, processing_pipeline)
+            processed_frame = processor.safe_process(frame, processing_pipeline)
+
+            if processed_frame is None:
+                return SignalProcessingResult(
+                    success=False,
+                    error="Processing returned None (empty frame or validation failed)",
+                    warnings=warnings,
+                    metrics=ProcessingMetrics(processing_time_ms=(time.perf_counter() - start_time) * 1000),
+                )
+
+            # Calculate SNR improvement (simplified)
+            if noise_reduction_applied:
+                original_noise = np.std(original_frame - np.mean(original_frame))
+                processed_noise = np.std(processed_frame - np.mean(processed_frame))
+                if processed_noise > 0 and original_noise > 0:
+                    snr_improvement_db = 20 * np.log10(original_noise / processed_noise)
+
+            processing_time_ms = (time.perf_counter() - start_time) * 1000
+            metrics = ProcessingMetrics(
+                processing_time_ms=processing_time_ms,
+                algorithm_name="SignalProcessor",
+                parameters={
+                    "bit_depth": self.config.bit_depth,
+                    "noise_reduction_strength": self.config.noise_reduction_strength,
+                    "noise_reduction_applied": noise_reduction_applied,
+                    "dynamic_range_expanded": dynamic_range_expanded,
+                    "color_correction_applied": color_correction_applied,
+                },
+            )
+
+            return SignalProcessingResult(
+                success=True,
+                data=processed_frame,
+                warnings=warnings,
+                metrics=metrics,
+                snr_improvement_db=snr_improvement_db,
+                noise_reduction_applied=noise_reduction_applied,
+                dynamic_range_expanded=dynamic_range_expanded,
+                color_correction_applied=color_correction_applied,
+            )
 
         except Exception as e:
             logger.error(f"Error processing frame: {e!s}")
+            processing_time_ms = (time.perf_counter() - start_time) * 1000
+
             # Handle empty frames gracefully
             if isinstance(e, ValueError) and "empty" in str(e).lower():
-                return None  # Return None for empty frames
+                return SignalProcessingResult(
+                    success=False,
+                    error="Empty frame",
+                    warnings=warnings,
+                    metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
+                )
             # Handle unsupported dtypes gracefully
             elif isinstance(e, ValueError) and "dtype" in str(e).lower():
-                # Try to convert to a supported dtype and return
                 try:
                     if frame.dtype == np.float64:
-                        # Convert float64 to uint16
                         converted = (frame * 65535).astype(np.uint16)
-                        return converted
-                    return frame.astype(np.uint16)  # Default conversion
-                except Exception:
-                    return None
+                        return SignalProcessingResult(
+                            success=True,
+                            data=converted,
+                            warnings=[f"Converted from float64 to uint16: {e!s}"],
+                            metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
+                        )
+                    converted = frame.astype(np.uint16)
+                    return SignalProcessingResult(
+                        success=True,
+                        data=converted,
+                        warnings=[f"Converted to uint16: {e!s}"],
+                        metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
+                    )
+                except Exception as conv_e:
+                    return SignalProcessingResult(
+                        success=False,
+                        error=f"Failed to convert dtype: {conv_e}",
+                        warnings=warnings,
+                        metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
+                    )
             elif isinstance(e, ValueError):
-                raise  # Re-raise other ValueError for tests to catch
-            return frame
+                return SignalProcessingResult(
+                    success=False,
+                    error=str(e),
+                    warnings=warnings,
+                    metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
+                )
+            return SignalProcessingResult(
+                success=False, error=str(e), warnings=warnings, metrics=ProcessingMetrics(processing_time_ms=processing_time_ms)
+            )
 
     def _apply_noise_reduction(self, frame: np.ndarray) -> np.ndarray:
         """Apply noise reduction to the frame."""
@@ -363,8 +454,8 @@ class AutomatedTestSuite:
         passed_tests = 0
         for i, test_case in enumerate(self._test_cases):
             try:
-                processed_frame = self.signal_processor.process_frame(test_case)
-                if self._validate_processed_frame(processed_frame):
+                result = self.signal_processor.process_frame(test_case)
+                if result.success and self._validate_processed_frame(result.data):
                     passed_tests += 1
             except Exception as e:
                 logger.error(f"Test case {i} failed: {e!s}")
@@ -376,9 +467,10 @@ class AutomatedTestSuite:
         logger.info(f"Test suite completed in {self._execution_time:.2f} seconds with {self._pass_rate:.2%} pass rate")
         return self._execution_time, self._pass_rate
 
-    def _validate_processed_frame(self, frame: np.ndarray) -> bool:
+    def _validate_processed_frame(self, frame: np.ndarray | None) -> bool:
         """Validate a processed frame."""
-        # Implement various checks here. For simplicity, we'll just check if the frame is not empty
+        if frame is None:
+            return False
         return frame.size > 0 and not np.isnan(frame).any()
 
 
@@ -418,12 +510,21 @@ if __name__ == "__main__":
     initial_frame = np.random.rand(1080, 1920, 3)
 
     start_time = time.time()
-    processor.process_frame(initial_frame)
+    result = processor.process_frame(initial_frame)
     initial_processing_time = time.time() - start_time
 
     start_time = time.time()
-    processor.process_frame(initial_frame)
+    result = processor.process_frame(initial_frame)
     optimized_processing_time = time.time() - start_time
 
     performance_improvement = (initial_processing_time - optimized_processing_time) / initial_processing_time * 100
     print(f"Overall system performance improvement: {performance_improvement:.2f}%")
+
+    # Show new result structure
+    print("\nSignalProcessingResult example:")
+    print(f"  Success: {result.success}")
+    print(f"  SNR Improvement: {result.snr_improvement_db:.2f} dB")
+    print(f"  Noise Reduction: {result.noise_reduction_applied}")
+    print(f"  Dynamic Range: {result.dynamic_range_expanded}")
+    print(f"  Color Correction: {result.color_correction_applied}")
+    print(f"  Processing Time: {result.metrics.processing_time_ms:.2f} ms")

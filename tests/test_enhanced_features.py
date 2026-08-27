@@ -180,17 +180,23 @@ class TestHDRProcessing:
         """Test single image HDR processing."""
         result = self.hdr_processor.process_single_image(self.test_image)
 
-        assert isinstance(result, np.ndarray)
-        assert result.shape == self.test_image.shape
-        assert result.dtype == np.uint8
+        from advanced_image_sensor_interface.types import HDRProcessingResult
+
+        assert isinstance(result, HDRProcessingResult)
+        assert result.success
+        assert result.data.shape == self.test_image.shape
+        assert result.data.dtype == np.uint8
 
     def test_exposure_stack_processing(self):
         """Test exposure stack HDR processing."""
         result = self.hdr_processor.process_exposure_stack(self.test_images, self.exposure_values)
 
-        assert isinstance(result, np.ndarray)
-        assert result.shape == self.test_images[0].shape
-        assert result.dtype == np.uint8
+        from advanced_image_sensor_interface.types import HDRProcessingResult
+
+        assert isinstance(result, HDRProcessingResult)
+        assert result.success
+        assert result.data.shape == self.test_images[0].shape
+        assert result.data.dtype == np.uint8
 
     def test_tone_mapping_methods(self):
         """Test different tone mapping methods."""
@@ -201,7 +207,10 @@ class TestHDRProcessing:
             processor = HDRProcessor(params)
 
             result = processor.process_single_image(self.test_image)
-            assert isinstance(result, np.ndarray)
+            from advanced_image_sensor_interface.types import HDRProcessingResult
+
+            assert isinstance(result, HDRProcessingResult)
+            assert result.success
 
     def test_processing_stats(self):
         """Test HDR processing statistics."""
@@ -246,11 +255,14 @@ class TestRAWProcessing:
         """Test RAW to RGB processing."""
         result = self.raw_processor.process_raw_image(self.raw_data)
 
-        assert isinstance(result, np.ndarray)
-        assert len(result.shape) == 3  # Should be RGB
-        assert result.shape[:2] == self.raw_data.shape  # Same height/width
-        assert result.shape[2] == 3  # RGB channels
-        assert result.dtype == np.uint8
+        from advanced_image_sensor_interface.types import RAWProcessingResult
+
+        assert isinstance(result, RAWProcessingResult)
+        assert result.success
+        assert len(result.data.shape) == 3  # Should be RGB
+        assert result.data.shape[:2] == self.raw_data.shape  # Same height/width
+        assert result.data.shape[2] == 3  # RGB channels
+        assert result.data.dtype == np.uint8
 
     def test_demosaic_methods(self):
         """Test different demosaicing methods."""
@@ -261,8 +273,11 @@ class TestRAWProcessing:
             processor = RAWProcessor(params)
 
             result = processor.process_raw_image(self.raw_data)
-            assert isinstance(result, np.ndarray)
-            assert len(result.shape) == 3
+            from advanced_image_sensor_interface.types import RAWProcessingResult
+
+            assert isinstance(result, RAWProcessingResult)
+            assert result.success
+            assert len(result.data.shape) == 3
 
     def test_bayer_patterns(self):
         """Test different Bayer patterns."""
@@ -273,7 +288,10 @@ class TestRAWProcessing:
             processor = RAWProcessor(params)
 
             result = processor.process_raw_image(self.raw_data)
-            assert isinstance(result, np.ndarray)
+            from advanced_image_sensor_interface.types import RAWProcessingResult
+
+            assert isinstance(result, RAWProcessingResult)
+            assert result.success
 
     def test_processing_stats(self):
         """Test RAW processing statistics."""
@@ -543,10 +561,20 @@ class TestV2FeatureIntegration:
 
         assert raw_frame is not None
         # Process RAW to RGB
-        rgb_frame = raw_processor.process_raw_image(raw_frame)
+        from advanced_image_sensor_interface.types import RAWProcessingResult
+
+        raw_result = raw_processor.process_raw_image(raw_frame)
+        assert isinstance(raw_result, RAWProcessingResult)
+        assert raw_result.success
+        rgb_frame = raw_result.data
 
         # Apply HDR processing
-        hdr_frame = hdr_processor.process_single_image(rgb_frame)
+        from advanced_image_sensor_interface.types import HDRProcessingResult
+
+        hdr_result = hdr_processor.process_single_image(rgb_frame)
+        assert isinstance(hdr_result, HDRProcessingResult)
+        assert hdr_result.success
+        hdr_frame = hdr_result.data
         assert isinstance(hdr_frame, np.ndarray)
 
         sensor.stop_streaming()

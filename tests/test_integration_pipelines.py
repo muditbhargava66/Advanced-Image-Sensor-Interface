@@ -90,7 +90,14 @@ class TestFullPipelineIntegration:
             received_frame = np.frombuffer(received_bytes, dtype=np.uint16).reshape(height, width, 3)
 
         # Step 3: Process the received frame
-        processed_frame = signal_processor.process_frame(received_frame)
+        result = signal_processor.process_frame(received_frame)
+
+        from advanced_image_sensor_interface.types import SignalProcessingResult
+
+        assert isinstance(result, SignalProcessingResult)
+        assert result.success
+
+        processed_frame = result.data
 
         assert processed_frame.shape == test_pattern.shape
         assert processed_frame.dtype == test_pattern.dtype
@@ -133,7 +140,12 @@ class TestFullPipelineIntegration:
             assert components["mipi_driver"].send_data(frame_bytes)
 
             # Process
-            processed = components["signal_processor"].process_frame(frame)
+            result = components["signal_processor"].process_frame(frame)
+            from advanced_image_sensor_interface.types import SignalProcessingResult
+
+            assert isinstance(result, SignalProcessingResult)
+            assert result.success
+            processed = result.data
             processed_frames.append(processed)
 
         # Validate all frames processed correctly
@@ -166,7 +178,14 @@ class TestFullPipelineIntegration:
         )
         signal_processor = SignalProcessor(signal_config)
 
-        processed_frame = signal_processor.process_frame(noisy_pattern)
+        result = signal_processor.process_frame(noisy_pattern)
+
+        from advanced_image_sensor_interface.types import SignalProcessingResult
+
+        assert isinstance(result, SignalProcessingResult)
+        assert result.success
+
+        processed_frame = result.data
 
         # Test noise reduction effectiveness by comparing variance
         if noise_level > 0:
@@ -280,7 +299,14 @@ class TestFullPipelineIntegration:
             received_bytes = components["mipi_driver"].receive_data(len(frame_bytes))
             received_frame = np.frombuffer(received_bytes, dtype=np.uint16).reshape(height, width, 3)
 
-            processed_frame = components["signal_processor"].process_frame(received_frame)
+            result = components["signal_processor"].process_frame(received_frame)
+
+            from advanced_image_sensor_interface.types import SignalProcessingResult
+
+            assert isinstance(result, SignalProcessingResult)
+            assert result.success
+
+            processed_frame = result.data
 
             # Calculate color accuracy
             # Use center region to avoid edge effects
@@ -316,7 +342,14 @@ class TestFullPipelineIntegration:
         # Grayscale pattern is 2D, so reshape accordingly
         received_frame = np.frombuffer(received_bytes, dtype=np.uint16).reshape(gradient_pattern.shape)
 
-        processed_frame = components["signal_processor"].process_frame(received_frame)
+        result = components["signal_processor"].process_frame(received_frame)
+
+        from advanced_image_sensor_interface.types import SignalProcessingResult
+
+        assert isinstance(result, SignalProcessingResult)
+        assert result.success
+
+        processed_frame = result.data
 
         # Calculate dynamic range
         original_dr = calculate_dynamic_range(gradient_pattern)
@@ -366,7 +399,14 @@ class TestStressConditions:
             received_bytes = components["mipi_driver"].receive_data(len(frame_bytes))
             received_frame = np.frombuffer(received_bytes, dtype=np.uint16).reshape(height, width, 3)
 
-            processed_frame = components["signal_processor"].process_frame(received_frame)
+            result = components["signal_processor"].process_frame(received_frame)
+
+            from advanced_image_sensor_interface.types import SignalProcessingResult
+
+            assert isinstance(result, SignalProcessingResult)
+            assert result.success
+
+            processed_frame = result.data
 
             processing_time = time.time() - start_time
             processing_times.append(processing_time)
@@ -415,7 +455,13 @@ class TestStressConditions:
             components["mipi_driver"].send_data(frame_bytes)
             received_bytes = components["mipi_driver"].receive_data(len(frame_bytes))
             received_frame = np.frombuffer(received_bytes, dtype=np.uint16).reshape(height, width, 3)
-            components["signal_processor"].process_frame(received_frame)
+
+            result = components["signal_processor"].process_frame(received_frame)
+
+            from advanced_image_sensor_interface.types import SignalProcessingResult
+
+            assert isinstance(result, SignalProcessingResult)
+            assert result.success
 
         # Check final memory usage
         final_memory = process.memory_info().rss
@@ -432,14 +478,18 @@ class TestStressConditions:
         # Test with invalid frame dimensions
         invalid_frame = np.zeros((0, 0, 3), dtype=np.uint16)
         result = components["signal_processor"].process_frame(invalid_frame)
-        # Should handle gracefully (return None or empty array)
-        assert result is None or result.size == 0
+        # Should handle gracefully (return SignalProcessingResult with success=False)
+        from advanced_image_sensor_interface.types import SignalProcessingResult
+
+        assert isinstance(result, SignalProcessingResult)
+        assert not result.success
 
         # Test with wrong data type
         wrong_type_frame = np.random.rand(100, 100, 3).astype(np.float64)
         result = components["signal_processor"].process_frame(wrong_type_frame)
         # Should handle gracefully
-        assert result is not None  # Should convert or handle appropriately
+        assert isinstance(result, SignalProcessingResult)
+        assert result.success  # Should convert and process
 
         # Test MIPI with invalid data sizes
         invalid_data = b"invalid"

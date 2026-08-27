@@ -10,8 +10,9 @@ Key Features:
 - Stream statistics and monitoring
 - Error recovery and retry logic
 - Multi-stream support
+- Configurable simulation delays for realistic hardware behavior
 
-Version: 3.0.0
+Version: 3.2.0
 """
 
 import logging
@@ -23,6 +24,8 @@ from enum import Enum
 from typing import Optional
 
 import numpy as np
+
+from advanced_image_sensor_interface.types import SimulationDelayConfig
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +80,18 @@ class StreamBuffer:
 
 @dataclass
 class StreamConfig:
-    """Configuration for streaming."""
+    """Configuration for streaming.
+
+    Attributes:
+        buffer_count: Number of buffers in pool
+        buffer_size: Size of each buffer (0 = auto-calculate)
+        timeout_ms: Timeout for frame capture
+        payload_type: Type of payload (image, chunk, etc.)
+        enable_chunk_data: Enable chunk data support
+        enable_timestamps: Enable timestamp generation
+        max_retries: Maximum retry attempts
+        simulation_delays: Optional configurable simulation delays
+    """
 
     buffer_count: int = 10
     buffer_size: int = 0  # 0 = auto-calculate
@@ -87,6 +101,9 @@ class StreamConfig:
     enable_timestamps: bool = True
     max_retries: int = 3
 
+    # Simulation delay configuration (v3.2.0+)
+    simulation_delays: Optional[SimulationDelayConfig] = None
+
     def __post_init__(self) -> None:
         """Validate configuration."""
         if self.buffer_count < 2:
@@ -94,6 +111,9 @@ class StreamConfig:
 
         if self.timeout_ms < 100:
             raise ValueError("Timeout must be at least 100ms")
+
+        if self.simulation_delays is None:
+            self.simulation_delays = SimulationDelayConfig()
 
 
 @dataclass
@@ -347,6 +367,10 @@ class USB3StreamingManager:
         if self.config.buffer_size > 0:
             buffer_size = max(buffer_size, self.config.buffer_size)
 
+        # Apply buffer allocation delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.buffer_allocation_delay)
+        time.sleep(delay)
+
         # Allocate buffers
         if not self.buffer_pool.allocate(buffer_size):
             self._state = StreamState.ERROR
@@ -370,8 +394,13 @@ class USB3StreamingManager:
         self._start_time = time.time()
         self._frame_counter = 0
 
-        # Queue initial buffers
-        for _ in range(min(5, self.config.buffer_count)):
+        # Apply streaming setup delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.streaming_setup_delay)
+        time.sleep(delay)
+
+        # Queue initial buffers (leave most free for capture simulation)
+        num_to_queue = min(2, self.config.buffer_count)
+        for _ in range(num_to_queue):
             buffer = self.buffer_pool.get_free_buffer()
             if buffer is None:
                 break
@@ -390,6 +419,10 @@ class USB3StreamingManager:
             return True
 
         self._state = StreamState.STOPPING
+
+        # Apply streaming teardown delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.streaming_teardown_delay)
+        time.sleep(delay)
 
         # Update statistics
         if self._start_time:
@@ -494,6 +527,10 @@ class USB3StreamingManager:
         if buffer is None:
             self._statistics.buffer_underruns += 1
             return None
+
+        # Apply frame capture delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.frame_capture_delay)
+        time.sleep(delay)
 
         # Generate simulated frame
         self._frame_counter += 1

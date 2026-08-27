@@ -5,11 +5,14 @@ capabilities including tone mapping, exposure fusion, and HDR reconstruction.
 """
 
 import logging
+import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
 import numpy as np
+
+from ..types import HDRProcessingResult, ProcessingMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +90,7 @@ class HDRProcessor:
         self.parameters = parameters or HDRParameters()
         logger.info(f"HDR processor initialized with {self.parameters.tone_mapping_method.value} tone mapping")
 
-    def process_single_image(self, image: np.ndarray, exposure_value: float = 0.0) -> np.ndarray:
+    def process_single_image(self, image: np.ndarray, exposure_value: float = 0.0) -> HDRProcessingResult:
         """Process a single image with HDR techniques.
 
         Args:
@@ -95,14 +98,15 @@ class HDRProcessor:
             exposure_value: Exposure value for the image.
 
         Returns:
-            HDR processed image in the same dtype as the input.
-
-        **WARNING: SILENT FAILURE BEHAVIOR**
-            This method **silently returns the original input image** on any
-            processing error. An ERROR-level log is emitted, but no exception
-            is raised. Callers that require failure detection MUST check logs
-            or wrap this method in a try/except block.
+            HDRProcessingResult: Result object containing processed data,
+                success status, error info, warnings, and metrics.
         """
+        start_time = time.perf_counter()
+        warnings = []
+        metrics = ProcessingMetrics(algorithm_name="HDRProcessor")
+        ghost_reduction_applied = False
+        alignment_quality = 0.0
+
         try:
             # Convert to float32 for processing
             if image.dtype == np.uint8:
@@ -124,13 +128,44 @@ class HDRProcessor:
                 tone_mapped = np.power(tone_mapped, 1.0 / self.parameters.gamma)
 
             # Convert to output format
-            return self._convert_to_output_format(tone_mapped)
+            result_image = self._convert_to_output_format(tone_mapped)
+
+            processing_time_ms = (time.perf_counter() - start_time) * 1000
+            metrics = ProcessingMetrics(
+                processing_time_ms=processing_time_ms,
+                algorithm_name=f"HDRProcessor_{self.parameters.tone_mapping_method.value}",
+                parameters={
+                    "tone_mapping_method": self.parameters.tone_mapping_method.value,
+                    "gamma": self.parameters.gamma,
+                    "exposure_compensation": self.parameters.exposure_compensation,
+                    "exposure_value": exposure_value,
+                    "output_bit_depth": self.parameters.output_bit_depth,
+                },
+            )
+
+            return HDRProcessingResult(
+                success=True,
+                data=result_image,
+                warnings=warnings,
+                metrics=metrics,
+                tone_mapping_algorithm=self.parameters.tone_mapping_method.value,
+                exposure_fusion_used=False,
+                ghost_reduction_applied=ghost_reduction_applied,
+                alignment_quality=alignment_quality,
+            )
 
         except Exception as e:
             logger.error(f"HDR processing failed: {e}")
-            return image
+            processing_time_ms = (time.perf_counter() - start_time) * 1000
+            return HDRProcessingResult(
+                success=False,
+                data=image,
+                error=str(e),
+                warnings=warnings,
+                metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
+            )
 
-    def process_exposure_stack(self, images: list[np.ndarray], exposure_values: list[float] | None = None) -> np.ndarray:
+    def process_exposure_stack(self, images: list[np.ndarray], exposure_values: list[float] | None = None) -> HDRProcessingResult:
         """Process a stack of images with different exposures.
 
         Args:
@@ -139,21 +174,27 @@ class HDRProcessor:
                 If None, values are auto-generated as a linear ramp.
 
         Returns:
-            HDR fused image
-
-        **WARNING: SILENT FAILURE BEHAVIOR**
-            This method **silently returns the middle exposure image** on any
-            processing error. An ERROR-level log is emitted, but no exception
-            is raised. Callers that require failure detection MUST check logs
-            or wrap this method in a try/except block.
+            HDRProcessingResult: Result object containing processed data,
+                success status, error info, warnings, and metrics.
         """
+        start_time = time.perf_counter()
+        warnings = []
+        metrics = ProcessingMetrics(algorithm_name="HDRProcessor")
+        ghost_reduction_applied = False
+        alignment_quality = 0.0
+
         # Auto-generate exposure values if not provided
         if exposure_values is None:
             n = len(images)
             exposure_values = [float(i - n // 2) for i in range(n)]
 
         if len(images) != len(exposure_values):
-            raise ValueError("Number of images must match number of exposure values")
+            return HDRProcessingResult(
+                success=False,
+                error="Number of images must match number of exposure values",
+                warnings=warnings,
+                metrics=ProcessingMetrics(processing_time_ms=(time.perf_counter() - start_time) * 1000),
+            )
 
         if len(images) < 2:
             logger.warning("Only one image provided, using single image processing")
@@ -181,11 +222,46 @@ class HDRProcessor:
                 tone_mapped = np.power(tone_mapped, 1.0 / self.parameters.gamma)
 
             # Convert to output format
-            return self._convert_to_output_format(tone_mapped)
+            result_image = self._convert_to_output_format(tone_mapped)
+
+            # Calculate alignment quality (simplified)
+            alignment_quality = self._calculate_alignment_quality(float_images)
+
+            processing_time_ms = (time.perf_counter() - start_time) * 1000
+            metrics = ProcessingMetrics(
+                processing_time_ms=processing_time_ms,
+                algorithm_name=f"HDRProcessor_ExposureFusion_{self.parameters.fusion_method.value}",
+                parameters={
+                    "fusion_method": self.parameters.fusion_method.value,
+                    "tone_mapping_method": self.parameters.tone_mapping_method.value,
+                    "gamma": self.parameters.gamma,
+                    "num_images": len(images),
+                    "exposure_range": (min(exposure_values), max(exposure_values)),
+                    "output_bit_depth": self.parameters.output_bit_depth,
+                },
+            )
+
+            return HDRProcessingResult(
+                success=True,
+                data=result_image,
+                warnings=warnings,
+                metrics=metrics,
+                tone_mapping_algorithm=self.parameters.tone_mapping_method.value,
+                exposure_fusion_used=True,
+                ghost_reduction_applied=ghost_reduction_applied,
+                alignment_quality=alignment_quality,
+            )
 
         except Exception as e:
             logger.error(f"Exposure stack processing failed: {e}")
-            return images[len(images) // 2]  # Return middle exposure as fallback
+            processing_time_ms = (time.perf_counter() - start_time) * 1000
+            return HDRProcessingResult(
+                success=False,
+                data=images[len(images) // 2],
+                error=str(e),
+                warnings=warnings,
+                metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
+            )
 
     def _apply_tone_mapping(self, image: np.ndarray) -> np.ndarray:
         """Apply tone mapping to HDR image."""
@@ -447,6 +523,42 @@ class HDRProcessor:
             result += img * weights[i]
 
         return np.clip(result, 0.0, 1.0)
+
+    def _calculate_alignment_quality(self, images: list[np.ndarray]) -> float:
+        """Calculate alignment quality of exposure stack.
+
+        Uses phase correlation to measure relative shift between images.
+        Returns 1.0 for perfect alignment, lower for misalignment.
+        """
+        if len(images) < 2:
+            return 1.0
+
+        try:
+            # Use first image as reference
+            ref = images[0]
+            if ref.ndim == 3:
+                ref = 0.299 * ref[:, :, 0] + 0.587 * ref[:, :, 1] + 0.114 * ref[:, :, 2]
+
+            quality_scores = []
+            for img in images[1:]:
+                test = img
+                if test.ndim == 3:
+                    test = 0.299 * test[:, :, 0] + 0.587 * test[:, :, 1] + 0.114 * test[:, :, 2]
+
+                # Cross-correlation via FFT
+                f1 = np.fft.fft2(ref)
+                f2 = np.fft.fft2(test)
+                cross_corr = np.fft.ifft2(f1 * np.conj(f2)).real
+
+                # Find peak
+                peak = np.max(cross_corr)
+                max_possible = np.sum(ref * test)
+                if max_possible > 0:
+                    quality_scores.append(peak / max_possible)
+
+            return float(np.mean(quality_scores)) if quality_scores else 1.0
+        except Exception:
+            return 0.5  # Default moderate quality on error
 
     def _convert_to_output_format(self, image: np.ndarray) -> np.ndarray:
         """Convert processed image to output format."""
