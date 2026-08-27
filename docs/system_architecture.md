@@ -667,7 +667,7 @@ Integrated into Layer 6 for runtime calibration optimization:
 - **329 tests passing** (pytest/asyncio)
 - **Quality gates**: pytest, ruff, black, compileall, mypy, pyright
 - **Coverage**: 60%+ coverage available on demand
-- **Multi-Python**: 3.10–3.13
+- **Multi-Python**: 3.11–3.13
 - **Test distribution**:
   - Protocol tests: MIPI, GigE, USB3, CoaXPress + extensions
   - Imaging tests: HDR, RAW, lens correction, signal processing

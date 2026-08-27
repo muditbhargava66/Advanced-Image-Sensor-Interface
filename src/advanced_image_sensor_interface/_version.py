@@ -1,7 +1,7 @@
 """Version information for Advanced Image Sensor Interface."""
 
-__version__ = "3.0.0"
-__version_info__ = (3, 0, 0)
+__version__ = "3.2.0"
+__version_info__ = (3, 2, 0)
 
 # Release information
 __title__ = "Advanced Image Sensor Interface"
@@ -56,7 +56,7 @@ VERSION_HISTORY = {
             "API redesign for protocol interface standardization",
             "Configuration schema changes with validation",
             "Updated buffer management API with context managers",
-            "Python 3.10+ requirement",
+            "Python 3.11+ requirement",
         ],
     },
     "1.1.0": {

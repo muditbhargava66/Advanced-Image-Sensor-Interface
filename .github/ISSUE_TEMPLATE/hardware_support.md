@@ -31,7 +31,7 @@ Please provide links to:
 **Testing Environment**
  - **Platform**: [e.g. Raspberry Pi 4, NVIDIA Jetson, x86_64 PC]
  - **OS**: [e.g. Ubuntu 20.04, Raspberry Pi OS, Windows 10]
- - **Python version**: [e.g. 3.10.5]
+ - **Python version**: [e.g. 3.11.5]
  - **Package version**: [e.g. 3.0.0]
 
 **Expected Functionality**

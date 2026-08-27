@@ -32,7 +32,7 @@ Relates to #(issue number)
 
 ### Test Environment
 - **OS**: [e.g. Ubuntu 20.04, Windows 10, macOS 12.0]
-- **Python version**: [e.g. 3.10.5]
+- **Python version**: [e.g. 3.11.5]
 - **Hardware**: [e.g. specific camera models tested]
 
 ## Performance Impact

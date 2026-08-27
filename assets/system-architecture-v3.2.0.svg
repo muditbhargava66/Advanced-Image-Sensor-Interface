@@ -691,7 +691,7 @@
        FOOTER
        ============================================================ -->
   <rect x="0" y="2610" width="1600" height="60" rx="0" fill="#1e293b"/>
-  <text x="200" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">Python 3.10–3.13</text>
+  <text x="200" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">Python 3.11–3.13</text>
   <text x="450" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">NumPy · SciPy · OpenCV · scikit-learn</text>
   <text x="700" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">MIT License</text>
   <text x="950" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">329 Tests · All Passing</text>

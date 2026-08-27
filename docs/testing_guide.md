@@ -276,7 +276,7 @@ The Advanced Image Sensor Interface project maintains a comprehensive test suite
 - **329 collected tests** verified locally for the current v3.1.0 workspace
 - **Targeted quality gates**: pytest, ruff, black, compileall, mypy, and pyright
 - **Coverage reports available on demand** via `pytest --cov=src`
-- **Multi-Python version testing** (3.10-3.13)
+- **Multi-Python version testing** (3.11-3.13)
 
 ### Test Distribution
 - **Protocol tests**: MIPI, GigE Vision, USB3 Vision, and CoaXPress drivers plus extension coverage

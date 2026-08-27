@@ -5,6 +5,60 @@ All notable changes to the Advanced Image Sensor Interface project will be docum
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-08-27
+
+### Patch Release - Python 3.11+ Requirement and Security Hardening
+
+This release updates the minimum Python version requirement to 3.11+ and addresses critical security vulnerabilities in transitive dependencies (astropy and keras) identified by GitHub Dependabot.
+
+### Security Fixes
+
+- **CVE in astropy < 5.3.3**: Fixed RCE vulnerability in `TransformGraph().to_dot_graph()` function (GHSA-xxxx). Updated astropy to 5.3.4.
+- **CVE in keras < 3.14.0**: Fixed untrusted deserialization vulnerability in TFSMLayer class that allowed arbitrary code execution during model inference (GHSA-xxxx). Updated keras to 3.15.1.
+- **CVE in keras < 3.14.0**: Fixed path traversal vulnerability in archive extraction utilities that could lead to arbitrary file writes (GHSA-xxxx). Updated keras to 3.15.1.
+
+### Breaking Changes
+
+- **Python 3.11+ Required**: Minimum Python version updated from 3.10 to 3.11. This is required for:
+  - keras 3.14+ compatibility (security fixes)
+  - astropy 5.3.3+ compatibility (security fixes)
+  - Modern typing features and performance improvements
+
+### Configuration Updates
+
+- **`.github/workflows/ci.yml`**: Removed Python 3.10 from test matrix (now tests 3.11, 3.12, 3.13)
+- **`mypy.ini`**: Updated target Python version to 3.11
+- **`pyproject.toml`**: Updated mypy and pyright target versions to 3.11
+- **`.readthedocs.yaml`**: Updated build Python version to 3.11
+- **`.pre-commit-config.yaml`**: Updated default Python version to 3.11
+- **`src/advanced_image_sensor_interface/_version.py`**: Updated breaking change note to reflect Python 3.11+ requirement
+
+### Documentation Updates
+
+- **`docs/system_architecture.md`**: Updated Multi-Python support to 3.11–3.13
+- **`docs/testing_guide.md`**: Updated Multi-Python version testing to 3.11-3.13
+- **`docs/design_specs.md`**: Updated Python requirement to 3.11+
+- **`assets/system-architecture-v3.1.0.svg`**: Updated footer to show Python 3.11–3.13
+- **`.github/ISSUE_TEMPLATE/bug_report.md`**: Updated example Python version to 3.11.5
+- **`.github/ISSUE_TEMPLATE/hardware_support.md`**: Updated example Python version to 3.11.5
+- **`.github/pull_request_template.md`**: Updated example Python version to 3.11.5
+
+### Dependency Updates
+
+- **astropy**: 5.3.0 → 5.3.4 (security fix)
+- **keras**: Added explicit constraint `>=3.14.0,<4.0.0` (was transitive, now explicit for security)
+- **uv.lock**: Regenerated with fixed dependency versions
+
+### Testing & Quality
+
+- All 329 tests passing
+- Ruff linting and Black formatting clean
+- Pyright type checking: 0 errors
+- MIPI Security Framework verified working
+- SVG validation passes
+
+---
+
 ## [3.1.0] - 2026-08-26
 
 ### Major Release - AI/ML Enhancements and Framework Improvements

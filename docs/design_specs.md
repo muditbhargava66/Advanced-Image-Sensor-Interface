@@ -534,7 +534,7 @@ The project includes a thorough testing framework:
 
 ### 5.1 Software Requirements
 
-- Python 3.10 or higher (3.10-3.13 supported)
+- Python 3.11 or higher (3.11-3.13 supported)
 - NumPy >= 1.23.5, < 2.0.0
 - SciPy >= 1.10.0, < 2.0.0
 - Matplotlib >= 3.7.0, < 4.0.0 (for visualization)

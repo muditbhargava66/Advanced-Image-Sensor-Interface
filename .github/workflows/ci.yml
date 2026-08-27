@@ -2,10 +2,10 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [main, develop, version-3.1.0]
+    branches: [main, develop, version-3.2.0]
     tags: ['v*']
   pull_request:
-    branches: [main, version-3.1.0]
+    branches: [main, version-3.2.0]
 
 permissions:
   contents: read
@@ -15,15 +15,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        exclude:
-          # Exclude some combinations to reduce CI time
-          - os: windows-latest
-            python-version: "3.13"
-          - os: macos-latest
-            python-version: "3.11"
+matrix:
+    python-version: ["3.11", "3.12", "3.13"]
+    os: [ubuntu-latest, windows-latest, macos-latest]
+    exclude:
+      # Exclude some combinations to reduce CI time
+      - os: windows-latest
+        python-version: "3.13"
+      - os: macos-latest
+        python-version: "3.11"
      
     steps:
       - uses: actions/checkout@v7
