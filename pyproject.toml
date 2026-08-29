@@ -83,7 +83,7 @@ full = [
     "protobuf>=5.29.6",
     # Networking and protocols
     "requests>=2.31.0,<3.0.0",
-    "websockets>=11.0.0,<12.0.0",
+    "websockets>=11.0.0,<18.0.0",
     "pyzmq>=26.0.0,<27.0.0",
     # Visualization enhancements
     "plotly>=5.17.0,<6.0.0",
