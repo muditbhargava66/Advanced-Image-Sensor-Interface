@@ -78,7 +78,7 @@ full = [
     "py-spy>=0.3.0,<1.0.0",
     # Data formats and serialization
     "h5py>=3.8.0,<4.0.0",
-    "zarr>=2.16.0,<3.0.0",
+    "zarr>=2.16.0,<4.0.0",
     "msgpack>=1.0.0,<2.0.0",
     "protobuf>=5.29.6",
     # Networking and protocols
