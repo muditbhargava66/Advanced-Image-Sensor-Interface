@@ -99,7 +99,7 @@ full = [
     "loguru>=0.7.0,<1.0.0",
     "colorama>=0.4.0,<1.0.0",
     # Optional GUI support
-    "tkinter-tooltip>=2.1.0,<3.0.0",
+    "tkinter-tooltip>=2.1.0,<4.0.0",
     "pillow-simd>=9.5.0.post2,<10.0.0; sys_platform != 'darwin'",
 ]
 
