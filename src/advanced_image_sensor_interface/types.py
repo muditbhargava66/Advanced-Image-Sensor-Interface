@@ -361,8 +361,31 @@ class LensCorrectionResult:
             self.metrics = ProcessingMetrics()
 
 
+@dataclass
+class DepthResult:
+    """Result of stereo depth processing operation (v3.2.0)."""
+
+    success: bool
+    disparity_map: Optional[np.ndarray] = None
+    depth_map: Optional[np.ndarray] = None
+    point_cloud: Optional[np.ndarray] = None
+    error: Optional[str] = None
+    warnings: list[str] = None
+    metrics: ProcessingMetrics = None
+    algorithm_used: str = ""
+    valid_pixel_ratio: float = 0.0
+
+    def __post_init__(self):
+        if self.warnings is None:
+            self.warnings = []
+        if self.metrics is None:
+            self.metrics = ProcessingMetrics()
+
+
 # Union type for all processing results
-ProcessingResult = Union[SignalProcessingResult, HDRProcessingResult, RAWProcessingResult, LensCorrectionResult]
+ProcessingResult = Union[
+    SignalProcessingResult, HDRProcessingResult, RAWProcessingResult, LensCorrectionResult, DepthResult
+]
 
 
 # Simulation Delay Configuration (v3.2.0+)

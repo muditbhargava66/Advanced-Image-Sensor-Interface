@@ -2,7 +2,7 @@
 Utils Module
 
 This module provides utility functions for image processing, performance evaluation,
-data integrity, and lens correction for image sensor applications.
+data integrity, lens correction, and stereo depth for image sensor applications.
 
 Modules:
     noise_reduction: Functions for reducing noise in image data.
@@ -10,11 +10,15 @@ Modules:
     buffer_manager: Advanced buffer management with memory pooling (v2.0.0).
     data_integrity: CRC-32 and Forward Error Correction (v3.0.0).
     lens_correction: Radial and tangential distortion correction (v3.0.0).
+    depth: Stereo disparity, depth conversion, point clouds, PLY export (v3.2.0).
 
 Usage:
     from advanced_image_sensor_interface.utils import reduce_noise, calculate_snr
 """
 
+from .._version import __version__
+from ..types import DepthResult
+from .depth import DepthConfig, DisparityAlgorithm, StereoDepthProcessor
 from .noise_reduction import (
     BilateralNoiseReducer,
     GaussianNoiseReducer,
@@ -43,8 +47,12 @@ __all__ = [
     "calculate_snr",
     "calculate_dynamic_range",
     "calculate_color_accuracy",
+    # Stereo depth (v3.2.0)
+    "StereoDepthProcessor",
+    "DepthConfig",
+    "DisparityAlgorithm",
+    "DepthResult",
 ]
 
-__version__ = "3.0.0"
 __author__ = "Mudit Bhargava"
 __license__ = "MIT"
