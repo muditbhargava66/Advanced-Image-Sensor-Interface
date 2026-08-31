@@ -21,17 +21,21 @@
 
 ## Overview
 
-The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera interface framework** supporting MIPI CSI-2, CoaXPress, GigE Vision, and USB3 Vision protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities. Version 3.1.0 introduces AI/ML enhancements, complete multi-sensor synchronization implementation, MIPI security framework updates, and comprehensive documentation updates.
+The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera interface framework** supporting MIPI CSI-2, CoaXPress, GigE Vision, and USB3 Vision protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities. Version 3.2.0 introduces typed ProcessingResult objects for explicit error handling, configurable simulation delays across all protocol drivers, a 3D/Depth module for stereo disparity and point cloud generation, and Python 3.11+ security hardening.
 
-### New in Version 3.1.0
+### New in Version 3.2.0
 
-- **AI/ML Integration Complete**: Neural Calibration Tuner with scikit-learn MLPRegressor, AI/ML Enhancements (SceneClassifier, NoisePredictor, QualityAssessor), Custom Extensions (AINoiseReducer, AdaptiveColorCorrector)
-- **Complete Multi-Sensor Synchronization**: Feature-based alignment with ORB+RANSAC, Phase Correlation with sub-pixel FFT precision, sensor validation, timeout handling
-- **MIPI Security Framework Update**: PRE_SHARED_KEY authentication method support in SecurityConfig
-- **Documentation Updates**: API documentation v3.1.0, README examples updated, CHANGELOG v3.1.0
-- **All "In a real implementation" TODOs completed**: Neural calibration tuner, multi-sensor sync, custom extensions, AI/ML enhancements
-- **Scripts & Benchmarks Fixed**: simulation.py, data_analysis.py, noise_analysis.py, benchmarks/__init__.py
-- **All 329 Tests Passing**: Ruff + Black clean, mypy + pyright configured
+- **Typed Processing Results**: `SignalProcessingResult`, `HDRProcessingResult`, `RAWProcessingResult`, and `LensCorrectionResult` dataclasses replace silent `None` returns with explicit success/error/metrics information
+- **Configurable Simulation Delays**: `SimulationDelayConfig` gives per-driver control over simulated latencies in MIPI, GigE/RoCE, CoaXPress CXP-12, and USB3 drivers
+- **3D/Depth Module**: `StereoDepthProcessor` with Block Matching and SGM-lite stereo disparity, disparity-to-depth conversion, point cloud generation, and PLY export
+- **Python 3.11+ Required**: Security fixes for keras (deserialization, path traversal) and astropy (RCE) transitive dependencies
+- **Security Hardening**: Dependency constraints updated for CVE-fixed versions; Python 3.10 support removed
+
+### Version 3.1.0 Features (Retained)
+
+- **AI/ML Integration**: Neural Calibration Tuner (scikit-learn MLPRegressor), SceneClassifier, NoisePredictor, QualityAssessor, AINoiseReducer, AdaptiveColorCorrector
+- **Multi-Sensor Synchronization**: Feature-based alignment with ORB+RANSAC, Phase Correlation with sub-pixel precision, sensor validation, timeout handling
+- **MIPI Security Framework**: PRE_SHARED_KEY authentication method support in SecurityConfig
 
 ### Version 3.0.0 Features (Retained)
 
@@ -67,7 +71,7 @@ The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera i
 
 ## System Overview
 
-![Advanced Image Sensor Interface System Diagram](./assets/system-architecture-v3.1.0.svg)
+![Advanced Image Sensor Interface System Diagram](./assets/system-architecture-v3.2.0.svg)
 
 This diagram illustrates the key components and data flow of our Advanced Image Sensor Interface system.
 

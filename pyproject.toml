@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "advanced_image_sensor_interface"
-version = "3.1.0"
+version = "3.2.0"
 description = "A high-performance interface for next-generation camera modules with AI/ML enhancements"
 readme = "README.md"
 authors = [{ name = "Mudit Bhargava", email = "muditbhargava666@gmail.com" }]
@@ -216,7 +216,7 @@ ignore_missing_imports = true
 
 [tool.black]
 line-length = 130
-target-version = ["py310"]
+target-version = ["py311"]
 skip_magic_trailing_comma = true
 
 [tool.isort]
@@ -230,7 +230,7 @@ ensure_newline_before_comments = true
 
 [tool.ruff]
 line-length = 130
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [

@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document outlines the design specifications for the Advanced Image Sensor Interface project (v3.1.0), a comprehensive camera interface framework supporting multiple protocols with advanced image processing, multi-sensor synchronization, AI/ML enhancements, and professional-grade calibration capabilities.
+This document outlines the design specifications for the Advanced Image Sensor Interface project (v3.2.0), a comprehensive camera interface framework supporting multiple protocols with advanced image processing, multi-sensor synchronization, AI/ML enhancements, and professional-grade calibration capabilities.
 
 ## 2. System Architecture
 

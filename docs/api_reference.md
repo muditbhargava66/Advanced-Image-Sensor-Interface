@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Advanced Image Sensor Interface (AISI) v3.1.0 provides a comprehensive Python framework for interfacing with high-performance image sensors across multiple protocols including MIPI CSI-2, CoaXPress, and GigE Vision with AI/ML enhancements, multi-sensor synchronization, and neural calibration tuning.
+The Advanced Image Sensor Interface (AISI) v3.2.0 provides a comprehensive Python framework for interfacing with high-performance image sensors across multiple protocols including MIPI CSI-2, CoaXPress, and GigE Vision with AI/ML enhancements, multi-sensor synchronization, and neural calibration tuning.
 
 ## Core Components
 

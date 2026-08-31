@@ -1,8 +1,8 @@
-# Advanced Image Sensor Interface v3.1.0 — System Architecture
+# Advanced Image Sensor Interface v3.2.0 — System Architecture
 
 ## Overview
 
-The Advanced Image Sensor Interface is a simulation framework for developing and testing image sensor interfaces across multiple protocols. Version 3.1.0 introduces AI/ML enhancements, completes multi-sensor synchronization, adds a neural calibration tuner, and provides custom extension examples.
+The Advanced Image Sensor Interface is a simulation framework for developing and testing image sensor interfaces across multiple protocols. Version 3.2.0 introduces typed ProcessingResult objects for explicit error handling, configurable simulation delays across all protocol drivers, and a 3D/Depth module for stereo disparity and point cloud generation, on top of Python 3.11+ security hardening.
 
 This document describes the system architecture organized in seven logical layers, from sensor input through processed output.
 
@@ -224,7 +224,7 @@ Layer 7: Output · Calibration DB · Metrics · Testing
 │                   │   ·database.py.   │                   │                  │
 │                   │   ·neural_tuner.py│                   │                  │
 └───────────────────┴───────────────────┴───────────────────┴──────────────────┘
-🔄 Feedback Loops & Cross-Cutting Concerns
+Feedback Loops & Cross-Cutting Concerns
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │  ◄── Performance Feedback ──► │  ◄── Power Control ──► │ ◄── Opt. Feedback ──►  │
 │   (Metrics → Signal Proc)      (Power → Protocol)      (Cache → Signal Proc)    │

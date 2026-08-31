@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project (v3.1.0). It covers all supported protocols, advanced image processing, multi-sensor synchronization, calibration, AI/ML enhancements, and buffer management interfaces.
+This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project (v3.2.0). It covers all supported protocols, advanced image processing, multi-sensor synchronization, calibration, AI/ML enhancements, and buffer management interfaces.
 
 ## Table of Contents
 

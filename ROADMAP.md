@@ -4,6 +4,13 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 
 ## Completed Milestones
 
+### v3.2.0 Features (Typed Results, Simulation Delays, 3D/Depth) - **RELEASED 2026-08-27**
+- [x] **ProcessingResult Dataclasses**: SignalProcessingResult, HDRProcessingResult, RAWProcessingResult, LensCorrectionResult replace silent None returns with explicit success/error/metrics.
+- [x] **Simulation Delay Config**: SimulationDelayConfig wired into MIPI, GigE/RoCE, CoaXPress CXP-12, and USB3 drivers for configurable simulated latencies.
+- [x] **3D / Depth Module**: StereoDepthProcessor with Block Matching and SGM-lite disparity, disparity-to-depth conversion, point cloud generation, and PLY export.
+- [x] **Python 3.11+ Requirement**: Security fixes for keras (deserialization, path traversal CVEs) and astropy (RCE CVE); Python 3.10 support removed.
+- [x] **Test Coverage**: Added suites for the depth module and simulation delays; existing CXP12, RoCE, D-PHY, USB3 streaming, MIPI Security, and Lens Correction coverage retained.
+
 ### v3.1.0 Features (AI/ML & Implementation Completion) - **RELEASED 2026-08-21**
 - [x] **AI/ML Integration Complete**: Neural Calibration Tuner with scikit-learn MLPRegressor fallback.
 - [x] **AI/ML Enhancements**: SceneClassifier, NoisePredictor, QualityAssessor with scene-aware processing.
@@ -45,7 +52,7 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 
 ---
 
-## v3.2+ Planning (Next Release)
+## v3.3+ Planning (Next Release)
 
 ### High Priority
 - [ ] **AI Denoising**: Integration of ML-based noise reduction models (torch/tensorflow backends).
@@ -53,8 +60,6 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 - [ ] **Predictive Power**: AI-based power consumption forecasting.
 
 ### Medium Priority
-- [ ] **3D / Depth**: Native support for disparity maps and depth calculation.
-- [ ] **ProcessingResult Dataclass**: Replace silent failures with explicit result objects.
-- [ ] **Simulation Delay Config**: Make protocol driver sleep delays configurable.
-- [ ] **Missing Test Coverage**: Add tests for CXP12, RoCE, D-PHY, USB3 streaming, MIPI Security, Lens Correction.
+- [ ] **Full 8-Path SGM**: Upgrade SGM-lite (4-path) to full 8-path semi-global matching with numba acceleration.
+- [ ] **Calibration Solver**: Replace placeholder calibration matrices with a photogrammetry solver.
 

@@ -1,51 +1,51 @@
 """
-Advanced Image Sensor Interface v3.0.0
+Advanced Image Sensor Interface v3.2.0
 
 A high-performance simulation and interface model for next-generation camera modules.
 This package provides comprehensive sensor interface capabilities including MIPI CSI-2
 simulation, advanced signal processing, HDR imaging, RAW processing, multi-sensor
 synchronization, GPU acceleration, and advanced power management.
 
-Version 3.0.0 Features:
-- CoaXPress CXP-12 support (50Gbps aggregate bandwidth)
-- GigE Vision RoCE transport (RDMA over Converged Ethernet)
-- MIPI D-PHY v2.5 support (4.5Gbps per lane with adaptive equalization)
-- MIPI Security Framework (AES-GCM encryption with key management)
-- USB3 Enhanced Streaming (buffer pooling and async frame capture)
-- USB3 Device Discovery (hot-plug detection and device filtering)
-- Data Integrity module (CRC-32 validation and Reed-Solomon FEC)
-- Lens Correction Pipeline (radial and tangential distortion correction)
-- Multi-System Power Management (coordinated power budgeting for sensor arrays)
-- 328 automated tests passing in the current release workspace
+Version 3.2.0 Features:
+- Typed ProcessingResult dataclasses (SignalProcessingResult, HDRProcessingResult,
+  RAWProcessingResult, LensCorrectionResult) for explicit error handling
+- SimulationDelayConfig for configurable per-driver simulated latencies
+  (MIPI, GigE/RoCE, CoaXPress CXP-12, USB3)
+- 3D/Depth module (StereoDepthProcessor): Block Matching and SGM-lite stereo
+  disparity, disparity-to-depth conversion, point cloud generation, PLY export
+- Python 3.11+ requirement with security fixes (keras, astropy)
 
-Previous Features (v2.0.0):
-- Enhanced sensor interface support (up to 8K resolution)
-- HDR image processing pipeline with multiple tone mapping algorithms
-- Comprehensive RAW image format support with advanced demosaicing
-- Multi-sensor synchronization capabilities for stereo and multi-camera setups
-- GPU acceleration support for high-performance image processing
-- Advanced power states management with thermal monitoring
-- Real-world scenario simulations for automotive, surveillance, and mobile applications
+Previous Features (v3.1.0):
+- Neural Calibration Tuner with scikit-learn MLPRegressor
+- AI/ML Enhancements: SceneClassifier, NoisePredictor, QualityAssessor
+- Custom Extensions: AINoiseReducer, AdaptiveColorCorrector, HighSpeedMIPIDriver
+- Multi-Sensor Synchronization: ORB+RANSAC feature alignment, Phase Correlation
+- MIPI Security Framework: PRE_SHARED_KEY authentication
+
+Previous Features (v3.0.0):
+- CoaXPress CXP-12 support, GigE Vision RoCE transport, MIPI D-PHY v2.5
+- USB3 Enhanced Streaming and Device Discovery, Data Integrity (CRC-32, RS-FEC)
+- Lens Correction Pipeline, Multi-System Power Management
 
 Note: This is a simulation and modeling framework, not a hardware driver implementation.
 For hardware integration, see the documentation on interfacing with actual sensor hardware.
 
 Modules:
-    sensor_interface: Core sensor interface components with v3.0.0 protocol enhancements
-    utils: Utility functions including data integrity, lens correction, and metrics
+    sensor_interface: Core sensor interface components with protocol drivers
+    utils: Utilities including data integrity, lens correction, depth, and metrics
     test_patterns: Test pattern generation for sensor validation
 
-Legacy Example (v1.x compatibility):
-    >>> from advanced_image_sensor_interface.sensor_interface import MIPIDriver, MIPIConfig
-    >>> config = MIPIConfig(lanes=4, data_rate=2.5, channel=0)
-    >>> driver = MIPIDriver(config)
+v3.2.0 Typed Results Example:
+    >>> from advanced_image_sensor_interface import SignalProcessor, SignalConfig
+    >>> processor = SignalProcessor(SignalConfig())
+    >>> result = processor.process_frame(frame)
+    >>> if result.success:
+    ...     processed = result.data
 
-v2.0.0 Example:
-    >>> from advanced_image_sensor_interface.sensor_interface import EnhancedSensorInterface, create_8k_sensor_config
-    >>> config = create_8k_sensor_config()
-    >>> sensor = EnhancedSensorInterface(config)
-    >>> sensor.start_streaming()
-    >>> frame = sensor.capture_frame()
+v3.2.0 Depth Example:
+    >>> from advanced_image_sensor_interface import StereoDepthProcessor, DepthConfig
+    >>> processor = StereoDepthProcessor(DepthConfig())
+    >>> result = processor.compute_disparity(left_frame, right_frame)
 
 v3.0.0 Protocol Example:
     >>> from advanced_image_sensor_interface.sensor_interface.protocol.coaxpress import CXP12Config, CXP12Driver, CXPSpeed

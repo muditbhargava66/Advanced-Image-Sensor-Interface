@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document presents a comprehensive performance analysis of the Advanced Image Sensor Interface project (v3.1.0). We've conducted extensive benchmarks and tests to quantify the improvements in data transfer rates, signal processing speed, noise reduction, power efficiency, AI/ML enhancements, multi-sensor synchronization, and security frameworks.
+This document presents a comprehensive performance analysis of the Advanced Image Sensor Interface project (v3.2.0). We've conducted extensive benchmarks and tests to quantify the improvements in data transfer rates, signal processing speed, noise reduction, power efficiency, AI/ML enhancements, multi-sensor synchronization, and security frameworks.
 
 ## 2. Version 3.1.0 Key Improvements
 

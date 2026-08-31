@@ -1,6 +1,6 @@
 # Calibration Guide
 
-This guide documents the calibration-related APIs that are actually available in v3.1.0. The project provides calibration building blocks for lens distortion correction, synchronization, calibration result storage, and neural-tuner experimentation. It does not currently ship a full OpenCV-style `CameraCalibrator` workflow.
+This guide documents the calibration-related APIs that are actually available in v3.2.0. The project provides calibration building blocks for lens distortion correction, synchronization, calibration result storage, and neural-tuner experimentation. It does not currently ship a full OpenCV-style `CameraCalibrator` workflow.
 
 ## Available Components
 

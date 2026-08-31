@@ -269,11 +269,11 @@ Keep test documentation up to date:
 - Test fixtures should be documented
 - Complex test setups should include comments
 
-## 12. Current Test Status (v3.1.0)
+## 12. Current Test Status (v3.2.0)
 
 The Advanced Image Sensor Interface project maintains a comprehensive test suite:
 
-- **329 collected tests** verified locally for the current v3.1.0 workspace
+- **Collected tests** verified locally for the current v3.2.0 workspace (see `pytest` summary for the live count)
 - **Targeted quality gates**: pytest, ruff, black, compileall, mypy, and pyright
 - **Coverage reports available on demand** via `pytest --cov=src`
 - **Multi-Python version testing** (3.11-3.13)
