@@ -28,6 +28,8 @@ try:
 except ImportError:
     correlate = None
 
+from .calibration.photogrammetry import calibrate_camera as native_calibrate_camera
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,6 +89,7 @@ class SyncConfiguration:
     # Calibration
     enable_geometric_calibration: bool = False
     calibration_pattern_size: tuple[int, int] = (9, 6)  # Chessboard corners
+    prefer_native_calibration: bool = False  # Use the numpy/scipy photogrammetry solver instead of cv2
 
     def __post_init__(self):
         """Validate configuration."""
@@ -509,18 +512,30 @@ class MultiSensorSynchronizer:
             # Find peak
             peak = np.unravel_index(np.argmax(correlation), correlation.shape)
 
-            # Calculate sub-pixel shift using parabolic interpolation
-            shift_y, shift_x = peak
+            # Sub-pixel refinement via per-axis parabolic interpolation. The
+            # correlation surface is periodic (FFT-derived), so neighbors are
+            # sampled with wrap-around; a flat parabola falls back to the
+            # integer peak.
+            peak_y, peak_x = peak
+            h_corr, w_corr = correlation.shape
+            sub_y, sub_x = float(peak_y), float(peak_x)
+
+            y_m = correlation[(peak_y - 1) % h_corr, peak_x]
+            y_0 = correlation[peak_y, peak_x]
+            y_p = correlation[(peak_y + 1) % h_corr, peak_x]
+            denom = y_m - 2.0 * y_0 + y_p
+            if abs(denom) > 1e-12:
+                sub_y += 0.5 * (y_m - y_p) / denom
+
+            x_m = correlation[peak_y, (peak_x - 1) % w_corr]
+            x_p = correlation[peak_y, (peak_x + 1) % w_corr]
+            denom = x_m - 2.0 * y_0 + x_p
+            if abs(denom) > 1e-12:
+                sub_x += 0.5 * (x_m - x_p) / denom
+
             h, w = ref_frame.shape[:2]
-
-            # Convert to shift relative to center
-            shift_y = shift_y if shift_y < h // 2 else shift_y - h
-            shift_x = shift_x if shift_x < w // 2 else shift_x - w
-
-            # Sub-pixel refinement using parabolic interpolation
-            if 0 < shift_y < correlation.shape[0] - 1 and 0 < shift_x < correlation.shape[1] - 1:
-                # Parabolic interpolation for sub-pixel accuracy
-                pass
+            shift_y = sub_y if sub_y < h / 2 else sub_y - h
+            shift_x = sub_x if sub_x < w / 2 else sub_x - w
 
             # Apply translation using warpAffine
             M = np.float32([[1, 0, shift_x], [0, 1, shift_y]])
@@ -602,6 +617,32 @@ class MultiSensorSynchronizer:
         """
         self.sync_error_callback = callback
 
+    def _detect_pattern_points(self, frames: list[np.ndarray]) -> tuple[list[np.ndarray], list[np.ndarray]]:
+        """Detect the calibration pattern in frames using OpenCV.
+
+        Args:
+            frames: Captured calibration frames for one sensor
+
+        Returns:
+            Matching lists of object points (3D) and detected image points (2D)
+        """
+        pattern_size = self.config.calibration_pattern_size
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+
+        pattern_points = np.zeros((pattern_size[0] * pattern_size[1], 3), np.float32)
+        pattern_points[:, :2] = np.mgrid[0 : pattern_size[0], 0 : pattern_size[1]].T.reshape(-1, 2)
+
+        object_points: list[np.ndarray] = []
+        image_points: list[np.ndarray] = []
+        for frame in frames:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
+            found, corners = cv2.findChessboardCorners(gray, pattern_size, None)
+            if found:
+                cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+                object_points.append(pattern_points)
+                image_points.append(corners)
+        return object_points, image_points
+
     def calibrate_sensors(self) -> bool:
         """Perform geometric calibration of sensors.
 
@@ -612,57 +653,65 @@ class MultiSensorSynchronizer:
             logger.info("Geometric calibration disabled")
             return True
 
+        if cv2 is None:
+            logger.error(
+                "Sensor calibration requires OpenCV (opencv-python) for calibration-pattern detection; "
+                "install it with `pip install advanced-image-sensor-interface[full]` or use `pip install opencv-python`."
+            )
+            return False
+
         try:
             logger.info("Starting sensor calibration...")
 
             # 1. Capture calibration images from all sensors
             calibration_frames = {}
             for sensor_id in self.sensors:
-                frames = []
+                frames: list[np.ndarray] = []
                 for _ in range(10):  # Capture multiple frames for robustness
-                    frame = self._capture_from_sensor(sensor_id)
-                    if frame is not None:
-                        frames.append(frame[0])
+                    capture = self._capture_from_sensor(sensor_id)
+                    if capture is not None:
+                        frames.append(capture[0])
                 if frames:
                     calibration_frames[sensor_id] = frames
 
-            # 2. Detect calibration pattern (e.g., chessboard) in each sensor's images
-            # Using OpenCV's findChessboardCorners for chessboard pattern
-            calibration_data = {}
-            pattern_size = self.config.calibration_pattern_size
-            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+            # 2. Detect calibration pattern (e.g., chessboard) and solve per-sensor calibration
+            calibration_data: dict[int, dict[str, Any]] = {}
 
             for sensor_id, frames in calibration_frames.items():
-                sensor_obj_points = []  # 3D points in real world space
-                sensor_img_points = []  # 2D points in image plane
-
-                # Prepare object points (3D coordinates of chessboard corners)
-                pattern_points = np.zeros((pattern_size[0] * pattern_size[1], 3), np.float32)
-                pattern_points[:, :2] = np.mgrid[0 : pattern_size[0], 0 : pattern_size[1]].T.reshape(-1, 2)
-
-                for frame in frames:
-                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
-                    ret, corners = cv2.findChessboardCorners(gray, pattern_size, None)
-
-                    if ret:
-                        # Refine corner positions
-                        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-                        cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-
-                        sensor_obj_points.append(pattern_points)
-                        sensor_img_points.append(corners)
+                sensor_obj_points, sensor_img_points = self._detect_pattern_points(frames)
 
                 if len(sensor_obj_points) >= 3:  # Need at least 3 valid frames
-                    # Calibrate camera
-                    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
-                        [sensor_obj_points] * len(sensor_obj_points), [sensor_img_points], frames[0].shape[:2][::-1], None, None
-                    )
-
-                    if ret:
-                        calibration_data[sensor_id] = {"camera_matrix": mtx, "dist_coeffs": dist, "rvecs": rvecs, "tvecs": tvecs}
-                        logger.info(f"Sensor {sensor_id} calibrated successfully (RMS error: {ret:.4f})")
+                    image_size = (int(frames[0].shape[1]), int(frames[0].shape[0]))  # cv2 convention: (width, height)
+                    if self.config.prefer_native_calibration:
+                        try:
+                            result = native_calibrate_camera(sensor_obj_points, sensor_img_points, image_size)
+                        except ValueError as e:
+                            logger.warning(f"Native calibration failed for sensor {sensor_id}: {e}")
+                            continue
+                        calibration_data[sensor_id] = {
+                            "camera_matrix": result.camera_matrix,
+                            "dist_coeffs": result.distortion_coefficients,
+                            "rvecs": result.rotation_vectors,
+                            "tvecs": result.translation_vectors,
+                        }
+                        logger.info(
+                            f"Sensor {sensor_id} calibrated with native solver (RMS error: {result.rms_reprojection_error:.4f})"
+                        )
                     else:
-                        logger.warning(f"Calibration failed for sensor {sensor_id}")
+                        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
+                            sensor_obj_points, sensor_img_points, image_size, None, None
+                        )
+
+                        if ret:
+                            calibration_data[sensor_id] = {
+                                "camera_matrix": mtx,
+                                "dist_coeffs": dist,
+                                "rvecs": rvecs,
+                                "tvecs": tvecs,
+                            }
+                            logger.info(f"Sensor {sensor_id} calibrated successfully (RMS error: {ret:.4f})")
+                        else:
+                            logger.warning(f"Calibration failed for sensor {sensor_id}")
 
             # Store calibration data
             for sensor_id, calib in calibration_data.items():

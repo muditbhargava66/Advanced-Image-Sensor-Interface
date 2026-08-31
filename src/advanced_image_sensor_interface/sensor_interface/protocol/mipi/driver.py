@@ -11,6 +11,7 @@ Key Features:
 - Data type handling
 - Integration with D-PHY v2.5 high-speed driver
 - Optional security layer integration
+- Configurable simulation delays for realistic hardware behavior
 """
 
 import logging
@@ -20,6 +21,7 @@ from typing import Any, ClassVar, Optional
 
 
 from ..base import ConnectionError, DataTransferError, ProtocolCapabilities, StreamingProtocolBase
+from advanced_image_sensor_interface.types import SimulationDelayConfig
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +39,7 @@ class MIPIConfig:
         frame_rate: Target frame rate in Hz
         virtual_channel: Virtual channel ID (0-3)
         data_type: MIPI data type code
+        simulation_delays: Optional configurable simulation delays
     """
 
     # Lane configuration
@@ -63,6 +66,9 @@ class MIPIConfig:
     enable_security: bool = False
     security_level: str = "standard"
 
+    # Simulation delay configuration (v3.2.0+)
+    simulation_delays: Optional[SimulationDelayConfig] = None
+
     def __post_init__(self) -> None:
         """Validate configuration parameters."""
         if not 1 <= self.lanes <= 4:
@@ -73,6 +79,9 @@ class MIPIConfig:
 
         if not 0 <= self.virtual_channel <= 3:
             raise ValueError("Virtual channel must be between 0 and 3")
+
+        if self.simulation_delays is None:
+            self.simulation_delays = SimulationDelayConfig()
 
     @property
     def total_bandwidth_mbps(self) -> float:
@@ -251,8 +260,9 @@ class MIPIProtocolDriver(StreamingProtocolBase):
             raise ConnectionError("Not connected to MIPI device")
 
         try:
-            # Simulate I2C/CCI control transfer
-            time.sleep(0.0001)  # ~100us for I2C transaction
+            # Simulate I2C/CCI control transfer with configurable delay
+            delay = self.mipi_config.simulation_delays.apply_delay(self.mipi_config.simulation_delays.command_transfer_delay)
+            time.sleep(delay)
 
             self.status.bytes_transmitted += len(data)
             logger.debug(f"Sent {len(data)} bytes via MIPI CCI")
@@ -278,8 +288,9 @@ class MIPIProtocolDriver(StreamingProtocolBase):
             raise ConnectionError("Not connected to MIPI device")
 
         try:
-            # Simulate I2C/CCI read
-            time.sleep(0.0001)
+            # Simulate I2C/CCI read with configurable delay
+            delay = self.mipi_config.simulation_delays.apply_delay(self.mipi_config.simulation_delays.register_read_delay)
+            time.sleep(delay)
 
             data = bytes([i % 256 for i in range(size)])
             self.status.bytes_received += len(data)
@@ -314,6 +325,10 @@ class MIPIProtocolDriver(StreamingProtocolBase):
             # Enable streaming mode on sensor (simulation)
             self._enable_streaming()
 
+            # Apply streaming setup delay
+            delay = self.mipi_config.simulation_delays.apply_delay(self.mipi_config.simulation_delays.streaming_setup_delay)
+            time.sleep(delay)
+
             logger.info("MIPI streaming started")
             return True
 
@@ -334,6 +349,12 @@ class MIPIProtocolDriver(StreamingProtocolBase):
             if self.is_streaming:
                 self.is_streaming = False
                 self.stream_handle = None
+
+                # Apply streaming teardown delay
+                delay = self.mipi_config.simulation_delays.apply_delay(
+                    self.mipi_config.simulation_delays.streaming_teardown_delay
+                )
+                time.sleep(delay)
 
                 # Calculate final statistics
                 if self.start_time:
@@ -362,9 +383,9 @@ class MIPIProtocolDriver(StreamingProtocolBase):
             width, height = self.mipi_config.resolution
             bytes_per_pixel = self._get_bytes_per_pixel(self.mipi_config.pixel_format)
 
-            # Simulate frame capture delay
-            capture_delay = 1.0 / self.mipi_config.frame_rate
-            time.sleep(min(capture_delay, 0.05))  # Cap simulation delay
+            # Simulate frame capture delay with configurable delay
+            delay = self.mipi_config.simulation_delays.apply_delay(self.mipi_config.simulation_delays.frame_capture_delay)
+            time.sleep(delay)
 
             # Generate test frame
             frame_data = self._generate_test_frame(width, height, bytes_per_pixel)
@@ -421,8 +442,9 @@ class MIPIProtocolDriver(StreamingProtocolBase):
 
     def _initialize_lanes(self) -> None:
         """Initialize MIPI data lanes."""
-        # Simulate lane initialization
-        time.sleep(0.01)
+        # Simulate lane initialization with configurable delay
+        delay = self.mipi_config.simulation_delays.apply_delay(self.mipi_config.simulation_delays.link_initialization_delay)
+        time.sleep(delay)
         logger.debug(f"Initialized {self.mipi_config.lanes} MIPI lanes")
 
     def _verify_link(self) -> None:

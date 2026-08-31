@@ -11,15 +11,18 @@ Key Features:
 - GPU-accelerated processing (NumPy vectorized)
 
 Author: Advanced Image Sensor Interface Team
-Version: 3.0.0
+Version: 3.2.0
 """
 
 import logging
+import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
 import numpy as np
+
+from ..types import LensCorrectionResult, ProcessingMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -447,7 +450,9 @@ class LensCorrectionPipeline:
 
         logger.info(f"Built combined correction maps: {w}x{h}")
 
-    def correct(self, image: np.ndarray, interpolation: InterpolationMethod = InterpolationMethod.BILINEAR) -> CorrectionResult:
+    def correct(
+        self, image: np.ndarray, interpolation: InterpolationMethod = InterpolationMethod.BILINEAR
+    ) -> LensCorrectionResult:
         """
         Apply full lens correction to an image.
 
@@ -456,10 +461,8 @@ class LensCorrectionPipeline:
             interpolation: Interpolation method
 
         Returns:
-            CorrectionResult with corrected image and statistics
+            LensCorrectionResult with corrected image and statistics
         """
-        import time
-
         start_time = time.perf_counter()
 
         # Handle size mismatch
@@ -492,8 +495,37 @@ class LensCorrectionPipeline:
         dy = np.abs(self._combined_map_y - y_coords)
         max_displacement = float(np.sqrt(np.max(dx**2 + dy**2)))
 
-        return CorrectionResult(
-            image=corrected, processing_time_ms=processing_time, pixels_corrected=h * w, max_displacement=max_displacement
+        # Determine distortion type
+        radial_correction = abs(self.profile.k1) > 1e-6 or abs(self.profile.k2) > 1e-6 or abs(self.profile.k3) > 1e-6
+        tangential_correction = abs(self.profile.p1) > 1e-6 or abs(self.profile.p2) > 1e-6
+        distortion_type = self.profile.distortion_type.value
+
+        metrics = ProcessingMetrics(
+            processing_time_ms=processing_time,
+            algorithm_name="LensCorrectionPipeline",
+            parameters={
+                "profile_name": self.profile.name,
+                "distortion_type": distortion_type,
+                "radial_correction": radial_correction,
+                "tangential_correction": tangential_correction,
+                "k1": self.profile.k1,
+                "k2": self.profile.k2,
+                "k3": self.profile.k3,
+                "p1": self.profile.p1,
+                "p2": self.profile.p2,
+            },
+        )
+
+        return LensCorrectionResult(
+            success=True,
+            data=corrected,
+            warnings=[],
+            metrics=metrics,
+            pixels_corrected=h * w,
+            max_displacement=max_displacement,
+            distortion_type=distortion_type,
+            radial_correction_applied=radial_correction,
+            tangential_correction_applied=tangential_correction,
         )
 
     def get_statistics(self) -> dict:

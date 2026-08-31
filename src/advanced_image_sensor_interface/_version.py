@@ -1,7 +1,17 @@
 """Version information for Advanced Image Sensor Interface."""
 
-__version__ = "3.0.0"
-__version_info__ = (3, 0, 0)
+__version__ = "3.2.0"
+__version_info__ = (3, 2, 0)
+
+# Breaking changes for v3.2.0
+BREAKING_CHANGES_3_2_0 = [
+    "Python 3.11+ required (removed 3.10 support for keras 3.14+/astropy 5.3.3+ security fixes)",
+    "SignalProcessor.process_frame() returns SignalProcessingResult instead of Optional[np.ndarray]",
+    "HDRProcessor methods return HDRProcessingResult",
+    "RAWProcessor methods return RAWProcessingResult",
+    "LensCorrectionPipeline.correct() returns LensCorrectionResult",
+    "Protocol drivers accept SimulationDelayConfig for configurable delays",
+]
 
 # Release information
 __title__ = "Advanced Image Sensor Interface"
@@ -13,6 +23,41 @@ __url__ = "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface"
 
 # Version history
 VERSION_HISTORY = {
+    "3.2.0": {
+        "release_date": "2026-08-31",
+        "major_features": [
+            "Python 3.11+ requirement (security fix for keras/astropy)",
+            "ProcessingResult dataclasses for explicit error handling (SignalProcessor, HDRProcessor, RAWProcessor, LensCorrection)",
+            "Per-driver configurable simulation delays (MIPI, GigE, CXP12, USB3)",
+            "3D/Depth module: stereo disparity (Block Matching, full 8-path SGM, ORB), depth calculation, point cloud generation",
+            "Full 8-path semi-global matching with optional numba acceleration and bit-identical numpy fallback",
+            "Native numpy/scipy photogrammetry calibration solver (Zhang's method + DLT), no OpenCV required",
+            "PyWavelets and trimesh optional extras with trimesh-backed mesh PLY export",
+            "Security fixes: astropy 5.3.4 (RCE), keras 3.15.1 (deserialization, path traversal)",
+            "Enhanced test coverage for CXP12, RoCE, D-PHY, USB3 streaming, MIPI Security, Lens Correction",
+            "388 tests passing (395 collected), Ruff + Black clean, mypy baseline reduced from 139 to 136",
+        ],
+        "breaking_changes": [
+            "Python 3.11+ required (removed 3.10 support)",
+            "SignalProcessor.process_frame() returns ProcessingResult instead of Optional[np.ndarray]",
+            "HDRProcessor and RAWProcessor return explicit result objects",
+            "LensCorrectionPipeline returns ProcessingResult with metrics",
+        ],
+    },
+    "3.1.0": {
+        "release_date": "2026-08-21",
+        "major_features": [
+            "AI/ML Integration Complete: Neural Calibration Tuner with scikit-learn MLPRegressor",
+            "AI/ML Enhancements: SceneClassifier, NoisePredictor, QualityAssessor",
+            "Custom Extensions: AINoiseReducer, AdaptiveColorCorrector, HighSpeedMIPIDriver",
+            "Complete Multi-Sensor Synchronization: ORB+RANSAC feature alignment, Phase Correlation (FFT sub-pixel)",
+            "MIPI Security Framework: PRE_SHARED_KEY authentication method",
+            "All 'In a real implementation' TODOs completed",
+            "Scripts & Benchmarks fixed: simulation.py, data_analysis.py, noise_analysis.py",
+            "Documentation: reST to Google style, mathematical explanations in design_specs.md",
+            "329 tests passing, Ruff + Black clean, mypy + pyright configured",
+        ],
+    },
     "3.0.0": {
         "release_date": "2026-02-03",
         "major_features": [
@@ -56,7 +101,7 @@ VERSION_HISTORY = {
             "API redesign for protocol interface standardization",
             "Configuration schema changes with validation",
             "Updated buffer management API with context managers",
-            "Python 3.10+ requirement",
+            "Python 3.11+ requirement",
         ],
     },
     "1.1.0": {

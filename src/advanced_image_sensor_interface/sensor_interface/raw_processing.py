@@ -9,12 +9,15 @@ This module provides comprehensive RAW image format support including:
 """
 
 import logging
+import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
 import numpy as np
 from scipy import ndimage
+
+from ..types import RAWProcessingResult, ProcessingMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +129,7 @@ class RAWProcessor:
         """
         return self.processing_stats.copy()
 
-    def process_raw_image(self, raw_data: np.ndarray, metadata: Optional[dict] = None) -> np.ndarray:
+    def process_raw_image(self, raw_data: np.ndarray, metadata: Optional[dict] = None) -> RAWProcessingResult:
         """Process RAW image data to RGB.
 
         Args:
@@ -134,26 +137,29 @@ class RAWProcessor:
             metadata: Optional metadata dictionary.
 
         Returns:
-            Processed RGB image in the configured output bit depth.
-
-        **WARNING: SILENT FAILURE BEHAVIOR**
-            This method **silently returns a zero-filled fallback image** on any
-            processing error (e.g., invalid input, memory errors, missing
-            dependencies). An ERROR-level log is emitted, but no exception is
-            raised. Callers that require failure detection MUST check logs or
-            wrap this method in a try/except block.
+            RAWProcessingResult: Result object containing processed data,
+                success status, error info, warnings, and metrics.
 
         Raises:
             ValueError: If raw_data is not a 2D array (before processing begins).
         """
-        import time
-
-        start_time = time.time()
+        start_time = time.perf_counter()
+        warnings = []
+        metrics = ProcessingMetrics(algorithm_name="RAWProcessor")
+        demosaicing_algorithm = self.parameters.demosaic_method.value
+        white_balance_applied = False
+        bad_pixel_correction = 0
+        vignetting_corrected = False
 
         try:
             # Validate input
             if len(raw_data.shape) != 2:
-                raise ValueError("RAW data must be 2D array")
+                return RAWProcessingResult(
+                    success=False,
+                    error="RAW data must be 2D array",
+                    warnings=warnings,
+                    metrics=ProcessingMetrics(processing_time_ms=(time.perf_counter() - start_time) * 1000),
+                )
 
             # Step 1: Normalize RAW data
             normalized_raw = self._normalize_raw_data(raw_data)
@@ -171,8 +177,10 @@ class RAWProcessor:
             # Step 5: Apply white balance
             if self.parameters.auto_white_balance:
                 rgb_image = self._auto_white_balance(rgb_image)
+                white_balance_applied = True
             else:
                 rgb_image = self._apply_white_balance(rgb_image)
+                white_balance_applied = True
 
             # Step 6: Apply color correction matrix
             rgb_image = self._apply_color_correction(rgb_image)
@@ -185,19 +193,52 @@ class RAWProcessor:
             output_image = self._convert_to_output_format(rgb_image)
 
             # Update statistics
-            processing_time = time.time() - start_time
+            processing_time = time.perf_counter() - start_time
             self._update_processing_stats(processing_time)
 
+            processing_time_ms = processing_time * 1000
+            metrics = ProcessingMetrics(
+                processing_time_ms=processing_time_ms,
+                algorithm_name=f"RAWProcessor_{demosaicing_algorithm}",
+                parameters={
+                    "bayer_pattern": self.parameters.bayer_pattern.value,
+                    "demosaic_method": demosaicing_algorithm,
+                    "bit_depth": self.parameters.bit_depth,
+                    "auto_white_balance": self.parameters.auto_white_balance,
+                    "noise_reduction": self.parameters.noise_reduction,
+                    "noise_reduction_strength": self.parameters.noise_reduction_strength,
+                    "output_bit_depth": self.parameters.output_bit_depth,
+                    "output_color_space": self.parameters.output_color_space.value,
+                },
+            )
+
             logger.debug(f"RAW processing completed in {processing_time:.3f}s")
-            return output_image
+            return RAWProcessingResult(
+                success=True,
+                data=output_image,
+                warnings=warnings,
+                metrics=metrics,
+                demosaicing_algorithm=demosaicing_algorithm,
+                white_balance_applied=white_balance_applied,
+                bad_pixel_correction=bad_pixel_correction,
+                vignetting_corrected=vignetting_corrected,
+            )
 
         except Exception as e:
             logger.error(f"RAW processing failed: {e}")
+            processing_time_ms = (time.perf_counter() - start_time) * 1000
             # Return a fallback image when spatial dimensions are available.
+            fallback_image = None
             if raw_data.ndim >= 2:
                 height, width = raw_data.shape[:2]
-                return np.zeros((height, width, 3), dtype=np.uint8)
-            return np.zeros((0, 0, 3), dtype=np.uint8)
+                fallback_image = np.zeros((height, width, 3), dtype=np.uint8)
+            return RAWProcessingResult(
+                success=False,
+                data=fallback_image,
+                error=str(e),
+                warnings=warnings,
+                metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
+            )
 
     def _normalize_raw_data(self, raw_data: np.ndarray) -> np.ndarray:
         """Normalize RAW data to [0, 1] range."""

@@ -6,6 +6,7 @@ Use the latest version to ensure you have the most up-to-date security patches.
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 3.2.x   | :white_check_mark: |
 | 3.1.x   | :white_check_mark: |
 | 3.0.x   | :white_check_mark: |
 | 2.0.x   | :x:                |

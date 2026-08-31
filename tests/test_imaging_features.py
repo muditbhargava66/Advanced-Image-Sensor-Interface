@@ -241,9 +241,13 @@ class TestLensCorrection:
         pipeline = LensCorrectionPipeline(profile)
 
         result = pipeline.correct(test_image)
-        assert result.image.shape == test_image.shape
-        assert result.processing_time_ms > 0
+        assert result.success
+        assert result.data.shape == test_image.shape
+        assert result.metrics.processing_time_ms > 0
         assert result.pixels_corrected == 10000
+        assert result.max_displacement >= 0
+        assert result.radial_correction_applied
+        assert result.tangential_correction_applied
 
     def test_standard_profiles(self):
         """Test pre-defined standard profiles."""

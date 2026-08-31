@@ -183,7 +183,9 @@ class PerformanceProfiler:
 
                 # Process frames
                 for _ in range(iterations):
-                    _ = processor.process_frame(frame)
+                    result = processor.process_frame(frame)
+                    if not result.success:
+                        raise RuntimeError(f"Signal processing failed at {height}x{width}: {result.error}")
                     total_frames += 1
 
         end_time = time.perf_counter()

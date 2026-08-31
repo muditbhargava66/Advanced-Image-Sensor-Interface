@@ -7,12 +7,14 @@ and system integration.
 """
 
 from .buffer_benchmarks import BufferManagerBenchmarks
+from .depth_benchmarks import run_depth_benchmarks
 from .noise_analysis import run_noise_analysis
 from .performance_benchmark import PerformanceBenchmark
 from .speed_tests import PerformanceProfiler, BenchmarkSuite, run_performance_profile
 
 __all__ = [
     "BufferManagerBenchmarks",
+    "run_depth_benchmarks",
     "run_noise_analysis",
     "PerformanceBenchmark",
     "PerformanceProfiler",

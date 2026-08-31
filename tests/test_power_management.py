@@ -127,6 +127,10 @@ class TestPowerManager:
         """Test power efficiency at different voltage levels."""
         config = PowerConfig(voltage_main=voltage_main, voltage_io=voltage_io, current_limit=1.0)
         pm = PowerManager(config)
+        # Disable simulated current-measurement noise so the efficiency model
+        # is verified deterministically instead of asserting on one noisy
+        # sample (10% noise occasionally pushed efficiency outside [0.8, 1.0]).
+        pm._noise_level = 0.0
         power_consumption = pm._calculate_power_consumption()
         efficiency = (voltage_main * 0.5 + voltage_io * 0.5) / power_consumption  # Assuming 50% current draw on each rail
         assert 0.8 <= efficiency <= 1.0  # Assuming 80-100% efficiency

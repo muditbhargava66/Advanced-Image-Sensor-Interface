@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Advanced Image Sensor Interface Documentation (v3.1.0)
+Advanced Image Sensor Interface Documentation (v3.2.0)
 ========================================================
 
 Welcome to the Advanced Image Sensor Interface documentation! This is a comprehensive Python framework for camera interface protocols with advanced image processing, multi-sensor synchronization, AI/ML enhancements, neural calibration tuning, custom extensions, and professional-grade calibration capabilities.
@@ -24,7 +24,7 @@ The Advanced Image Sensor Interface provides:
 * **Security Framework**: MIPI AES-GCM encryption with key management and PRE_SHARED_KEY authentication
 * **AI/ML Enhancements**: Neural Calibration Tuner, SceneClassifier, NoisePredictor, QualityAssessor
 * **Custom Extensions**: AINoiseReducer, AdaptiveColorCorrector with scikit-learn backends
-* **Comprehensive Testing**: 329 automated tests in the current suite
+* **Comprehensive Testing**: 388 automated tests in the current suite
 * **Production-Ready**: 100% linting compliance and robust CI/CD pipeline
 
 Quick Start

@@ -5,6 +5,104 @@ All notable changes to the Advanced Image Sensor Interface project will be docum
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-08-31
+
+### Minor Release - Typed Processing Results, Simulation Delays, and 3D/Depth Module
+
+This release introduces explicit typed result objects for all image processing pipelines, configurable simulation delays across all protocol drivers, and a new stereo depth module. It also raises the minimum Python version to 3.11+ and addresses critical security vulnerabilities in transitive dependencies (astropy and keras) identified by GitHub Dependabot.
+
+### Breaking Changes
+
+- **Typed Processing Results**: Processors now return explicit result dataclasses instead of raw arrays or `None`:
+  - `SignalProcessor.process_frame()` returns `SignalProcessingResult` (was `Optional[np.ndarray]`)
+  - `HDRProcessor` methods return `HDRProcessingResult`
+  - `RAWProcessor` methods return `RAWProcessingResult`
+  - `LensCorrectionPipeline.correct()` returns `LensCorrectionResult`
+  - Check `result.success` and read `result.data`; errors are reported in `result.error`
+- **Python 3.11+ Required**: Minimum Python version updated from 3.10 to 3.11. This is required for:
+  - keras 3.14+ compatibility (security fixes)
+  - astropy 5.3.3+ compatibility (security fixes)
+  - Modern typing features and performance improvements
+
+### Added
+
+- **ProcessingResult Dataclasses** (`types.py`): `SignalProcessingResult`, `HDRProcessingResult`, `RAWProcessingResult`, `LensCorrectionResult`, and shared `ProcessingMetrics` — all exported from the package root
+- **Simulation Delay Configuration**: `SimulationDelayConfig` wired into the MIPI D-PHY, GigE/RoCE, CoaXPress CXP-12, and USB3 streaming drivers, replacing hardcoded sleeps with configurable per-operation delays (connection, streaming, control, power, security) plus optional randomized jitter for testing
+- **3D/Depth Module** (`utils/depth.py`): `StereoDepthProcessor` with
+  - Block Matching (SAD cost volume with box-filter windowing)
+  - Full 8-path semi-global matching (4 cardinal + 4 diagonal scanline paths with P1/P2 penalties), optionally accelerated with numba `@njit` kernels; a pure-numpy fallback produces bit-identical results
+  - Optional ORB feature alignment via OpenCV with graceful numpy-only fallback
+  - Disparity-to-depth conversion (pinhole stereo model), point cloud generation, ASCII/binary PLY export, and trimesh-backed mesh PLY export (`export_mesh_ply`, requires the optional trimesh dependency)
+  - `DepthResult` dataclass added to the `ProcessingResult` union
+- **Native Calibration Solver** (`sensor_interface/calibration/photogrammetry.py`): OpenCV-free camera calibration with numpy/scipy — `calibrate_camera` (Zhang's method: normalized DLT homographies, closed-form intrinsics, per-view extrinsics, Levenberg-Marquardt reprojection refinement) and `solve_projection_matrix` (DLT + RQ decomposition); opt-in for `MultiSensorSynchronizer.calibrate_sensors()` via `SyncConfiguration.prefer_native_calibration`
+- **Optional Extras**: PyWavelets and trimesh added to the `[full]` extra (guarded imports only; no new required dependencies)
+- **Test Suites**: New `tests/test_depth_module.py`, `tests/test_simulation_delays.py`, and `tests/test_calibration_solver.py` (388 tests passing, 395 collected)
+- **Showcase Examples and Depth Benchmarks**: New runnable entry points for the v3.2.0 features
+  - `examples/stereo_depth_example.py`: Block Matching vs. 8-path SGM comparison on a synthetic stereo pair, 4-path vs. 8-path scanline demo, numba vs. numpy bit-identity check, end-to-end depth → point cloud → PLY/mesh export, and typed-error handling
+  - `examples/native_calibration_example.py`: Zhang's-method calibration accuracy report (intrinsic recovery vs. ground truth), DLT + RQ projection-matrix solve demo, and error-handling demos
+  - `benchmarks/depth_benchmarks.py`: disparity algorithm, SGM path count, and numba/numpy backend sweeps with JSON output
+
+### Fixed
+
+- **Sub-pixel synchronization**: Implemented parabolic interpolation for phase-correlation peak refinement in `multi_sensor_sync.py` (previously an unimplemented stub)
+- **GPU detection logging**: `gpu_acceleration.py` no longer silently swallows backend detection exceptions; failures are logged at debug level
+- **Honest denoising docs**: The multi-scale "wavelet" denoiser is now documented as a Gaussian approximation with an optional PyWavelets path when installed
+- **Power optimization stub**: `AdvancedPowerManager._optimize_component_power()` has a real implementation instead of a bare `pass`
+- **Calibration feature extraction**: `neural_tuner.py` now uses OpenCV `Canny`/`goodFeaturesToTrack` when available instead of numpy-only placeholders
+- **Flaky power efficiency test**: `test_power_efficiency` disabled simulated measurement noise so it verifies the efficiency model deterministically (previously failed intermittently)
+- **Calibration argument bug**: `calibrate_sensors()` passed a duplicated, nested object-point list and an over-wrapped image-point list to `cv2.calibrateCamera`; it now passes the correct per-view lists
+- **Silent calibration failure without OpenCV**: `calibrate_sensors()` previously raised a swallowed `AttributeError` when OpenCV was unavailable; it now logs an explicit error and returns `False`
+- **Per-sensor native calibration isolation**: with `prefer_native_calibration`, a single sensor whose views are degenerate no longer aborts `calibrate_sensors()` for the whole rig; that sensor is skipped with a warning and the remaining sensors are still calibrated
+- **Calibration typing errors**: resolved the mypy errors in `calibrate_sensors()` caused by reusing loop variables across different types, and made the optional-numba typing in `utils/depth.py` identical with or without extras installed (mypy baseline reduced from 139 to 136)
+- **Stale examples, scripts, and benchmarks**: `examples/basic_usage.py`, `examples/ai_ml_enhancements.py`, `scripts/simulation.py`, `scripts/automated_testing.py`, `benchmarks/noise_analysis.py`, and `benchmarks/speed_tests.py` still consumed the pre-3.2.0 raw-array returns; they now unwrap the typed result objects and raise loudly on processing errors instead of crashing on `None`
+
+### Security Fixes
+
+- **CVE in astropy < 5.3.3**: Fixed RCE vulnerability in `TransformGraph().to_dot_graph()` function (GHSA-xxxx). Updated astropy to 5.3.4.
+- **CVE in keras < 3.14.0**: Fixed untrusted deserialization vulnerability in TFSMLayer class that allowed arbitrary code execution during model inference (GHSA-xxxx). Updated keras to 3.15.1.
+- **CVE in keras < 3.14.0**: Fixed path traversal vulnerability in archive extraction utilities that could lead to arbitrary file writes (GHSA-xxxx). Updated keras to 3.15.1.
+
+### Changed
+
+- **SGM default upgraded**: SGM aggregation now runs full 8-path by default (`DepthConfig.sgm_paths=8`); set `sgm_paths=4` to restore the previous 4-path cardinal behavior, and `use_numba=False` to force the numpy backend
+- **Dependency ranges widened** (dependabot-equivalent updates): websockets `<18.0.0`, zarr `<4.0.0`, rich `<16.0.0`, tkinter-tooltip `<4.0.0`, plotly `<8.0.0`, photutils `<4.0.0`, docs numpy `<3.0.0`, sphinxcontrib applehelp/devhelp/serializinghtml `>=2.0.0`
+- **Tooling targets**: black/ruff target `py311`; tox envlist drops `py310`
+- **Version references**: `pyproject.toml`, docs, README, ROADMAP, and package docstrings aligned to 3.2.0
+- **`scripts/simulation.py`**: Builds its `MIPIConfig` with an explicit `SimulationDelayConfig` and accepts `--fast` to run the pipeline with zero simulated delays
+
+### Configuration Updates
+
+- **`.github/workflows/ci.yml`**: Removed Python 3.10 from test matrix (now tests 3.11, 3.12, 3.13)
+- **`mypy.ini`**: Updated target Python version to 3.11
+- **`pyproject.toml`**: Updated mypy and pyright target versions to 3.11
+- **`.readthedocs.yaml`**: Updated build Python version to 3.11
+- **`.pre-commit-config.yaml`**: Updated default Python version to 3.11
+- **`src/advanced_image_sensor_interface/_version.py`**: Updated breaking change note to reflect Python 3.11+ requirement
+
+### Documentation Updates
+
+- **`docs/system_architecture.md`**: Updated Multi-Python support to 3.11–3.13
+- **`docs/testing_guide.md`**: Updated Multi-Python version testing to 3.11-3.13
+- **`docs/design_specs.md`**: Updated Python requirement to 3.11+
+- **`assets/system-architecture-v3.2.0.svg`**: Updated footer to show Python 3.11–3.13
+- **`.github/ISSUE_TEMPLATE/bug_report.md`**: Updated example Python version to 3.11.5
+- **`.github/ISSUE_TEMPLATE/hardware_support.md`**: Updated example Python version to 3.11.5
+- **`.github/pull_request_template.md`**: Updated example Python version to 3.11.5
+- **`docs/calibration.md`**: Documented the native photogrammetry solver, the `prefer_native_calibration` flag, and the zero-distortion limitation
+- **`docs/design_specs.md`**: Added stereo depth (full 8-path SGM) and native calibration solver specifications
+- **`docs/api_reference.md`**: Added 3D depth and native calibration API sections
+- **Test counts refreshed to 388**: README badge/bullets, `docs/testing_guide.md`, `docs/performance_analysis.md`, `docs/system_architecture.md`, `docs/index.rst`, and `assets/system-architecture-v3.2.0.svg`
+- **`README.md`**: Full v3.2.0 refresh — new "v3.2.0 Features" section (stereo depth, native calibration, simulation delays) with runnable code snippets, corrected typed-result code samples in the usage sections, updated project structure tree (depth, photogrammetry, new examples/tests/benchmarks/stubs), and simulation commands for the new examples and `--fast` mode
+- **`src/advanced_image_sensor_interface/__init__.py`**: Package docstring now describes the full 8-path SGM with numba acceleration, trimesh mesh export, and the native calibration solver instead of the outdated SGM-lite wording
+
+### Dependency Updates
+
+- **astropy**: 5.3.0 → 5.3.4 (security fix)
+- **keras**: Added explicit constraint `>=3.14.0,<4.0.0` (was transitive, now explicit for security)
+- **uv.lock**: Regenerated with fixed dependency versions and widened ranges
+
+---
+
 ## [3.1.0] - 2026-08-26
 
 ### Major Release - AI/ML Enhancements and Framework Improvements
@@ -110,13 +208,6 @@ This release completes the incomplete implementations marked with "In a real imp
 - **pyproject.toml**: Added `scikit-learn>=1.3.0,<2.0.0` to main dependencies
 - **mypy.ini**: Expanded type checking to entire `src/advanced_image_sensor_interface` package
 - **.readthedocs.yaml**: Added `extra_requirements: [docs]` for proper doc build
-
-### Testing & Quality
-
-- All 329 tests passing
-- Ruff linting and Black formatting clean
-- Mypy passes for protocol modules (16 source files)
-- All linting and formatting checks pass
 
 ---
 

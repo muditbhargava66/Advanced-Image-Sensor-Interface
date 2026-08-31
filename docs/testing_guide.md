@@ -8,7 +8,7 @@ This document provides comprehensive guidance on testing the Advanced Image Sens
 
 The project uses the following testing tools:
 
-- **pytest**: Main testing framework for the full suite (329 collected tests in the current workspace)
+- **pytest**: Main testing framework for the full suite (395 collected tests in the current workspace: 388 passing, 7 skipped when optional extras like numba, trimesh, or OpenCV are not installed)
 - **unittest.mock**: For mocking dependencies during testing
 - **pytest-cov**: For measuring test coverage
 - **pytest-asyncio**: For async test support
@@ -269,14 +269,14 @@ Keep test documentation up to date:
 - Test fixtures should be documented
 - Complex test setups should include comments
 
-## 12. Current Test Status (v3.1.0)
+## 12. Current Test Status (v3.2.0)
 
 The Advanced Image Sensor Interface project maintains a comprehensive test suite:
 
-- **329 collected tests** verified locally for the current v3.1.0 workspace
+- **Collected tests** verified locally for the current v3.2.0 workspace (see `pytest` summary for the live count)
 - **Targeted quality gates**: pytest, ruff, black, compileall, mypy, and pyright
 - **Coverage reports available on demand** via `pytest --cov=src`
-- **Multi-Python version testing** (3.10-3.13)
+- **Multi-Python version testing** (3.11-3.13)
 
 ### Test Distribution
 - **Protocol tests**: MIPI, GigE Vision, USB3 Vision, and CoaXPress drivers plus extension coverage

@@ -11,6 +11,7 @@ Options:
     --resolution RESOLUTION   Set the simulation resolution (default: 1920x1080)
     --frames FRAMES           Number of frames to simulate (default: 100)
     --noise NOISE             Noise level for simulation (default: 0.05)
+    --fast                    Zero the simulated driver delays for quick runs
     --output OUTPUT           Output file for simulation results
 
 Example:
@@ -32,6 +33,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from advanced_image_sensor_interface.sensor_interface.protocol.mipi.driver import MIPIConfig, MIPIProtocolDriver
 from advanced_image_sensor_interface.sensor_interface.power_management import PowerConfig, PowerManager
 from advanced_image_sensor_interface.sensor_interface.signal_processing import SignalConfig, SignalProcessor
+from advanced_image_sensor_interface.types import SimulationDelayConfig
 from advanced_image_sensor_interface.utils.performance_metrics import (
     calculate_color_accuracy,
     calculate_dynamic_range,
@@ -66,10 +68,29 @@ def generate_synthetic_frame(width: int, height: int, noise_level: float) -> tup
     return clean_image, noise.astype(np.uint16), noisy_image
 
 
-def simulate_pipeline(width: int, height: int, num_frames: int, noise_level: float) -> dict[str, Any]:
+def simulate_pipeline(width: int, height: int, num_frames: int, noise_level: float, fast_mode: bool = False) -> dict[str, Any]:
     """Simulate the entire image sensor pipeline and return performance metrics."""
+    # v3.2.0: configurable simulation delays replace hardcoded sleeps in protocol drivers.
+    # Fast mode zeroes the per-operation delays so large simulations run quickly.
+    delay_config = (
+        SimulationDelayConfig(
+            link_initialization_delay=0.0,
+            streaming_setup_delay=0.0,
+            streaming_teardown_delay=0.0,
+            frame_capture_delay=0.0,
+        )
+        if fast_mode
+        else SimulationDelayConfig()
+    )
+
     # Initialize components
-    mipi_config = MIPIConfig(lanes=4, data_rate_mbps=2500.0, pixel_format="RAW12", resolution=(width, height))
+    mipi_config = MIPIConfig(
+        lanes=4,
+        data_rate_mbps=2500.0,
+        pixel_format="RAW12",
+        resolution=(width, height),
+        simulation_delays=delay_config,
+    )
     mipi_driver = MIPIProtocolDriver(mipi_config)
 
     signal_config = SignalConfig(bit_depth=12, noise_reduction_strength=0.1, color_correction_matrix=np.eye(3))
@@ -97,10 +118,13 @@ def simulate_pipeline(width: int, height: int, num_frames: int, noise_level: flo
         # Generate synthetic frame (returns clean, noise, noisy)
         clean_frame, noise_frame, raw_frame = generate_synthetic_frame(width, height, noise_level)
 
-        # Process frame
+        # Process frame (v3.2.0: typed SignalProcessingResult)
         start_time = time.time()
-        processed_frame = signal_processor.process_frame(raw_frame)
+        result = signal_processor.process_frame(raw_frame)
         processing_time = time.time() - start_time
+        if not result.success or result.data is None:
+            raise RuntimeError(f"Frame {i} processing failed: {result.error}")
+        processed_frame = result.data
 
         # Calculate metrics using proper noise estimate
         noise_estimate = clean_frame.astype(np.float32) - processed_frame.astype(np.float32)
@@ -152,6 +176,7 @@ def main() -> None:
     parser.add_argument("--resolution", default="1920x1080", help="Simulation resolution (WxH)")
     parser.add_argument("--frames", type=int, default=100, help="Number of frames to simulate")
     parser.add_argument("--noise", type=float, default=0.05, help="Noise level for simulation (0.0-1.0)")
+    parser.add_argument("--fast", action="store_true", help="Zero the simulated driver delays for quick runs")
     parser.add_argument("--output", default="simulation_results.json", help="Output file for results")
 
     args = parser.parse_args()
@@ -162,9 +187,10 @@ def main() -> None:
     print(f"  Resolution: {width}x{height}")
     print(f"  Frames: {args.frames}")
     print(f"  Noise Level: {args.noise}")
+    print(f"  Driver delays: {'disabled (--fast)' if args.fast else 'realistic defaults'}")
     print()
 
-    results = simulate_pipeline(width, height, args.frames, args.noise)
+    results = simulate_pipeline(width, height, args.frames, args.noise, fast_mode=args.fast)
 
     print("\nSimulation Results:")
     for key, value in results.items():

@@ -10,8 +10,9 @@ Key Features:
 - Lossless Ethernet with PFC (Priority Flow Control)
 - Multi-stream support
 - Compatible with GigE Vision over RoCE
+- Configurable simulation delays for realistic hardware behavior
 
-Version: 3.0.0
+Version: 3.2.0
 """
 
 import logging
@@ -21,6 +22,8 @@ from enum import Enum
 from typing import Any, Optional
 
 import numpy as np
+
+from advanced_image_sensor_interface.types import SimulationDelayConfig
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +66,7 @@ class RoCEConfig:
         enable_pfc: Enable Priority Flow Control
         traffic_class: DSCP traffic class
         gid_index: GID index for RoCEv2
+        simulation_delays: Optional configurable simulation delays
     """
 
     version: RoCEVersion = RoCEVersion.ROCE_V2
@@ -76,6 +80,9 @@ class RoCEConfig:
     max_scatter_gather: int = 16
     timeout_ms: int = 5000
 
+    # Simulation delay configuration (v3.2.0+)
+    simulation_delays: Optional[SimulationDelayConfig] = None
+
     def __post_init__(self) -> None:
         """Validate configuration."""
         valid_mtus = [256, 512, 1024, 2048, 4096]
@@ -84,6 +91,9 @@ class RoCEConfig:
 
         if self.queue_depth < 16 or self.queue_depth > 4096:
             raise ValueError("Queue depth must be between 16 and 4096")
+
+        if self.simulation_delays is None:
+            self.simulation_delays = SimulationDelayConfig()
 
 
 @dataclass
@@ -356,6 +366,10 @@ class RoCETransport:
             # 2. Allocate protection domain
             # 3. Create completion queues
 
+            # Apply link initialization delay
+            delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.link_initialization_delay)
+            time.sleep(delay)
+
             self._is_initialized = True
             logger.info("RoCE transport initialized")
             return True
@@ -431,6 +445,10 @@ class RoCETransport:
         if qp is None:
             return False
 
+        # Apply command transfer delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.command_transfer_delay)
+        time.sleep(delay)
+
         qp.post_send(buffer=data, operation=RDMAOperation.WRITE, remote_addr=remote_addr, remote_key=remote_key)
 
         self._statistics.rdma_writes += 1
@@ -454,6 +472,10 @@ class RoCETransport:
         if qp is None:
             return None
 
+        # Apply register read delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.register_read_delay)
+        time.sleep(delay)
+
         # Simulate read
         data = bytes(size)
 
@@ -476,6 +498,10 @@ class RoCETransport:
         if qp is None:
             return False
 
+        # Apply command transfer delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.command_transfer_delay)
+        time.sleep(delay)
+
         qp.post_send(data, RDMAOperation.SEND)
         self._statistics.sends_completed += 1
         self._statistics.bytes_sent += len(data)
@@ -497,6 +523,10 @@ class RoCETransport:
             return None
 
         qp.post_recv(size)
+
+        # Apply frame capture delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.frame_capture_delay)
+        time.sleep(delay)
 
         # Simulate receive
         data = np.random.bytes(size)
@@ -584,6 +614,10 @@ class GigERoCEDriver:
             if not self.transport.connect_qp(self._stream_qp, 1, remote_gid):
                 return False
 
+            # Apply device discovery delay
+            delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.device_discovery_delay)
+            time.sleep(delay)
+
             self._is_connected = True
             logger.info(f"Connected to {remote_ip}:{remote_port}")
             return True
@@ -597,6 +631,10 @@ class GigERoCEDriver:
         if self._is_streaming:
             self.stop_streaming()
 
+        # Apply streaming teardown delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.streaming_teardown_delay)
+        time.sleep(delay)
+
         self.transport.shutdown()
         self._is_connected = False
         logger.info("Disconnected")
@@ -608,12 +646,22 @@ class GigERoCEDriver:
             return False
 
         self._is_streaming = True
+
+        # Apply streaming setup delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.streaming_setup_delay)
+        time.sleep(delay)
+
         logger.info("Streaming started")
         return True
 
     def stop_streaming(self) -> bool:
         """Stop image streaming."""
         self._is_streaming = False
+
+        # Apply streaming teardown delay
+        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.streaming_teardown_delay)
+        time.sleep(delay)
+
         logger.info("Streaming stopped")
         return True
 

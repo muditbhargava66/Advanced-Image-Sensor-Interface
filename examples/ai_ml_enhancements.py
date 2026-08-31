@@ -151,7 +151,11 @@ class AIEnhancedProcessor:
             processed = self._gpu_hdr_processing(hdr_processor, images, exposure_values)
         else:
             logger.info("Using CPU for HDR processing")
-            processed = hdr_processor.process_exposure_stack(images, exposure_values)
+            result = hdr_processor.process_exposure_stack(images, exposure_values)
+            if not result.success or result.data is None:
+                raise RuntimeError(f"HDR exposure stack processing failed: {result.error}")
+            logger.info(f"HDR tone mapping: {result.tone_mapping_algorithm}, exposure fusion: {result.exposure_fusion_used}")
+            processed = result.data
 
         return processed
 
@@ -335,7 +339,10 @@ class AIEnhancedProcessor:
     def _gpu_hdr_processing(self, hdr_processor, images: list, exposure_values: list) -> np.ndarray:
         """GPU-accelerated HDR processing."""
         # Simulate GPU acceleration
-        return hdr_processor.process_exposure_stack(images, exposure_values)
+        result = hdr_processor.process_exposure_stack(images, exposure_values)
+        if not result.success or result.data is None:
+            raise RuntimeError(f"GPU HDR processing failed: {result.error}")
+        return result.data
 
     def _adaptive_sharpening(self, image: np.ndarray, scene_type: str) -> np.ndarray:
         """Apply adaptive sharpening based on scene type."""

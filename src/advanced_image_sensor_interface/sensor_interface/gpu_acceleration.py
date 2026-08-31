@@ -228,14 +228,14 @@ class GPUAccelerator:
                 cp.cuda.runtime.getDeviceCount()
                 return GPUBackend.CUPY
             except Exception:
-                pass
+                logger.debug("CuPy installed but CUDA runtime probe failed", exc_info=True)
 
         if NUMBA_AVAILABLE:
             try:
                 if cuda.is_available():
                     return GPUBackend.NUMBA_CUDA
             except Exception:
-                pass
+                logger.debug("Numba CUDA availability check failed", exc_info=True)
 
         return GPUBackend.NONE
 
