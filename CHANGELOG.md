@@ -5,11 +5,43 @@ All notable changes to the Advanced Image Sensor Interface project will be docum
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.2.0] - 2026-08-27
+## [3.2.0] - 2026-08-31
 
-### Patch Release - Python 3.11+ Requirement and Security Hardening
+### Minor Release - Typed Processing Results, Simulation Delays, and 3D/Depth Module
 
-This release updates the minimum Python version requirement to 3.11+ and addresses critical security vulnerabilities in transitive dependencies (astropy and keras) identified by GitHub Dependabot.
+This release introduces explicit typed result objects for all image processing pipelines, configurable simulation delays across all protocol drivers, and a new stereo depth module. It also raises the minimum Python version to 3.11+ and addresses critical security vulnerabilities in transitive dependencies (astropy and keras) identified by GitHub Dependabot.
+
+### Breaking Changes
+
+- **Typed Processing Results**: Processors now return explicit result dataclasses instead of raw arrays or `None`:
+  - `SignalProcessor.process_frame()` returns `SignalProcessingResult` (was `Optional[np.ndarray]`)
+  - `HDRProcessor` methods return `HDRProcessingResult`
+  - `RAWProcessor` methods return `RAWProcessingResult`
+  - `LensCorrectionPipeline.correct()` returns `LensCorrectionResult`
+  - Check `result.success` and read `result.data`; errors are reported in `result.error`
+- **Python 3.11+ Required**: Minimum Python version updated from 3.10 to 3.11. This is required for:
+  - keras 3.14+ compatibility (security fixes)
+  - astropy 5.3.3+ compatibility (security fixes)
+  - Modern typing features and performance improvements
+
+### Added
+
+- **ProcessingResult Dataclasses** (`types.py`): `SignalProcessingResult`, `HDRProcessingResult`, `RAWProcessingResult`, `LensCorrectionResult`, and shared `ProcessingMetrics` — all exported from the package root
+- **Simulation Delay Configuration**: `SimulationDelayConfig` wired into the MIPI D-PHY, GigE/RoCE, CoaXPress CXP-12, and USB3 streaming drivers, replacing hardcoded sleeps with configurable per-operation delays (connection, streaming, control, power, security) plus optional randomized jitter for testing
+- **3D/Depth Module** (`utils/depth.py`): `StereoDepthProcessor` with
+  - Block Matching (SAD cost volume with box-filter windowing)
+  - SGM-lite (4-path semi-global matching approximation with P1/P2 penalties)
+  - Optional ORB feature alignment via OpenCV with graceful numpy-only fallback
+  - Disparity-to-depth conversion (pinhole stereo model), point cloud generation, and ASCII/binary PLY export
+  - `DepthResult` dataclass added to the `ProcessingResult` union
+- **Test Suites**: New `tests/test_depth_module.py` and `tests/test_simulation_delays.py`
+
+### Fixed
+
+- **Sub-pixel synchronization**: Implemented parabolic interpolation for phase-correlation peak refinement in `multi_sensor_sync.py` (previously an unimplemented stub)
+- **GPU detection logging**: `gpu_acceleration.py` no longer silently swallows backend detection exceptions; failures are logged at debug level
+- **Honest denoising docs**: The multi-scale "wavelet" denoiser is now documented as a Gaussian approximation with an optional PyWavelets path when installed
+- **Power optimization stub**: `AdvancedPowerManager._optimize_component_power()` has a real implementation instead of a bare `pass`
 
 ### Security Fixes
 
@@ -17,12 +49,11 @@ This release updates the minimum Python version requirement to 3.11+ and address
 - **CVE in keras < 3.14.0**: Fixed untrusted deserialization vulnerability in TFSMLayer class that allowed arbitrary code execution during model inference (GHSA-xxxx). Updated keras to 3.15.1.
 - **CVE in keras < 3.14.0**: Fixed path traversal vulnerability in archive extraction utilities that could lead to arbitrary file writes (GHSA-xxxx). Updated keras to 3.15.1.
 
-### Breaking Changes
+### Changed
 
-- **Python 3.11+ Required**: Minimum Python version updated from 3.10 to 3.11. This is required for:
-  - keras 3.14+ compatibility (security fixes)
-  - astropy 5.3.3+ compatibility (security fixes)
-  - Modern typing features and performance improvements
+- **Dependency ranges widened** (dependabot-equivalent updates): websockets `<18.0.0`, zarr `<4.0.0`, rich `<16.0.0`, tkinter-tooltip `<4.0.0`, plotly `<8.0.0`, photutils `<4.0.0`, docs numpy `<3.0.0`, sphinxcontrib applehelp/devhelp/serializinghtml `>=2.0.0`
+- **Tooling targets**: black/ruff target `py311`; tox envlist drops `py310`
+- **Version references**: `pyproject.toml`, docs, README, ROADMAP, and package docstrings aligned to 3.2.0
 
 ### Configuration Updates
 
@@ -38,7 +69,7 @@ This release updates the minimum Python version requirement to 3.11+ and address
 - **`docs/system_architecture.md`**: Updated Multi-Python support to 3.11–3.13
 - **`docs/testing_guide.md`**: Updated Multi-Python version testing to 3.11-3.13
 - **`docs/design_specs.md`**: Updated Python requirement to 3.11+
-- **`assets/system-architecture-v3.1.0.svg`**: Updated footer to show Python 3.11–3.13
+- **`assets/system-architecture-v3.2.0.svg`**: Updated footer to show Python 3.11–3.13
 - **`.github/ISSUE_TEMPLATE/bug_report.md`**: Updated example Python version to 3.11.5
 - **`.github/ISSUE_TEMPLATE/hardware_support.md`**: Updated example Python version to 3.11.5
 - **`.github/pull_request_template.md`**: Updated example Python version to 3.11.5
@@ -47,15 +78,7 @@ This release updates the minimum Python version requirement to 3.11+ and address
 
 - **astropy**: 5.3.0 → 5.3.4 (security fix)
 - **keras**: Added explicit constraint `>=3.14.0,<4.0.0` (was transitive, now explicit for security)
-- **uv.lock**: Regenerated with fixed dependency versions
-
-### Testing & Quality
-
-- All 329 tests passing
-- Ruff linting and Black formatting clean
-- Pyright type checking: 0 errors
-- MIPI Security Framework verified working
-- SVG validation passes
+- **uv.lock**: Regenerated with fixed dependency versions and widened ranges
 
 ---
 
@@ -164,13 +187,6 @@ This release completes the incomplete implementations marked with "In a real imp
 - **pyproject.toml**: Added `scikit-learn>=1.3.0,<2.0.0` to main dependencies
 - **mypy.ini**: Expanded type checking to entire `src/advanced_image_sensor_interface` package
 - **.readthedocs.yaml**: Added `extra_requirements: [docs]` for proper doc build
-
-### Testing & Quality
-
-- All 329 tests passing
-- Ruff linting and Black formatting clean
-- Mypy passes for protocol modules (16 source files)
-- All linting and formatting checks pass
 
 ---
 

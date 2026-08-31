@@ -165,6 +165,36 @@ except ImportError as e:
     # Fallback to legacy exports only
     __all__ = ["MIPIConfig", "MIPIDriver", "PowerConfig", "PowerManager", "SignalConfig", "SignalProcessor", "AutomatedTestSuite"]
 
+# v3.2.0 typed results and depth module (core dependencies only)
+from .types import (
+    DepthResult,
+    HDRProcessingResult,
+    LensCorrectionResult,
+    ProcessingMetrics,
+    ProcessingResult,
+    RAWProcessingResult,
+    SignalProcessingResult,
+    SimulationDelayConfig,
+)
+from .utils.depth import DepthConfig, DisparityAlgorithm, StereoDepthProcessor
+
+__all__ += [
+    # v3.2.0 typed processing results
+    "ProcessingResult",
+    "SignalProcessingResult",
+    "HDRProcessingResult",
+    "RAWProcessingResult",
+    "LensCorrectionResult",
+    "DepthResult",
+    "ProcessingMetrics",
+    # v3.2.0 simulation delays
+    "SimulationDelayConfig",
+    # v3.2.0 stereo depth
+    "StereoDepthProcessor",
+    "DepthConfig",
+    "DisparityAlgorithm",
+]
+
 # Version information
 from ._version import __author__, __license__, __version__, get_release_info, get_version, get_version_info
 
