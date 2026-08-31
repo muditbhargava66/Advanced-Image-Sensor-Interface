@@ -67,7 +67,7 @@ full = [
     # Scientific computing enhancements
     "sympy>=1.12.0,<2.0.0",
     "astropy>=5.3.3,<6.0.0",
-    "photutils>=1.9.0,<2.0.0",
+    "photutils>=1.9.0,<4.0.0",
     # Hardware interface simulation
     "pyserial>=3.5.0,<4.0.0",
     "pyusb>=1.2.0,<2.0.0",
@@ -78,20 +78,20 @@ full = [
     "py-spy>=0.3.0,<1.0.0",
     # Data formats and serialization
     "h5py>=3.8.0,<4.0.0",
-    "zarr>=2.16.0,<3.0.0",
+    "zarr>=2.16.0,<4.0.0",
     "msgpack>=1.0.0,<2.0.0",
     "protobuf>=5.29.6",
     # Networking and protocols
     "requests>=2.31.0,<3.0.0",
-    "websockets>=11.0.0,<12.0.0",
+    "websockets>=11.0.0,<18.0.0",
     "pyzmq>=26.0.0,<27.0.0",
     # Visualization enhancements
-    "plotly>=5.17.0,<6.0.0",
+    "plotly>=5.17.0,<8.0.0",
     "bokeh>=3.2.0,<4.0.0",
     "seaborn>=0.12.0,<1.0.0",
     # Configuration and utilities
     "click>=8.1.0,<9.0.0",
-    "rich>=13.6.0,<14.0.0",
+    "rich>=13.6.0,<16.0.0",
     "typer>=0.9.0,<1.0.0",
     "pydantic>=2.4.0,<3.0.0",
     # Development and debugging
@@ -99,7 +99,7 @@ full = [
     "loguru>=0.7.0,<1.0.0",
     "colorama>=0.4.0,<1.0.0",
     # Optional GUI support
-    "tkinter-tooltip>=2.1.0,<3.0.0",
+    "tkinter-tooltip>=2.1.0,<4.0.0",
     "pillow-simd>=9.5.0.post2,<10.0.0; sys_platform != 'darwin'",
 ]
 
