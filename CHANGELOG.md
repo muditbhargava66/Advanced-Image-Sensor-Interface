@@ -37,6 +37,10 @@ This release introduces explicit typed result objects for all image processing p
 - **Native Calibration Solver** (`sensor_interface/calibration/photogrammetry.py`): OpenCV-free camera calibration with numpy/scipy — `calibrate_camera` (Zhang's method: normalized DLT homographies, closed-form intrinsics, per-view extrinsics, Levenberg-Marquardt reprojection refinement) and `solve_projection_matrix` (DLT + RQ decomposition); opt-in for `MultiSensorSynchronizer.calibrate_sensors()` via `SyncConfiguration.prefer_native_calibration`
 - **Optional Extras**: PyWavelets and trimesh added to the `[full]` extra (guarded imports only; no new required dependencies)
 - **Test Suites**: New `tests/test_depth_module.py`, `tests/test_simulation_delays.py`, and `tests/test_calibration_solver.py` (388 tests passing, 395 collected)
+- **Showcase Examples and Depth Benchmarks**: New runnable entry points for the v3.2.0 features
+  - `examples/stereo_depth_example.py`: Block Matching vs. 8-path SGM comparison on a synthetic stereo pair, 4-path vs. 8-path scanline demo, numba vs. numpy bit-identity check, end-to-end depth → point cloud → PLY/mesh export, and typed-error handling
+  - `examples/native_calibration_example.py`: Zhang's-method calibration accuracy report (intrinsic recovery vs. ground truth), DLT + RQ projection-matrix solve demo, and error-handling demos
+  - `benchmarks/depth_benchmarks.py`: disparity algorithm, SGM path count, and numba/numpy backend sweeps with JSON output
 
 ### Fixed
 
@@ -50,6 +54,7 @@ This release introduces explicit typed result objects for all image processing p
 - **Silent calibration failure without OpenCV**: `calibrate_sensors()` previously raised a swallowed `AttributeError` when OpenCV was unavailable; it now logs an explicit error and returns `False`
 - **Per-sensor native calibration isolation**: with `prefer_native_calibration`, a single sensor whose views are degenerate no longer aborts `calibrate_sensors()` for the whole rig; that sensor is skipped with a warning and the remaining sensors are still calibrated
 - **Calibration typing errors**: resolved the mypy errors in `calibrate_sensors()` caused by reusing loop variables across different types, and made the optional-numba typing in `utils/depth.py` identical with or without extras installed (mypy baseline reduced from 139 to 136)
+- **Stale examples, scripts, and benchmarks**: `examples/basic_usage.py`, `examples/ai_ml_enhancements.py`, `scripts/simulation.py`, `scripts/automated_testing.py`, `benchmarks/noise_analysis.py`, and `benchmarks/speed_tests.py` still consumed the pre-3.2.0 raw-array returns; they now unwrap the typed result objects and raise loudly on processing errors instead of crashing on `None`
 
 ### Security Fixes
 
@@ -63,6 +68,7 @@ This release introduces explicit typed result objects for all image processing p
 - **Dependency ranges widened** (dependabot-equivalent updates): websockets `<18.0.0`, zarr `<4.0.0`, rich `<16.0.0`, tkinter-tooltip `<4.0.0`, plotly `<8.0.0`, photutils `<4.0.0`, docs numpy `<3.0.0`, sphinxcontrib applehelp/devhelp/serializinghtml `>=2.0.0`
 - **Tooling targets**: black/ruff target `py311`; tox envlist drops `py310`
 - **Version references**: `pyproject.toml`, docs, README, ROADMAP, and package docstrings aligned to 3.2.0
+- **`scripts/simulation.py`**: Builds its `MIPIConfig` with an explicit `SimulationDelayConfig` and accepts `--fast` to run the pipeline with zero simulated delays
 
 ### Configuration Updates
 
@@ -86,6 +92,8 @@ This release introduces explicit typed result objects for all image processing p
 - **`docs/design_specs.md`**: Added stereo depth (full 8-path SGM) and native calibration solver specifications
 - **`docs/api_reference.md`**: Added 3D depth and native calibration API sections
 - **Test counts refreshed to 388**: README badge/bullets, `docs/testing_guide.md`, `docs/performance_analysis.md`, `docs/system_architecture.md`, `docs/index.rst`, and `assets/system-architecture-v3.2.0.svg`
+- **`README.md`**: Full v3.2.0 refresh — new "v3.2.0 Features" section (stereo depth, native calibration, simulation delays) with runnable code snippets, corrected typed-result code samples in the usage sections, updated project structure tree (depth, photogrammetry, new examples/tests/benchmarks/stubs), and simulation commands for the new examples and `--fast` mode
+- **`src/advanced_image_sensor_interface/__init__.py`**: Package docstring now describes the full 8-path SGM with numba acceleration, trimesh mesh export, and the native calibration solver instead of the outdated SGM-lite wording
 
 ### Dependency Updates
 

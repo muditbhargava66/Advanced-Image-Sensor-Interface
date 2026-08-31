@@ -21,15 +21,18 @@
 
 ## Overview
 
-The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera interface framework** supporting MIPI CSI-2, CoaXPress, GigE Vision, and USB3 Vision protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities. Version 3.2.0 introduces typed ProcessingResult objects for explicit error handling, configurable simulation delays across all protocol drivers, a 3D/Depth module for stereo disparity and point cloud generation, and Python 3.11+ security hardening.
+The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera interface framework** supporting MIPI CSI-2, CoaXPress, GigE Vision, and USB3 Vision protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities. Version 3.2.0 introduces typed ProcessingResult objects for explicit error handling, configurable simulation delays across all protocol drivers, a 3D/Depth module with full 8-path semi-global matching for stereo disparity and point cloud generation, an OpenCV-free native photogrammetry calibration solver, and Python 3.11+ security hardening.
 
 ### New in Version 3.2.0
 
 - **Typed Processing Results**: `SignalProcessingResult`, `HDRProcessingResult`, `RAWProcessingResult`, and `LensCorrectionResult` dataclasses replace silent `None` returns with explicit success/error/metrics information
 - **Configurable Simulation Delays**: `SimulationDelayConfig` gives per-driver control over simulated latencies in MIPI, GigE/RoCE, CoaXPress CXP-12, and USB3 drivers
-- **3D/Depth Module**: `StereoDepthProcessor` with Block Matching and SGM-lite stereo disparity, disparity-to-depth conversion, point cloud generation, and PLY export
+- **3D/Depth Module**: `StereoDepthProcessor` with Block Matching and full 8-path semi-global matching (4 cardinal + 4 diagonal paths, optionally numba-accelerated with a bit-identical numpy fallback), disparity-to-depth conversion, point cloud generation, ASCII/binary PLY export, and trimesh-backed mesh PLY export
+- **Native Calibration Solver**: OpenCV-free camera calibration with numpy/scipy — `calibrate_camera` (Zhang's method) and `solve_projection_matrix` (DLT + RQ decomposition); opt-in for multi-sensor sync via `SyncConfiguration.prefer_native_calibration`
+- **Optional Extras**: PyWavelets and trimesh added to the `[full]` extra with guarded imports (no new required dependencies)
 - **Python 3.11+ Required**: Security fixes for keras (deserialization, path traversal) and astropy (RCE) transitive dependencies
 - **Security Hardening**: Dependency constraints updated for CVE-fixed versions; Python 3.10 support removed
+- **388 Tests Passing**: Release verification completed against the current suite (395 collected, 7 skipped without optional extras)
 
 ### Version 3.1.0 Features (Retained)
 
@@ -48,7 +51,6 @@ The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera i
 - **Data Integrity**: CRC-32 validation and Reed-Solomon FEC
 - **Lens Correction**: Radial and tangential distortion correction
 - **Multi-System Power**: Coordinated power budgeting for sensor arrays
-- **388 Tests Passing**: Release verification completed against the current suite
 
 ### What This Is / Isn't
 
@@ -157,6 +159,7 @@ advanced_image_sensor_interface/
 │   │   │   ├── __init__.py
 │   │   │   ├── models.py
 │   │   │   ├── neural_tuner.py
+│   │   │   ├── photogrammetry.py       # v3.2.0: Native numpy/scipy calibration solver
 │   │   │   └── database.py
 │   │   ├── error_handling/             # v3.0.0: Error handling framework
 │   │   │   ├── __init__.py
@@ -202,6 +205,7 @@ advanced_image_sensor_interface/
 │       ├── __init__.py
 │       ├── buffer_manager.py           # Advanced buffer management
 │       ├── data_integrity.py           # v3.0.0: CRC/FEC validation
+│       ├── depth.py                    # v3.2.0: Stereo depth (BM, 8-path SGM, point clouds)
 │       ├── lens_correction.py          # v3.0.0: Distortion correction
 │       ├── noise_reduction.py
 │       └── performance_metrics.py
@@ -212,6 +216,8 @@ advanced_image_sensor_interface/
 │   ├── protocol_implementations.py
 │   ├── ai_ml_enhancements.py           # AI/ML enhancements with SceneClassifier, NoisePredictor, QualityAssessor
 │   ├── custom_extension.py             # Custom extensions: AINoiseReducer, AdaptiveColorCorrector
+│   ├── stereo_depth_example.py         # v3.2.0: Stereo depth (BM, 8-path SGM, PLY export)
+│   ├── native_calibration_example.py   # v3.2.0: Native photogrammetry calibration solver
 │   ├── integration_example.py
 │   ├── advanced_integration_example.py
 │   └── interactive_demo.ipynb
@@ -222,6 +228,9 @@ advanced_image_sensor_interface/
 │   ├── test_protocol_extensions.py     # v3.0.0: CXP-12, RoCE, D-PHY, streaming
 │   ├── test_imaging_features.py        # v3.0.0: D-PHY, data integrity, lens
 │   ├── test_enhanced_features.py       # v2.0.0: HDR, RAW, GPU
+│   ├── test_depth_module.py            # v3.2.0: Stereo depth incl. 8-path SGM
+│   ├── test_calibration_solver.py      # v3.2.0: Native photogrammetry solver
+│   ├── test_simulation_delays.py       # v3.2.0: SimulationDelayConfig
 │   ├── test_integration_pipelines.py   # Integration tests
 │   ├── test_buffer_manager.py
 │   ├── test_config.py
@@ -229,7 +238,10 @@ advanced_image_sensor_interface/
 │   ├── test_performance_metrics.py
 │   ├── test_power_management.py
 │   ├── test_security.py
-│   └── test_signal_processing.py
+│   ├── test_signal_processing.py
+│   ├── test_image_validation.py        # v1.x: Image validation
+│   ├── test_mipi_driver.py             # v1.x: Legacy MIPI driver
+│   └── test_mipi_protocol.py           # v1.x: MIPI protocol validation
 ├── docs/
 │   ├── design_specs.md
 │   ├── performance_analysis.md
@@ -242,6 +254,17 @@ advanced_image_sensor_interface/
 │   ├── simulation.py
 │   ├── data_analysis.py
 │   └── automated_testing.py
+├── benchmarks/
+│   ├── __init__.py
+│   ├── buffer_benchmarks.py            # Buffer management benchmarks
+│   ├── depth_benchmarks.py             # v3.2.0: Stereo depth (BM vs SGM, numba vs numpy)
+│   ├── noise_analysis.py               # Noise reduction and SNR analysis
+│   ├── performance_benchmark.py        # System performance benchmarks
+│   └── speed_tests.py                  # Processing speed tests
+├── stubs/                              # Type stubs for optional dependencies
+│   ├── cupy/
+│   ├── skimage/
+│   └── smbus/
 ├── assets/
 │   ├── image-sensor-interface-logo.png
 │   ├── image-sensor-interface-logo.svg
@@ -382,8 +405,14 @@ mipi_success = mipi_driver.send_data(frame_bytes)
 print(f"MIPI transfer: {'Success' if mipi_success else 'Failed'}")
 
 # Process frame through simulation
-processed_frame = signal_processor.process_frame(test_frame)
-print(f"Processed frame shape: {processed_frame.shape}")
+# v3.2.0: process_frame returns a typed SignalProcessingResult
+result = signal_processor.process_frame(test_frame)
+if result.success:
+    processed_frame = result.data
+    print(f"Processed frame shape: {processed_frame.shape}")
+    print(f"SNR improvement: {result.snr_improvement_db:.2f} dB")
+else:
+    print(f"Processing failed: {result.error}")
 
 # Get power status
 power_status = power_manager.get_power_status()
@@ -558,7 +587,77 @@ profile = STANDARD_PROFILES["gopro_wide"]
 
 pipeline = LensCorrectionPipeline(profile)
 result = pipeline.correct(distorted_image)
-print(f"Corrected in {result.processing_time_ms:.1f}ms")
+if result.success:
+    print(f"Corrected in {result.metrics.processing_time_ms:.1f}ms, {result.pixels_corrected} pixels moved")
+```
+
+### v3.2.0 Features
+
+#### Stereo Depth (Block Matching and Full 8-Path SGM)
+
+```python
+from advanced_image_sensor_interface import StereoDepthProcessor, DepthConfig, DisparityAlgorithm
+
+# Full 8-path semi-global matching (4 cardinal + 4 diagonal paths);
+# numba-accelerated when numba is installed, bit-identical numpy fallback otherwise
+config = DepthConfig(
+    algorithm=DisparityAlgorithm.SEMI_GLOBAL_MATCHING,
+    sgm_paths=8,       # set to 4 for cardinal-only paths
+    use_numba=True,    # ignored when numba is not installed
+)
+processor = StereoDepthProcessor(config)
+
+result = processor.compute_disparity(left_frame, right_frame)
+if result.success:
+    print(f"Algorithm: {result.algorithm_used}, valid pixels: {result.valid_pixel_ratio:.1%}")
+    depth = processor.disparity_to_depth(result.disparity_map, focal_length_px=800.0, baseline_m=0.12)
+    point_cloud = processor.generate_point_cloud(depth, focal_length_px=800.0, baseline_m=0.12)
+    processor.export_ply(point_cloud, "scene.ply", binary=True)
+
+# Or run the full pipeline (disparity -> depth -> point cloud -> optional PLY export)
+result = processor.process_stereo_pair(left_frame, right_frame, 800.0, 0.12, export_path="scene.ply")
+```
+
+See `examples/stereo_depth_example.py` for a complete walkthrough and
+`benchmarks/depth_benchmarks.py` for throughput and backend comparisons.
+
+#### Native Calibration Solver (no OpenCV required)
+
+```python
+from advanced_image_sensor_interface.sensor_interface.calibration import (
+    calibrate_camera, solve_projection_matrix,
+)
+
+# Zhang's-method calibration from multiple views of a planar pattern:
+# per-view DLT homographies, closed-form intrinsics, LM reprojection refinement
+result = calibrate_camera(object_points_per_view, image_points_per_view, image_size=(1920, 1080))
+print(f"RMS reprojection error: {result.rms_reprojection_error:.4f} px")
+print(f"Intrinsics:\n{result.camera_matrix}")
+
+# General DLT projection matrix from 3D-2D correspondences, decomposed via RQ
+K, R, t = solve_projection_matrix(object_points, image_points)
+```
+
+The same solver powers multi-sensor calibration when
+`SyncConfiguration.prefer_native_calibration` is enabled. See
+`examples/native_calibration_example.py` for a synthetic end-to-end demo.
+
+#### Configurable Simulation Delays
+
+```python
+from advanced_image_sensor_interface.types import SimulationDelayConfig
+from advanced_image_sensor_interface.sensor_interface.protocol.mipi.driver import MIPIConfig, MIPIProtocolDriver
+
+# Replace hardcoded sleeps with per-operation simulated latencies;
+# also available for GigE/RoCE, CoaXPress CXP-12, and USB3 drivers
+delays = SimulationDelayConfig(
+    frame_capture_delay=0.002,
+    enable_random_delays=True,           # optional jitter for testing
+    random_delay_range_ms=(0.0, 1.0),
+)
+config = MIPIConfig(lanes=4, data_rate_mbps=2500.0, pixel_format="RAW12",
+                    resolution=(1920, 1080), simulation_delays=delays)
+driver = MIPIProtocolDriver(config)
 ```
 
 ### v3.1.0 AI/ML Features
@@ -744,9 +843,12 @@ test_images = [
 ]
 exposure_values = [-2.0, 0.0, 2.0]
 
-# Process HDR stack
+# Process HDR stack (v3.2.0: returns HDRProcessingResult)
 hdr_result = hdr_processor.process_exposure_stack(test_images, exposure_values)
-print(f"HDR processed: {hdr_result.shape}, dtype: {hdr_result.dtype}")
+if hdr_result.success:
+    print(f"HDR processed: {hdr_result.data.shape}, dtype: {hdr_result.data.dtype}")
+else:
+    print(f"HDR processing failed: {hdr_result.error}")
 ```
 
 #### RAW Image Processing
@@ -762,9 +864,12 @@ raw_processor = create_raw_processor_for_automotive()
 # Generate synthetic RAW data (12-bit Bayer pattern)
 raw_data = np.random.randint(0, 4095, (480, 640), dtype=np.uint16)
 
-# Process RAW to RGB
+# Process RAW to RGB (v3.2.0: returns RAWProcessingResult)
 rgb_result = raw_processor.process_raw_image(raw_data)
-print(f"RAW to RGB: {rgb_result.shape}")  # (480, 640, 3)
+if rgb_result.success:
+    print(f"RAW to RGB: {rgb_result.data.shape}")  # (480, 640, 3)
+else:
+    print(f"RAW processing failed: {rgb_result.error}")
 
 # Get processing statistics
 stats = raw_processor.get_processing_stats()
@@ -936,6 +1041,21 @@ To run a simulation of the entire image processing pipeline:
 
 ```
 python scripts/simulation.py --resolution 3840x2160 --frames 500 --noise 0.03 --output simulation_results.json
+```
+
+Add `--fast` to zero the simulated driver delays for quick runs.
+
+To explore the v3.2.0 features on synthetic data:
+
+```
+# Stereo depth: Block Matching vs 8-path SGM, numba vs numpy backends, PLY export
+python examples/stereo_depth_example.py --size 320x240
+
+# Native calibration solver: recovers a known camera from noisy pattern views
+python examples/native_calibration_example.py --views 8 --noise 0.15
+
+# Depth pipeline benchmarks (BM vs SGM, 4 vs 8 paths, numba vs numpy)
+python benchmarks/depth_benchmarks.py
 ```
 
 ### Analyzing Results

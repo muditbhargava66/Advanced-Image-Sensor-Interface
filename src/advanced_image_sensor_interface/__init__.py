@@ -11,8 +11,13 @@ Version 3.2.0 Features:
   RAWProcessingResult, LensCorrectionResult) for explicit error handling
 - SimulationDelayConfig for configurable per-driver simulated latencies
   (MIPI, GigE/RoCE, CoaXPress CXP-12, USB3)
-- 3D/Depth module (StereoDepthProcessor): Block Matching and SGM-lite stereo
-  disparity, disparity-to-depth conversion, point cloud generation, PLY export
+- 3D/Depth module (StereoDepthProcessor): Block Matching and full 8-path
+  semi-global matching (4 cardinal + 4 diagonal paths, optionally numba-accelerated
+  with a bit-identical numpy fallback), disparity-to-depth conversion, point cloud
+  generation, PLY export, and trimesh-backed mesh PLY export
+- Native numpy/scipy photogrammetry calibration solver (Zhang's method + DLT),
+  no OpenCV required, opt-in via SyncConfiguration.prefer_native_calibration
+- Optional extras: PyWavelets and trimesh in the [full] extra (guarded imports)
 - Python 3.11+ requirement with security fixes (keras, astropy)
 
 Previous Features (v3.1.0):
