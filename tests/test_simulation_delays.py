@@ -23,7 +23,7 @@ from advanced_image_sensor_interface.sensor_interface.protocol.usb3.streaming im
 def sleep_calls(monkeypatch) -> list[float]:
     """Replace time.sleep with a recorder so tests never actually sleep."""
     calls: list[float] = []
-    monkeypatch.setattr("time.sleep", lambda seconds: calls.append(seconds))
+    monkeypatch.setattr("time.sleep", calls.append)
     return calls
 
 

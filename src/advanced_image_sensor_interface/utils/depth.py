@@ -280,7 +280,7 @@ class StereoDepthProcessor:
         logger.debug("Exported %d points to %s", points.shape[0], path)
         return True
 
-    def process_stereo_pair(
+    def process_stereo_pair(  # noqa: PLR0917
         self,
         left: np.ndarray,
         right: np.ndarray,
@@ -429,7 +429,7 @@ class StereoDepthProcessor:
             matches = sorted(matches, key=lambda m: m.distance)[: max(16, len(matches) // 2)]
 
             deltas = np.array([kp_left[m.queryIdx].pt[0] - kp_right[m.trainIdx].pt[0] for m in matches], dtype=np.float64)
-            shift = int(round(float(np.median(deltas))))
+            shift = round(float(np.median(deltas)))
             aligned = np.roll(right, shift, axis=1)
             return aligned, shift, None
         except Exception as exc:
