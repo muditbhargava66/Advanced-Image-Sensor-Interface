@@ -8,9 +8,18 @@ This module provides comprehensive camera calibration capabilities including:
 - Stereo calibration
 - Color calibration
 - Temporal calibration
+- Native numpy/scipy photogrammetry solver (no OpenCV required)
 """
 
 from .models import CalibrationQualityMetrics, CalibrationResult, StereoCalibrationResult
 from .neural_tuner import NeuralCalibrationTuner
+from .photogrammetry import calibrate_camera, solve_projection_matrix
 
-__all__ = ["CalibrationResult", "StereoCalibrationResult", "CalibrationQualityMetrics", "NeuralCalibrationTuner"]
+__all__ = [
+    "CalibrationResult",
+    "StereoCalibrationResult",
+    "CalibrationQualityMetrics",
+    "NeuralCalibrationTuner",
+    "calibrate_camera",
+    "solve_projection_matrix",
+]

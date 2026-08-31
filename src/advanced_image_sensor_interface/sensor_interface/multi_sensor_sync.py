@@ -28,6 +28,8 @@ try:
 except ImportError:
     correlate = None
 
+from .calibration.photogrammetry import calibrate_camera as native_calibrate_camera
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,6 +89,7 @@ class SyncConfiguration:
     # Calibration
     enable_geometric_calibration: bool = False
     calibration_pattern_size: tuple[int, int] = (9, 6)  # Chessboard corners
+    prefer_native_calibration: bool = False  # Use the numpy/scipy photogrammetry solver instead of cv2
 
     def __post_init__(self):
         """Validate configuration."""
@@ -624,6 +627,13 @@ class MultiSensorSynchronizer:
             logger.info("Geometric calibration disabled")
             return True
 
+        if cv2 is None:
+            logger.error(
+                "Sensor calibration requires OpenCV (opencv-python) for calibration-pattern detection; "
+                "install it with `pip install advanced-image-sensor-interface[full]` or use `pip install opencv-python`."
+            )
+            return False
+
         try:
             logger.info("Starting sensor calibration...")
 
@@ -665,16 +675,33 @@ class MultiSensorSynchronizer:
                         sensor_img_points.append(corners)
 
                 if len(sensor_obj_points) >= 3:  # Need at least 3 valid frames
-                    # Calibrate camera
-                    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
-                        [sensor_obj_points] * len(sensor_obj_points), [sensor_img_points], frames[0].shape[:2][::-1], None, None
-                    )
-
-                    if ret:
-                        calibration_data[sensor_id] = {"camera_matrix": mtx, "dist_coeffs": dist, "rvecs": rvecs, "tvecs": tvecs}
-                        logger.info(f"Sensor {sensor_id} calibrated successfully (RMS error: {ret:.4f})")
+                    image_size = frames[0].shape[:2][::-1]  # cv2 convention: (width, height)
+                    if self.config.prefer_native_calibration:
+                        result = native_calibrate_camera(sensor_obj_points, sensor_img_points, image_size)
+                        calibration_data[sensor_id] = {
+                            "camera_matrix": result.camera_matrix,
+                            "dist_coeffs": result.distortion_coefficients,
+                            "rvecs": result.rotation_vectors,
+                            "tvecs": result.translation_vectors,
+                        }
+                        logger.info(
+                            f"Sensor {sensor_id} calibrated with native solver (RMS error: {result.rms_reprojection_error:.4f})"
+                        )
                     else:
-                        logger.warning(f"Calibration failed for sensor {sensor_id}")
+                        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
+                            sensor_obj_points, sensor_img_points, image_size, None, None
+                        )
+
+                        if ret:
+                            calibration_data[sensor_id] = {
+                                "camera_matrix": mtx,
+                                "dist_coeffs": dist,
+                                "rvecs": rvecs,
+                                "tvecs": tvecs,
+                            }
+                            logger.info(f"Sensor {sensor_id} calibrated successfully (RMS error: {ret:.4f})")
+                        else:
+                            logger.warning(f"Calibration failed for sensor {sensor_id}")
 
             # Store calibration data
             for sensor_id, calib in calibration_data.items():
