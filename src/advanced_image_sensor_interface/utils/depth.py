@@ -27,10 +27,11 @@ Version: 3.2.0
 
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 from scipy.ndimage import uniform_filter
@@ -45,12 +46,13 @@ except ImportError:
     cv2 = None
     CV2_AVAILABLE = False
 
+njit: Any = None
 try:
-    from numba import njit
+    from numba import njit as _njit_impl
 
+    njit = _njit_impl
     NUMBA_AVAILABLE = True
 except ImportError:
-    njit = None
     NUMBA_AVAILABLE = False
 
 try:
@@ -170,6 +172,10 @@ def _sgm_scan_cols_numpy(  # noqa: PLR0917
     _sgm_scan_numpy(cost_volume, p1, p2, reverse, shift, aggregated, scan_rows=False)
 
 
+_SgmScan = Callable[[np.ndarray, float, float, bool, int, np.ndarray], None]
+_sgm_scan_rows_numba: Optional[_SgmScan] = None
+_sgm_scan_cols_numba: Optional[_SgmScan] = None
+
 if NUMBA_AVAILABLE:
 
     @njit(cache=False)
@@ -245,10 +251,6 @@ if NUMBA_AVAILABLE:
                 for d in range(num_disp):
                     aggregated[y, x, d] += new_l[y, d]
             prev, new_l = new_l, prev
-
-else:
-    _sgm_scan_rows_numba = None
-    _sgm_scan_cols_numba = None
 
 
 class StereoDepthProcessor:
@@ -566,8 +568,7 @@ class StereoDepthProcessor:
         p1, p2 = self.config.sgm_p1, self.config.sgm_p2
         aggregated = np.zeros((height, width, num_disp), dtype=np.float64)
 
-        use_numba = self.config.use_numba and NUMBA_AVAILABLE
-        if use_numba:
+        if self.config.use_numba and _sgm_scan_rows_numba is not None and _sgm_scan_cols_numba is not None:
             scan_rows, scan_cols = _sgm_scan_rows_numba, _sgm_scan_cols_numba
         else:
             logger.debug("SGM aggregation using numpy backend (numba %s)", "disabled" if NUMBA_AVAILABLE else "unavailable")

@@ -223,3 +223,56 @@ class TestMultiSensorSyncDispatch:
         assert intrinsic[0, 0] == pytest.approx(800.0, rel=0.02)
         assert intrinsic[1, 1] == pytest.approx(800.0, rel=0.02)
         assert stub.calibrate_camera_calls == 0
+
+    def test_degenerate_sensor_skipped_without_aborting_rig(self, monkeypatch):
+        rng = np.random.default_rng(11)
+        obj_points = _pattern_object_points()
+
+        # Sensor 0 (master): identical pose in every frame -> degenerate views
+        rotation, translation = _random_pose(rng)
+        degenerate = _project(obj_points, rotation, translation, 0.0, rng).reshape(-1, 1, 2).astype(np.float32)
+
+        # Sensor 1 (slave): distinct poses -> solvable
+        healthy = []
+        for _ in range(5):
+            rotation, translation = _random_pose(rng)
+            image_points = _project(obj_points, rotation, translation, 0.2, rng)
+            healthy.append(image_points.reshape(-1, 1, 2).astype(np.float32))
+
+        class _StubCv2:
+            TERM_CRITERIA_EPS = 1
+            TERM_CRITERIA_MAX_ITER = 2
+            COLOR_BGR2GRAY = 0
+
+            def __init__(self):
+                self._index = 0
+
+            def cvtColor(self, frame, code):
+                return frame.mean(axis=2).astype(np.uint8)
+
+            def cornerSubPix(self, gray, corners, win_size, zero_zone, criteria):
+                return corners
+
+            def findChessboardCorners(self, gray, pattern_size, flags):
+                # First 10 calls belong to sensor 0, the rest to sensor 1
+                corners = degenerate if self._index < 10 else healthy[(self._index - 10) % len(healthy)]
+                self._index += 1
+                return True, corners
+
+            def calibrateCamera(self, *_args):
+                raise AssertionError("cv2.calibrateCamera must not run when prefer_native_calibration is set")
+
+        stub = _StubCv2()
+        monkeypatch.setattr(sync_module, "cv2", stub)
+
+        config = SyncConfiguration(enable_geometric_calibration=True, prefer_native_calibration=True, slave_sensor_ids=[1])
+        synchronizer = MultiSensorSynchronizer(config)
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        monkeypatch.setattr(synchronizer, "_capture_from_sensor", lambda sensor_id, trigger_time=None: (frame, 0.0))
+
+        assert synchronizer.calibrate_sensors() is True
+
+        assert synchronizer.sensors[0].calibration_matrix is None
+        intrinsic = synchronizer.sensors[1].calibration_matrix
+        assert intrinsic is not None
+        assert intrinsic[0, 0] == pytest.approx(800.0, rel=0.02)

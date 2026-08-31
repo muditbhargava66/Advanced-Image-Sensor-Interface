@@ -11,9 +11,9 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 - [x] **Native Calibration Solver**: numpy/scipy photogrammetry solver (`calibrate_camera` via Zhang's method, `solve_projection_matrix` via DLT + RQ) calibrates without OpenCV; opt-in for multi-sensor sync via `SyncConfiguration.prefer_native_calibration`.
 - [x] **Optional Extras**: PyWavelets and trimesh added to the `[full]` extra with guarded imports (no new required dependencies).
 - [x] **Python 3.11+ Requirement**: Security fixes for keras (deserialization, path traversal CVEs) and astropy (RCE CVE); Python 3.10 support removed.
-- [x] **Test Coverage**: Added suites for the depth module (incl. 8-path SGM), simulation delays, native calibration solver, and trimesh export; 387 tests passing (394 collected, 7 skipped without optional extras).
+- [x] **Test Coverage**: Added suites for the depth module (incl. 8-path SGM), simulation delays, native calibration solver, and trimesh export; 388 tests passing (395 collected, 7 skipped without optional extras).
 
-### v3.1.0 Features (AI/ML & Implementation Completion)
+### v3.1.0 Features (AI/ML & Implementation Completion) - **RELEASED 2026-08-21**
 - [x] **AI/ML Integration Complete**: Neural Calibration Tuner with scikit-learn MLPRegressor fallback.
 - [x] **AI/ML Enhancements**: SceneClassifier, NoisePredictor, QualityAssessor with scene-aware processing.
 - [x] **Custom Extensions**: AINoiseReducer with scikit-learn denoising, AdaptiveColorCorrector.

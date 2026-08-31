@@ -35,7 +35,7 @@ VERSION_HISTORY = {
             "PyWavelets and trimesh optional extras with trimesh-backed mesh PLY export",
             "Security fixes: astropy 5.3.4 (RCE), keras 3.15.1 (deserialization, path traversal)",
             "Enhanced test coverage for CXP12, RoCE, D-PHY, USB3 streaming, MIPI Security, Lens Correction",
-            "387 tests passing (394 collected), Ruff + Black clean, mypy baseline maintained",
+            "388 tests passing (395 collected), Ruff + Black clean, mypy baseline reduced from 139 to 136",
         ],
         "breaking_changes": [
             "Python 3.11+ required (removed 3.10 support)",

@@ -24,7 +24,7 @@ The Advanced Image Sensor Interface provides:
 * **Security Framework**: MIPI AES-GCM encryption with key management and PRE_SHARED_KEY authentication
 * **AI/ML Enhancements**: Neural Calibration Tuner, SceneClassifier, NoisePredictor, QualityAssessor
 * **Custom Extensions**: AINoiseReducer, AdaptiveColorCorrector with scikit-learn backends
-* **Comprehensive Testing**: 387 automated tests in the current suite
+* **Comprehensive Testing**: 388 automated tests in the current suite
 * **Production-Ready**: 100% linting compliance and robust CI/CD pipeline
 
 Quick Start

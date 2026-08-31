@@ -639,14 +639,14 @@
   <text x="1055" y="2451" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1e3a5f" text-anchor="middle">• calculate_color_accuracy() (ΔE simplified)</text>
   <text x="1055" y="2469" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1e3a5f" text-anchor="middle">• SNR: 30% improvement (verified 35–100%)</text>
   <text x="1055" y="2487" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1e3a5f" text-anchor="middle">• ΔE &lt; 0.5 (sim) · Target &lt; 2.0 (HW)</text>
-  <text x="1055" y="2505" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1e3a5f" text-anchor="middle">• 387 tests passing · 60% coverage</text>
+  <text x="1055" y="2505" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#1e3a5f" text-anchor="middle">• 388 tests passing · 60% coverage</text>
   <text x="1055" y="2523" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#3b82f6" text-anchor="middle">✦ performance_metrics.py · benchmarks/</text>
 
   <!-- Testing &amp; Validation -->
   <rect x="1270" y="2365" width="290" height="165" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5" filter="url(#shadow)" id="testing-validation" class="panel" vector-effect="non-scaling-stroke"/>
   <text x="1425" y="2395" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#713f12" text-anchor="middle">Testing &amp; Validation</text>
   <line x1="1285" y1="2408" x2="1565" y2="2408" stroke="#eab308" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
-  <text x="1425" y="2433" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• 387 tests passing (pytest/asyncio)</text>
+  <text x="1425" y="2433" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• 388 tests passing (pytest/asyncio)</text>
   <text x="1425" y="2451" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• ruff &amp; black &amp; pyright &amp; mypy (CI)</text>
   <text x="1425" y="2469" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• AI/ML tests: noise, quality, neural tuner</text>
   <text x="1425" y="2487" font-family="Inter, system-ui, sans-serif" font-size="9" fill="#713f12" text-anchor="middle">• Protocol: MIPI/CXP/GigE/USB3 &amp; ext</text>
@@ -694,7 +694,7 @@
   <text x="200" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">Python 3.11–3.13</text>
   <text x="450" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">NumPy · SciPy · OpenCV · scikit-learn</text>
   <text x="700" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">MIT License</text>
-  <text x="950" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">387 Tests · All Passing</text>
+  <text x="950" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">388 Tests · All Passing</text>
   <text x="1200" y="2635" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">ruff · black · pyright · AI/ML Ready</text>
   <text x="800" y="2660" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">© 2026 Mudit Bhargava — Simulation Framework for Algorithm Development &amp; Validation</text>
 

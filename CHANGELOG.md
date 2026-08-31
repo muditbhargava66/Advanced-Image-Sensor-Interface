@@ -36,7 +36,7 @@ This release introduces explicit typed result objects for all image processing p
   - `DepthResult` dataclass added to the `ProcessingResult` union
 - **Native Calibration Solver** (`sensor_interface/calibration/photogrammetry.py`): OpenCV-free camera calibration with numpy/scipy — `calibrate_camera` (Zhang's method: normalized DLT homographies, closed-form intrinsics, per-view extrinsics, Levenberg-Marquardt reprojection refinement) and `solve_projection_matrix` (DLT + RQ decomposition); opt-in for `MultiSensorSynchronizer.calibrate_sensors()` via `SyncConfiguration.prefer_native_calibration`
 - **Optional Extras**: PyWavelets and trimesh added to the `[full]` extra (guarded imports only; no new required dependencies)
-- **Test Suites**: New `tests/test_depth_module.py`, `tests/test_simulation_delays.py`, and `tests/test_calibration_solver.py` (387 tests passing, 394 collected)
+- **Test Suites**: New `tests/test_depth_module.py`, `tests/test_simulation_delays.py`, and `tests/test_calibration_solver.py` (388 tests passing, 395 collected)
 
 ### Fixed
 
@@ -48,6 +48,8 @@ This release introduces explicit typed result objects for all image processing p
 - **Flaky power efficiency test**: `test_power_efficiency` disabled simulated measurement noise so it verifies the efficiency model deterministically (previously failed intermittently)
 - **Calibration argument bug**: `calibrate_sensors()` passed a duplicated, nested object-point list and an over-wrapped image-point list to `cv2.calibrateCamera`; it now passes the correct per-view lists
 - **Silent calibration failure without OpenCV**: `calibrate_sensors()` previously raised a swallowed `AttributeError` when OpenCV was unavailable; it now logs an explicit error and returns `False`
+- **Per-sensor native calibration isolation**: with `prefer_native_calibration`, a single sensor whose views are degenerate no longer aborts `calibrate_sensors()` for the whole rig; that sensor is skipped with a warning and the remaining sensors are still calibrated
+- **Calibration typing errors**: resolved the mypy errors in `calibrate_sensors()` caused by reusing loop variables across different types, and made the optional-numba typing in `utils/depth.py` identical with or without extras installed (mypy baseline reduced from 139 to 136)
 
 ### Security Fixes
 
@@ -83,7 +85,7 @@ This release introduces explicit typed result objects for all image processing p
 - **`docs/calibration.md`**: Documented the native photogrammetry solver, the `prefer_native_calibration` flag, and the zero-distortion limitation
 - **`docs/design_specs.md`**: Added stereo depth (full 8-path SGM) and native calibration solver specifications
 - **`docs/api_reference.md`**: Added 3D depth and native calibration API sections
-- **Test counts refreshed to 387**: README badge/bullets, `docs/testing_guide.md`, `docs/performance_analysis.md`, `docs/system_architecture.md`, `docs/index.rst`, and `assets/system-architecture-v3.2.0.svg`
+- **Test counts refreshed to 388**: README badge/bullets, `docs/testing_guide.md`, `docs/performance_analysis.md`, `docs/system_architecture.md`, `docs/index.rst`, and `assets/system-architecture-v3.2.0.svg`
 
 ### Dependency Updates
 

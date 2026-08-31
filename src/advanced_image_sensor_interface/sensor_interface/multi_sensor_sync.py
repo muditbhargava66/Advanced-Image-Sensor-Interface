@@ -617,6 +617,32 @@ class MultiSensorSynchronizer:
         """
         self.sync_error_callback = callback
 
+    def _detect_pattern_points(self, frames: list[np.ndarray]) -> tuple[list[np.ndarray], list[np.ndarray]]:
+        """Detect the calibration pattern in frames using OpenCV.
+
+        Args:
+            frames: Captured calibration frames for one sensor
+
+        Returns:
+            Matching lists of object points (3D) and detected image points (2D)
+        """
+        pattern_size = self.config.calibration_pattern_size
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+
+        pattern_points = np.zeros((pattern_size[0] * pattern_size[1], 3), np.float32)
+        pattern_points[:, :2] = np.mgrid[0 : pattern_size[0], 0 : pattern_size[1]].T.reshape(-1, 2)
+
+        object_points: list[np.ndarray] = []
+        image_points: list[np.ndarray] = []
+        for frame in frames:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
+            found, corners = cv2.findChessboardCorners(gray, pattern_size, None)
+            if found:
+                cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+                object_points.append(pattern_points)
+                image_points.append(corners)
+        return object_points, image_points
+
     def calibrate_sensors(self) -> bool:
         """Perform geometric calibration of sensors.
 
@@ -640,44 +666,28 @@ class MultiSensorSynchronizer:
             # 1. Capture calibration images from all sensors
             calibration_frames = {}
             for sensor_id in self.sensors:
-                frames = []
+                frames: list[np.ndarray] = []
                 for _ in range(10):  # Capture multiple frames for robustness
-                    frame = self._capture_from_sensor(sensor_id)
-                    if frame is not None:
-                        frames.append(frame[0])
+                    capture = self._capture_from_sensor(sensor_id)
+                    if capture is not None:
+                        frames.append(capture[0])
                 if frames:
                     calibration_frames[sensor_id] = frames
 
-            # 2. Detect calibration pattern (e.g., chessboard) in each sensor's images
-            # Using OpenCV's findChessboardCorners for chessboard pattern
+            # 2. Detect calibration pattern (e.g., chessboard) and solve per-sensor calibration
             calibration_data: dict[int, dict[str, Any]] = {}
-            pattern_size = self.config.calibration_pattern_size
-            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
             for sensor_id, frames in calibration_frames.items():
-                sensor_obj_points = []  # 3D points in real world space
-                sensor_img_points = []  # 2D points in image plane
-
-                # Prepare object points (3D coordinates of chessboard corners)
-                pattern_points = np.zeros((pattern_size[0] * pattern_size[1], 3), np.float32)
-                pattern_points[:, :2] = np.mgrid[0 : pattern_size[0], 0 : pattern_size[1]].T.reshape(-1, 2)
-
-                for frame in frames:
-                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
-                    ret, corners = cv2.findChessboardCorners(gray, pattern_size, None)
-
-                    if ret:
-                        # Refine corner positions
-                        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-                        cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-
-                        sensor_obj_points.append(pattern_points)
-                        sensor_img_points.append(corners)
+                sensor_obj_points, sensor_img_points = self._detect_pattern_points(frames)
 
                 if len(sensor_obj_points) >= 3:  # Need at least 3 valid frames
                     image_size = (int(frames[0].shape[1]), int(frames[0].shape[0]))  # cv2 convention: (width, height)
                     if self.config.prefer_native_calibration:
-                        result = native_calibrate_camera(sensor_obj_points, sensor_img_points, image_size)
+                        try:
+                            result = native_calibrate_camera(sensor_obj_points, sensor_img_points, image_size)
+                        except ValueError as e:
+                            logger.warning(f"Native calibration failed for sensor {sensor_id}: {e}")
+                            continue
                         calibration_data[sensor_id] = {
                             "camera_matrix": result.camera_matrix,
                             "dist_coeffs": result.distortion_coefficients,
