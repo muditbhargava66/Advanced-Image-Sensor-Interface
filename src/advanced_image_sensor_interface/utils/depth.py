@@ -172,7 +172,7 @@ def _sgm_scan_cols_numpy(  # noqa: PLR0917
 
 if NUMBA_AVAILABLE:
 
-    @njit(cache=False)  # type: ignore[misc]
+    @njit(cache=False)
     def _sgm_scan_rows_numba(cost_volume, p1, p2, reverse, shift, aggregated):  # noqa: PLR0917
         """Row-sequential SGM path, numba backend (mirrors the numpy recursion)."""
         num_disp, height, width = cost_volume.shape
@@ -209,7 +209,7 @@ if NUMBA_AVAILABLE:
                     aggregated[y, x, d] += new_l[x, d]
             prev, new_l = new_l, prev
 
-    @njit(cache=False)  # type: ignore[misc]
+    @njit(cache=False)
     def _sgm_scan_cols_numba(cost_volume, p1, p2, reverse, shift, aggregated):  # noqa: PLR0917
         """Column-sequential SGM path, numba backend (mirrors the numpy recursion)."""
         num_disp, height, width = cost_volume.shape

@@ -91,7 +91,7 @@ def calibrate_camera(
         rotation_vectors=rotation_vectors,
         translation_vectors=[np.asarray(translation) for translation in translations],
         rms_reprojection_error=float(rms_error),
-        image_size=tuple(image_size),
+        image_size=(int(image_size[0]), int(image_size[1])),
         calibration_flags=0,
         object_points=[view.copy() for view in object_views],
         image_points=[view.copy() for view in image_views],

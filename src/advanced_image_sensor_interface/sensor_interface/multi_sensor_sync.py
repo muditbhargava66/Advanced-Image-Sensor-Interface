@@ -650,7 +650,7 @@ class MultiSensorSynchronizer:
 
             # 2. Detect calibration pattern (e.g., chessboard) in each sensor's images
             # Using OpenCV's findChessboardCorners for chessboard pattern
-            calibration_data = {}
+            calibration_data: dict[int, dict[str, Any]] = {}
             pattern_size = self.config.calibration_pattern_size
             criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
@@ -675,7 +675,7 @@ class MultiSensorSynchronizer:
                         sensor_img_points.append(corners)
 
                 if len(sensor_obj_points) >= 3:  # Need at least 3 valid frames
-                    image_size = frames[0].shape[:2][::-1]  # cv2 convention: (width, height)
+                    image_size = (int(frames[0].shape[1]), int(frames[0].shape[0]))  # cv2 convention: (width, height)
                     if self.config.prefer_native_calibration:
                         result = native_calibrate_camera(sensor_obj_points, sensor_img_points, image_size)
                         calibration_data[sensor_id] = {
