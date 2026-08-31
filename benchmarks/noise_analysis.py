@@ -93,7 +93,10 @@ def benchmark_noise_reduction(noise_levels: list[int] = [10, 50, 100], signal_le
         processor._apply_dynamic_range_expansion = lambda x: x
         processor._apply_color_correction = lambda x: x
 
-        processed_image = processor.process_frame(noisy_image)
+        result = processor.process_frame(noisy_image)
+        if not result.success or result.data is None:
+            raise RuntimeError(f"Signal processing failed for noise_std={noise_std}: {result.error}")
+        processed_image = result.data
 
         # Restore methods
         processor._apply_dynamic_range_expansion = original_dynamic_range
@@ -139,7 +142,10 @@ def analyze_snr_improvement(signal_levels: list[int] = [500, 1000, 2000], noise_
         initial_noise = noisy_image.astype(np.float32) - clean_signal.astype(np.float32)
         initial_snr = calculate_snr(clean_signal, np.abs(initial_noise).astype(np.uint16))
 
-        processed_image = processor.process_frame(noisy_image)
+        result = processor.process_frame(noisy_image)
+        if not result.success or result.data is None:
+            raise RuntimeError(f"Signal processing failed for signal_level={signal_level}: {result.error}")
+        processed_image = result.data
 
         # Final SNR using clean signal as reference
         final_noise = processed_image.astype(np.float32) - clean_signal.astype(np.float32)

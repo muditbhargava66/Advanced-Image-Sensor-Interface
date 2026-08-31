@@ -85,14 +85,20 @@ class TestSignalProcessor(unittest.TestCase):
 
     def test_process_frame(self) -> None:
         test_frame = np.random.randint(0, 4096, (1080, 1920), dtype=np.uint16)
-        processed_frame = self.processor.process_frame(test_frame)
-        self.assertEqual(processed_frame.shape, test_frame.shape)
-        self.assertEqual(processed_frame.dtype, test_frame.dtype)
+        result = self.processor.process_frame(test_frame)
+        self.assertTrue(result.success)
+        self.assertIsNotNone(result.data)
+        assert result.data is not None
+        self.assertEqual(result.data.shape, test_frame.shape)
+        self.assertEqual(result.data.dtype, test_frame.dtype)
 
     def test_noise_reduction(self) -> None:
         noisy_frame = np.random.randint(0, 4096, (1080, 1920), dtype=np.uint16)
-        processed_frame = self.processor.process_frame(noisy_frame)
-        self.assertLessEqual(np.std(processed_frame), np.std(noisy_frame) * 1.1)
+        result = self.processor.process_frame(noisy_frame)
+        self.assertTrue(result.success)
+        self.assertIsNotNone(result.data)
+        assert result.data is not None
+        self.assertLessEqual(np.std(result.data), np.std(noisy_frame) * 1.1)
 
 
 class TestPowerManager(unittest.TestCase):
@@ -138,8 +144,11 @@ class IntegrationTests(unittest.TestCase):
         frame_array = np.frombuffer(frame, dtype=np.uint16)
         if frame_array.size >= 1920 * 1080:
             frame_array = frame_array[: 1920 * 1080].reshape((1080, 1920))
-            processed_frame = self.signal_processor.process_frame(frame_array)
-            self.assertEqual(processed_frame.shape, frame_array.shape)
+            result = self.signal_processor.process_frame(frame_array)
+            self.assertTrue(result.success)
+            self.assertIsNotNone(result.data)
+            assert result.data is not None
+            self.assertEqual(result.data.shape, frame_array.shape)
 
         # Check power
         power_status = self.power_manager.get_power_status()
@@ -181,7 +190,9 @@ def run_performance_benchmarks() -> dict[str, Any]:
     test_frame = np.random.randint(0, 4096, (1080, 1920), dtype=np.uint16)
     start_time = time.time()
     for _ in range(5):
-        signal_processor.process_frame(test_frame)
+        result = signal_processor.process_frame(test_frame)
+        if not result.success:
+            raise RuntimeError(f"Signal processing failed during benchmark: {result.error}")
     processing_time = time.time() - start_time
 
     results["frame_processing_time"] = processing_time / 5

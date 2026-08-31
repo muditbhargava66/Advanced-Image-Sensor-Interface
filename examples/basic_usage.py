@@ -178,17 +178,28 @@ def hdr_processing_demo(resolution: tuple[int, int], noise_level: float = 0.1) -
 
             logger.info(f"✓ Generated test image for EV {ev:+.1f}: {rgb_image.shape}")
 
-        # Process single image HDR
+        # Process single image HDR (v3.2.0: returns HDRProcessingResult)
         try:
-            single_hdr = hdr_processor.process_single_image(test_images[1])  # Use middle exposure
-            logger.info(f"✓ Single image HDR: {single_hdr.shape}, dtype: {single_hdr.dtype}")
+            single_result = hdr_processor.process_single_image(test_images[1])  # Use middle exposure
+            if single_result.success and single_result.data is not None:
+                logger.info(f"✓ Single image HDR: {single_result.data.shape}, dtype: {single_result.data.dtype}")
+                logger.info(f"  Tone mapping: {single_result.tone_mapping_algorithm or 'default'}")
+            else:
+                logger.error(f"✗ Single image HDR reported failure: {single_result.error}")
         except Exception as e:
             logger.error(f"✗ Single image HDR failed: {e}")
 
-        # Process exposure stack HDR
+        # Process exposure stack HDR (v3.2.0: returns HDRProcessingResult)
         try:
-            stack_hdr = hdr_processor.process_exposure_stack(test_images)
-            logger.info(f"✓ Exposure stack HDR: {stack_hdr.shape}, dtype: {stack_hdr.dtype}")
+            stack_result = hdr_processor.process_exposure_stack(test_images)
+            if stack_result.success and stack_result.data is not None:
+                logger.info(f"✓ Exposure stack HDR: {stack_result.data.shape}, dtype: {stack_result.data.dtype}")
+                logger.info(
+                    f"  Tone mapping: {stack_result.tone_mapping_algorithm or 'default'}, "
+                    f"exposure fusion: {stack_result.exposure_fusion_used}, ghost reduction: {stack_result.ghost_reduction_applied}"
+                )
+            else:
+                logger.error(f"✗ Exposure stack HDR reported failure: {stack_result.error}")
 
             # Get processing statistics
             stats = hdr_processor.get_processing_stats()
@@ -231,10 +242,17 @@ def raw_processing_demo(resolution: tuple[int, int]) -> None:
 
         logger.info(f"✓ Generated synthetic RAW data: {raw_data.shape}, dtype: {raw_data.dtype}")
 
-        # Process RAW to RGB
+        # Process RAW to RGB (v3.2.0: returns RAWProcessingResult)
         try:
-            rgb_image = raw_processor.process_raw_image(raw_data)
-            logger.info(f"✓ RAW to RGB conversion: {rgb_image.shape}, dtype: {rgb_image.dtype}")
+            raw_result = raw_processor.process_raw_image(raw_data)
+            if raw_result.success and raw_result.data is not None:
+                logger.info(f"✓ RAW to RGB conversion: {raw_result.data.shape}, dtype: {raw_result.data.dtype}")
+                logger.info(
+                    f"  Demosaicing: {raw_result.demosaicing_algorithm or 'default'}, "
+                    f"white balance: {raw_result.white_balance_applied}, bad pixels corrected: {raw_result.bad_pixel_correction}"
+                )
+            else:
+                logger.error(f"✗ RAW processing reported failure: {raw_result.error}")
 
             # Get processing statistics
             stats = raw_processor.get_processing_stats()
