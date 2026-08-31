@@ -12,6 +12,17 @@ from typing import Any, ClassVar
 
 import numpy as np
 
+# Optional dependency: true wavelet denoising uses PyWavelets when installed;
+# otherwise the wavelet reducer falls back to a multi-scale Gaussian
+# approximation. pywt is intentionally not a required dependency.
+try:
+    import pywt
+
+    PYWT_AVAILABLE = True
+except ImportError:
+    pywt = None
+    PYWT_AVAILABLE = False
+
 
 class NoiseType(Enum):
     """Types of noise that can be reduced."""
@@ -523,15 +534,22 @@ class NoiseReducerFactory:
 # Example of how to extend with a custom noise reducer
 class WaveletNoiseReducer(NoiseReducer):
     """
-    Example custom noise reducer using wavelet denoising.
+    Custom noise reducer using wavelet denoising.
 
-    This demonstrates how to implement a custom noise reduction algorithm
+    Uses true wavelet soft-thresholding (universal threshold) when the
+    optional PyWavelets (pywt) package is installed. Without pywt, falls back
+    to a weighted multi-scale Gaussian approximation that mimics wavelet
+    shrinkage smoothing — this is not a true wavelet transform.
+
+    Also demonstrates how to implement a custom noise reduction algorithm
     by inheriting from the NoiseReducer base class.
     """
 
     def get_algorithm_name(self) -> str:
         """Get algorithm name."""
-        return "Wavelet Denoising"
+        if PYWT_AVAILABLE:
+            return "Wavelet Denoising (PyWavelets)"
+        return "Multi-Scale Gaussian (wavelet approximation)"
 
     def process(self, image: np.ndarray) -> np.ndarray:
         """
@@ -548,9 +566,9 @@ class WaveletNoiseReducer(NoiseReducer):
         start_time = time.time()
         self.validate_image(image)
 
-        # Simplified wavelet denoising (would use pywt in practice)
-        # For this example, we'll use a combination of filters
-        processed = self._wavelet_denoise(image)
+        # True wavelet shrinkage when pywt is available; otherwise a
+        # multi-scale Gaussian approximation.
+        processed = self._multiscale_denoise(image)
 
         # Update statistics
         processing_time = time.time() - start_time
@@ -573,9 +591,9 @@ class WaveletNoiseReducer(NoiseReducer):
 
         return min(noise_level, 1.0)
 
-    def _wavelet_denoise(self, image: np.ndarray) -> np.ndarray:
+    def _multiscale_denoise(self, image: np.ndarray) -> np.ndarray:
         """
-        Simplified wavelet denoising implementation.
+        Denoise the image, dispatching on PyWavelets availability.
 
         Args:
             image: Input image
@@ -583,11 +601,70 @@ class WaveletNoiseReducer(NoiseReducer):
         Returns:
             Denoised image
         """
-        # This is a placeholder implementation
-        # In practice, you would use PyWavelets (pywt) library
+        if PYWT_AVAILABLE:
+            return self._wavelet_soft_threshold(image)
+        return self._multiscale_gaussian_approximation(image)
+
+    def _wavelet_soft_threshold(self, image: np.ndarray) -> np.ndarray:
+        """
+        True wavelet denoising via PyWavelets.
+
+        Decomposes each channel with a Daubechies-4 wavelet, estimates the
+        noise sigma from the finest detail coefficients (MAD estimator),
+        applies the universal threshold sigma * sqrt(2 * ln N) with soft
+        thresholding, and reconstructs.
+
+        Args:
+            image: Input image
+
+        Returns:
+            Denoised image
+        """
+        wavelet = pywt.Wavelet("db4")
+        float_image = image.astype(np.float32)
+        channels = [float_image] if float_image.ndim == 2 else [float_image[:, :, c] for c in range(float_image.shape[2])]
+
+        denoised_channels = []
+        for channel in channels:
+            max_level = pywt.dwt_max_level(min(channel.shape), wavelet.dec_len)
+            if max_level < 1:
+                # Image too small to decompose; leave unchanged.
+                denoised_channels.append(channel)
+                continue
+
+            level = min(4, max_level)
+            coeffs = pywt.wavedec2(channel, wavelet, level=level)
+
+            # Noise sigma via MAD of the finest-scale detail coefficients.
+            finest_details = coeffs[-1]
+            sigma = np.median(np.abs(finest_details[0])) / 0.6745
+            threshold = sigma * np.sqrt(2.0 * np.log(channel.size))
+
+            # Soft-threshold detail coefficients; keep the approximation.
+            coeffs[1:] = [tuple(pywt.threshold(detail, threshold, mode="soft") for detail in details) for details in coeffs[1:]]
+
+            reconstructed = pywt.waverec2(coeffs, wavelet)
+            denoised_channels.append(reconstructed[: channel.shape[0], : channel.shape[1]])
+
+        processed = denoised_channels[0] if image.ndim == 2 else np.stack(denoised_channels, axis=2)
+        return np.clip(processed, 0, 255).astype(image.dtype)
+
+    def _multiscale_gaussian_approximation(self, image: np.ndarray) -> np.ndarray:
+        """
+        Weighted multi-scale Gaussian approximation of wavelet shrinkage.
+
+        Combines Gaussian blurs at three scales to approximate the smoothing
+        behavior of wavelet denoising. This is not a true wavelet transform;
+        it is only used when PyWavelets is not installed.
+
+        Args:
+            image: Input image
+
+        Returns:
+            Denoised image
+        """
         from scipy.ndimage import gaussian_filter
 
-        # Multi-scale denoising approximation
         scales = [0.5, 1.0, 2.0]
         weights = [0.2, 0.6, 0.2]
 

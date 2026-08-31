@@ -42,6 +42,8 @@ This release introduces explicit typed result objects for all image processing p
 - **GPU detection logging**: `gpu_acceleration.py` no longer silently swallows backend detection exceptions; failures are logged at debug level
 - **Honest denoising docs**: The multi-scale "wavelet" denoiser is now documented as a Gaussian approximation with an optional PyWavelets path when installed
 - **Power optimization stub**: `AdvancedPowerManager._optimize_component_power()` has a real implementation instead of a bare `pass`
+- **Calibration feature extraction**: `neural_tuner.py` now uses OpenCV `Canny`/`goodFeaturesToTrack` when available instead of numpy-only placeholders
+- **Flaky power efficiency test**: `test_power_efficiency` disabled simulated measurement noise so it verifies the efficiency model deterministically (previously failed intermittently)
 
 ### Security Fixes
 

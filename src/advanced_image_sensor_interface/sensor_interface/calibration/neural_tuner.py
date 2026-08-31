@@ -15,6 +15,16 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPRegressor
 
+# Optional dependency: OpenCV provides higher-quality edge and corner
+# detection when installed; pure-numpy fallbacks are used otherwise.
+try:
+    import cv2
+
+    CV2_AVAILABLE = True
+except ImportError:
+    cv2 = None
+    CV2_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -91,8 +101,8 @@ class NeuralCalibrationTuner:
         else:
             gray = image
 
-        # Edge detection features
-        # Simplified edge detection (would use cv2.Canny in real implementation)
+        # Edge detection features (cv2.Canny when OpenCV is installed,
+        # gradient-magnitude fallback otherwise)
         edges = self._simple_edge_detection(gray)
 
         features.extend([np.sum(edges > 0) / edges.size, np.mean(edges), np.std(edges)])  # Edge density
@@ -151,28 +161,73 @@ class NeuralCalibrationTuner:
         return np.array(features)
 
     def _simple_edge_detection(self, image: np.ndarray) -> np.ndarray:
-        """Simplified edge detection (placeholder for cv2.Canny)."""
-        # Simple gradient-based edge detection
+        """Edge detection for feature extraction.
+
+        Uses cv2.Canny with median-based automatic thresholds when OpenCV is
+        installed; otherwise falls back to gradient-magnitude thresholding,
+        which is coarser than Canny (no non-maximum suppression or
+        hysteresis).
+
+        Args:
+            image: Grayscale input image
+
+        Returns:
+            Binary edge map (uint8, 0 or 255)
+        """
+        gray8 = np.clip(image, 0, 255).astype(np.uint8)
+
+        if CV2_AVAILABLE:
+            median_val = float(np.median(gray8))
+            lower = int(max(0.0, 0.66 * median_val))
+            upper = int(min(255.0, 1.33 * median_val))
+            return cv2.Canny(gray8, lower, upper)
+
+        # Fallback: simple gradient-magnitude edge detection
         grad_x = np.gradient(image.astype(np.float32), axis=1)
         grad_y = np.gradient(image.astype(np.float32), axis=0)
         gradient_magnitude = np.sqrt(grad_x**2 + grad_y**2)
 
-        # Threshold to create binary edge map
         threshold = np.percentile(gradient_magnitude, 90)
         edges = (gradient_magnitude > threshold).astype(np.uint8) * 255
 
         return edges
 
     def _detect_corners(self, image: np.ndarray) -> list[tuple[int, int, float]]:
-        """Simplified corner detection (placeholder for cv2.goodFeaturesToTrack)."""
-        # Simple corner detection based on gradient changes
+        """Corner detection for feature extraction.
+
+        Uses cv2.goodFeaturesToTrack (Shi-Tomasi) with per-corner Harris
+        response sampling when OpenCV is installed; otherwise falls back to a
+        simplified numpy Harris response (mean-filtered windows, no
+        sub-pixel refinement).
+
+        Args:
+            image: Grayscale input image
+
+        Returns:
+            List of (row, col, response) corner tuples
+        """
+        gray8 = np.clip(image, 0, 255).astype(np.uint8)
+
+        if CV2_AVAILABLE:
+            points = cv2.goodFeaturesToTrack(gray8, maxCorners=200, qualityLevel=0.01, minDistance=10, blockSize=7)
+            if points is None:
+                return []
+
+            harris_response = cv2.cornerHarris(gray8, blockSize=5, ksize=3, k=0.04)
+            corners = []
+            for point in points:
+                x, y = float(point[0][0]), float(point[0][1])
+                row, col = round(y), round(x)
+                response = float(harris_response[row, col])
+                corners.append((row, col, response))
+            return corners
+
+        # Fallback: simplified Harris corner response in numpy
         corners = []
 
-        # Compute gradients
         grad_x = np.gradient(image.astype(np.float32), axis=1)
         grad_y = np.gradient(image.astype(np.float32), axis=0)
 
-        # Harris corner response (simplified)
         Ixx = grad_x * grad_x
         Iyy = grad_y * grad_y
         Ixy = grad_x * grad_y

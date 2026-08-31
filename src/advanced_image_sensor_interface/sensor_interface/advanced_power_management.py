@@ -665,9 +665,13 @@ class AdvancedPowerManager:
         self.component_states["io"] = False
 
     def _optimize_component_power(self) -> None:
-        """Optimize component power for current workload."""
-        # This would contain workload-specific optimizations
-        pass
+        """Optimize component power for current workload.
+
+        No workload-specific tuning is implemented yet; this pass records the
+        current component power state so optimization behavior is observable.
+        """
+        active = [name for name, enabled in self.component_states.items() if enabled]
+        logger.debug(f"Component power optimization pass, active components: {active}")
 
     def _apply_component_power_control(self, component: str, enabled: bool) -> None:
         """Apply power control to specific component."""

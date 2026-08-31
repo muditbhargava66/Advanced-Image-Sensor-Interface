@@ -509,18 +509,30 @@ class MultiSensorSynchronizer:
             # Find peak
             peak = np.unravel_index(np.argmax(correlation), correlation.shape)
 
-            # Calculate sub-pixel shift using parabolic interpolation
-            shift_y, shift_x = peak
+            # Sub-pixel refinement via per-axis parabolic interpolation. The
+            # correlation surface is periodic (FFT-derived), so neighbors are
+            # sampled with wrap-around; a flat parabola falls back to the
+            # integer peak.
+            peak_y, peak_x = peak
+            h_corr, w_corr = correlation.shape
+            sub_y, sub_x = float(peak_y), float(peak_x)
+
+            y_m = correlation[(peak_y - 1) % h_corr, peak_x]
+            y_0 = correlation[peak_y, peak_x]
+            y_p = correlation[(peak_y + 1) % h_corr, peak_x]
+            denom = y_m - 2.0 * y_0 + y_p
+            if abs(denom) > 1e-12:
+                sub_y += 0.5 * (y_m - y_p) / denom
+
+            x_m = correlation[peak_y, (peak_x - 1) % w_corr]
+            x_p = correlation[peak_y, (peak_x + 1) % w_corr]
+            denom = x_m - 2.0 * y_0 + x_p
+            if abs(denom) > 1e-12:
+                sub_x += 0.5 * (x_m - x_p) / denom
+
             h, w = ref_frame.shape[:2]
-
-            # Convert to shift relative to center
-            shift_y = shift_y if shift_y < h // 2 else shift_y - h
-            shift_x = shift_x if shift_x < w // 2 else shift_x - w
-
-            # Sub-pixel refinement using parabolic interpolation
-            if 0 < shift_y < correlation.shape[0] - 1 and 0 < shift_x < correlation.shape[1] - 1:
-                # Parabolic interpolation for sub-pixel accuracy
-                pass
+            shift_y = sub_y if sub_y < h / 2 else sub_y - h
+            shift_x = sub_x if sub_x < w / 2 else sub_x - w
 
             # Apply translation using warpAffine
             M = np.float32([[1, 0, shift_x], [0, 1, shift_y]])
