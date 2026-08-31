@@ -1,9 +1,10 @@
 """
 Unit Tests for the v3.2.0 3D/Depth Module
 
-Covers StereoDepthProcessor disparity estimation (Block Matching, SGM-lite,
-ORB alignment with graceful fallback), disparity-to-depth conversion, point
-cloud generation, PLY export round-trips, and input validation.
+Covers StereoDepthProcessor disparity estimation (Block Matching, full 8-path
+SGM with optional numba acceleration, ORB alignment with graceful fallback),
+disparity-to-depth conversion, point cloud generation, PLY export round-trips,
+and input validation.
 
 Usage:
     Run these tests using pytest:
@@ -15,11 +16,7 @@ import pytest
 from scipy.ndimage import gaussian_filter
 
 import advanced_image_sensor_interface.utils.depth as depth_module
-from advanced_image_sensor_interface import (
-    DepthConfig,
-    DisparityAlgorithm,
-    StereoDepthProcessor,
-)
+from advanced_image_sensor_interface import DepthConfig, DisparityAlgorithm, StereoDepthProcessor
 
 TRUE_DISPARITY = 7
 FOCAL_LENGTH_PX = 800.0
@@ -52,6 +49,8 @@ class TestDepthConfig:
         assert config.window_size == 15
         assert config.num_disparities == 64
         assert config.algorithm is DisparityAlgorithm.BLOCK_MATCHING
+        assert config.sgm_paths == 8
+        assert config.use_numba is True
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -62,6 +61,8 @@ class TestDepthConfig:
             {"min_disparity": -1},
             {"sgm_p1": 0.0},
             {"sgm_p1": 40.0, "sgm_p2": 32.0},  # p2 must exceed p1
+            {"sgm_paths": 6},  # only 4 or 8 paths supported
+            {"sgm_paths": 0},
         ],
     )
     def test_invalid_config_rejected(self, kwargs):
@@ -98,7 +99,7 @@ class TestBlockMatching:
 
 
 class TestSgmLite:
-    """SGM-lite (4-path aggregation) accuracy."""
+    """SGM aggregation accuracy with the default configuration."""
 
     def test_at_least_as_accurate_as_block_matching(self, stereo_pair):
         mask = interior_mask(stereo_pair[0].shape, TRUE_DISPARITY, margin=16)
@@ -113,6 +114,77 @@ class TestSgmLite:
 
         assert np.median(sgm_error) <= np.median(bm_error) + 0.5
         assert (sgm_error <= 2).mean() >= (bm_error <= 2).mean() - 0.05
+
+
+def _sgm_disparity(stereo_pair, sgm_paths: int, use_numba: bool) -> np.ndarray:
+    """Run SGM disparity with explicit path count and backend selection."""
+    config = DepthConfig(algorithm=DisparityAlgorithm.SEMI_GLOBAL_MATCHING, sgm_paths=sgm_paths, use_numba=use_numba)
+    result = StereoDepthProcessor(config).compute_disparity(*stereo_pair)
+    assert result.success
+    return result.disparity_map
+
+
+class TestSgmFull8Path:
+    """Full 8-path SGM: accuracy, backend equivalence, and kernel sanity."""
+
+    def test_8path_at_least_as_accurate_as_4path(self, stereo_pair):
+        mask = interior_mask(stereo_pair[0].shape, TRUE_DISPARITY, margin=16)
+
+        error_4 = np.abs(_sgm_disparity(stereo_pair, sgm_paths=4, use_numba=False)[mask] - TRUE_DISPARITY)
+        error_8 = np.abs(_sgm_disparity(stereo_pair, sgm_paths=8, use_numba=False)[mask] - TRUE_DISPARITY)
+
+        assert np.median(error_8) <= np.median(error_4) + 0.25
+        assert (error_8 <= 2).mean() >= (error_4 <= 2).mean() - 0.02
+
+    def test_8path_at_least_as_accurate_as_block_matching(self, stereo_pair):
+        mask = interior_mask(stereo_pair[0].shape, TRUE_DISPARITY, margin=16)
+
+        bm_processor = StereoDepthProcessor(DepthConfig(algorithm=DisparityAlgorithm.BLOCK_MATCHING))
+        bm_error = np.abs(bm_processor.compute_disparity(*stereo_pair).disparity_map[mask] - TRUE_DISPARITY)
+
+        sgm_error = np.abs(_sgm_disparity(stereo_pair, sgm_paths=8, use_numba=False)[mask] - TRUE_DISPARITY)
+
+        assert np.median(sgm_error) <= np.median(bm_error) + 0.5
+        assert (sgm_error <= 2).mean() >= (bm_error <= 2).mean() - 0.05
+
+    @pytest.mark.skipif(not depth_module.NUMBA_AVAILABLE, reason="numba not installed")
+    def test_numba_matches_numpy_fallback(self, stereo_pair):
+        for paths in (4, 8):
+            numpy_disp = _sgm_disparity(stereo_pair, sgm_paths=paths, use_numba=False)
+            numba_disp = _sgm_disparity(stereo_pair, sgm_paths=paths, use_numba=True)
+            np.testing.assert_array_equal(numba_disp, numpy_disp)
+
+    @pytest.mark.skipif(not depth_module.NUMBA_AVAILABLE, reason="numba not installed")
+    def test_numba_not_called_when_disabled(self, stereo_pair, monkeypatch):
+        def _raise(*_args, **_kwargs):
+            raise AssertionError("numba kernel called despite use_numba=False")
+
+        monkeypatch.setattr(depth_module, "_sgm_scan_rows_numba", _raise)
+        monkeypatch.setattr(depth_module, "_sgm_scan_cols_numba", _raise)
+
+        disparity = _sgm_disparity(stereo_pair, sgm_paths=8, use_numba=False)
+        assert disparity.shape == stereo_pair[0].shape
+
+    def test_constant_cost_volume_selects_first_disparity(self):
+        config = DepthConfig(algorithm=DisparityAlgorithm.SEMI_GLOBAL_MATCHING, sgm_paths=8, use_numba=False)
+        processor = StereoDepthProcessor(config)
+        cost_volume = np.ones((4, 6, 8), dtype=np.float32)
+
+        disparity = processor._sgm_aggregate(cost_volume)
+
+        assert disparity.shape == (6, 8)
+        assert np.all(disparity == 0)
+
+    @pytest.mark.skipif(not depth_module.NUMBA_AVAILABLE, reason="numba not installed")
+    def test_constant_cost_volume_numba_backend(self):
+        config = DepthConfig(algorithm=DisparityAlgorithm.SEMI_GLOBAL_MATCHING, sgm_paths=8, use_numba=True)
+        processor = StereoDepthProcessor(config)
+        cost_volume = np.ones((4, 6, 8), dtype=np.float32)
+
+        disparity = processor._sgm_aggregate(cost_volume)
+
+        assert disparity.shape == (6, 8)
+        assert np.all(disparity == 0)
 
 
 class TestOrbAlignment:
@@ -227,10 +299,7 @@ class TestFullPipeline:
         export_path = tmp_path / "scene.ply"
 
         result = processor.process_stereo_pair(
-            *stereo_pair,
-            focal_length_px=FOCAL_LENGTH_PX,
-            baseline_m=BASELINE_M,
-            export_path=export_path,
+            *stereo_pair, focal_length_px=FOCAL_LENGTH_PX, baseline_m=BASELINE_M, export_path=export_path
         )
 
         assert result.success

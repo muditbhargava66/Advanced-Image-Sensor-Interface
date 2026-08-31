@@ -2,21 +2,24 @@
 3D/Depth Module
 
 Provides stereo depth estimation utilities for image sensor applications.
-Supports disparity estimation (Block Matching, SGM-lite, optional ORB-based
-alignment), disparity-to-depth conversion, point cloud generation, and PLY export.
+Supports disparity estimation (Block Matching, full 8-path semi-global
+matching, optional ORB-based alignment), disparity-to-depth conversion,
+point cloud generation, and PLY export.
 
 Key Features:
 - Block Matching (BM) disparity via SAD cost volume with box-filter windowing
-- Semi-Global Matching approximation (4-path penalty aggregation, "SGM-lite")
+- Full 8-path Semi-Global Matching (4 cardinal + 4 diagonal scanline paths
+  with P1/P2 smoothness penalties), optionally accelerated with numba when
+  installed; a pure-numpy fallback keeps behavior identical without it
 - Optional ORB feature alignment via OpenCV when available (graceful fallback)
 - Disparity-to-depth conversion using the pinhole stereo model (Z = f * B / d)
 - Point cloud generation and ASCII/binary PLY export (no external dependencies)
 
 Note:
-    This is a simulation-grade implementation. SGM-lite aggregates four scanline
-    paths (left-right, right-left, top-bottom, bottom-top) instead of the full
-    eight paths used by production SGM. ORB alignment uses a global shift derived
-    from matched keypoints, not a full homography.
+    This is a simulation-grade implementation. SGM aggregation runs the
+    standard per-path recursion along eight directions but omits left-right
+    consistency checks and sub-pixel refinement. ORB alignment uses a global
+    shift derived from matched keypoints, not a full homography.
 
 Author: Advanced Image Sensor Interface Team
 Version: 3.2.0
@@ -42,6 +45,14 @@ except ImportError:
     cv2 = None
     CV2_AVAILABLE = False
 
+try:
+    from numba import njit
+
+    NUMBA_AVAILABLE = True
+except ImportError:
+    njit = None
+    NUMBA_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,7 +75,9 @@ class DepthConfig:
         min_disparity: Minimum disparity to search (usually 0)
         sgm_p1: SGM penalty for +/-1 disparity change along a path
         sgm_p2: SGM penalty for larger disparity changes along a path
+        sgm_paths: Number of SGM aggregation paths (4 cardinal or 8 full)
         use_cv2_orb: Allow OpenCV ORB features when available
+        use_numba: Prefer numba-accelerated SGM kernels when numba is installed
     """
 
     algorithm: DisparityAlgorithm = DisparityAlgorithm.BLOCK_MATCHING
@@ -73,7 +86,9 @@ class DepthConfig:
     min_disparity: int = 0
     sgm_p1: float = 8.0
     sgm_p2: float = 32.0
+    sgm_paths: int = 8
     use_cv2_orb: bool = True
+    use_numba: bool = True
 
     def __post_init__(self):
         """Validate configuration."""
@@ -85,6 +100,147 @@ class DepthConfig:
             raise ValueError("min_disparity must be non-negative")
         if self.sgm_p1 <= 0 or self.sgm_p2 <= self.sgm_p1:
             raise ValueError("require 0 < sgm_p1 < sgm_p2")
+        if self.sgm_paths not in (4, 8):
+            raise ValueError("sgm_paths must be 4 (cardinal) or 8 (full)")
+
+
+def _sgm_scan_numpy(  # noqa: PLR0917
+    cost_volume: np.ndarray, p1: float, p2: float, reverse: bool, shift: int, aggregated: np.ndarray, scan_rows: bool
+) -> None:
+    """Aggregate one SGM path over the cost volume using pure numpy.
+
+    Iterates slice-by-slice along the scan axis while carrying the previous
+    slice's aggregated costs as state. ``shift`` displaces the predecessor
+    along the batch axis (diagonal paths); predecessors outside the image
+    start a new path. Accumulates the per-path costs into ``aggregated``.
+    """
+    num_disp, height, width = cost_volume.shape
+    n_steps = height if scan_rows else width
+    prev: Optional[np.ndarray] = None
+    for step_idx in range(n_steps):
+        s = (n_steps - 1 - step_idx) if reverse else step_idx
+        current = (cost_volume[:, s, :] if scan_rows else cost_volume[:, :, s]).transpose().astype(np.float64)
+        if prev is None:
+            l_path = current
+        else:
+            if shift > 0:
+                shifted = np.concatenate([np.full_like(prev[:1], np.inf), prev[:-1]], axis=0)
+            elif shift < 0:
+                shifted = np.concatenate([prev[1:], np.full_like(prev[-1:], np.inf)], axis=0)
+            else:
+                shifted = prev
+            prev_min = shifted.min(axis=1, keepdims=True)
+            finite = np.isfinite(prev_min[:, 0])
+            l_path = current.copy()
+            if finite.any():
+                fin_shifted = shifted[finite]
+                fin_prev_min = prev_min[finite]
+                d_left = np.concatenate([np.full_like(fin_shifted[:, :1], np.inf), fin_shifted[:, :-1]], axis=1)
+                d_right = np.concatenate([fin_shifted[:, 1:], np.full_like(fin_shifted[:, -1:], np.inf)], axis=1)
+                candidates = np.stack(
+                    [fin_shifted, d_left + p1, d_right + p1, np.broadcast_to(fin_prev_min + p2, fin_shifted.shape)]
+                )
+                l_path[finite] = current[finite] + candidates.min(axis=0) - fin_prev_min
+        if scan_rows:
+            aggregated[s, :, :] += l_path
+        else:
+            aggregated[:, s, :] += l_path
+        prev = l_path
+
+
+def _sgm_scan_rows_numpy(  # noqa: PLR0917
+    cost_volume: np.ndarray, p1: float, p2: float, reverse: bool, shift: int, aggregated: np.ndarray
+) -> None:
+    """Row-sequential (vertical and diagonal) SGM path, numpy backend."""
+    _sgm_scan_numpy(cost_volume, p1, p2, reverse, shift, aggregated, scan_rows=True)
+
+
+def _sgm_scan_cols_numpy(  # noqa: PLR0917
+    cost_volume: np.ndarray, p1: float, p2: float, reverse: bool, shift: int, aggregated: np.ndarray
+) -> None:
+    """Column-sequential (horizontal) SGM path, numpy backend."""
+    _sgm_scan_numpy(cost_volume, p1, p2, reverse, shift, aggregated, scan_rows=False)
+
+
+if NUMBA_AVAILABLE:
+
+    @njit(cache=False)  # type: ignore[misc]
+    def _sgm_scan_rows_numba(cost_volume, p1, p2, reverse, shift, aggregated):  # noqa: PLR0917
+        """Row-sequential SGM path, numba backend (mirrors the numpy recursion)."""
+        num_disp, height, width = cost_volume.shape
+        prev = np.empty((width, num_disp), dtype=np.float64)
+        new_l = np.empty((width, num_disp), dtype=np.float64)
+        for step_idx in range(height):
+            y = (height - 1 - step_idx) if reverse else step_idx
+            for x in range(width):
+                src = x - shift
+                if step_idx == 0 or src < 0 or src >= width:
+                    for d in range(num_disp):
+                        new_l[x, d] = cost_volume[d, y, x]
+                else:
+                    prev_min = prev[src, 0]
+                    for d in range(1, num_disp):
+                        if prev[src, d] < prev_min:
+                            prev_min = prev[src, d]
+                    for d in range(num_disp):
+                        best = prev[src, d]
+                        if d > 0:
+                            cand = prev[src, d - 1] + p1
+                            if cand < best:
+                                best = cand
+                        if d < num_disp - 1:
+                            cand = prev[src, d + 1] + p1
+                            if cand < best:
+                                best = cand
+                        cand = prev_min + p2
+                        if cand < best:
+                            best = cand
+                        new_l[x, d] = cost_volume[d, y, x] + best - prev_min
+            for x in range(width):
+                for d in range(num_disp):
+                    aggregated[y, x, d] += new_l[x, d]
+            prev, new_l = new_l, prev
+
+    @njit(cache=False)  # type: ignore[misc]
+    def _sgm_scan_cols_numba(cost_volume, p1, p2, reverse, shift, aggregated):  # noqa: PLR0917
+        """Column-sequential SGM path, numba backend (mirrors the numpy recursion)."""
+        num_disp, height, width = cost_volume.shape
+        prev = np.empty((height, num_disp), dtype=np.float64)
+        new_l = np.empty((height, num_disp), dtype=np.float64)
+        for step_idx in range(width):
+            x = (width - 1 - step_idx) if reverse else step_idx
+            for y in range(height):
+                src = y - shift
+                if step_idx == 0 or src < 0 or src >= height:
+                    for d in range(num_disp):
+                        new_l[y, d] = cost_volume[d, y, x]
+                else:
+                    prev_min = prev[src, 0]
+                    for d in range(1, num_disp):
+                        if prev[src, d] < prev_min:
+                            prev_min = prev[src, d]
+                    for d in range(num_disp):
+                        best = prev[src, d]
+                        if d > 0:
+                            cand = prev[src, d - 1] + p1
+                            if cand < best:
+                                best = cand
+                        if d < num_disp - 1:
+                            cand = prev[src, d + 1] + p1
+                            if cand < best:
+                                best = cand
+                        cand = prev_min + p2
+                        if cand < best:
+                            best = cand
+                        new_l[y, d] = cost_volume[d, y, x] + best - prev_min
+            for y in range(height):
+                for d in range(num_disp):
+                    aggregated[y, x, d] += new_l[y, d]
+            prev, new_l = new_l, prev
+
+else:
+    _sgm_scan_rows_numba = None
+    _sgm_scan_cols_numba = None
 
 
 class StereoDepthProcessor:
@@ -201,12 +357,7 @@ class StereoDepthProcessor:
         return depth
 
     def generate_point_cloud(
-        self,
-        depth: np.ndarray,
-        focal_length_px: float,
-        baseline_m: float,
-        cx: Optional[float] = None,
-        cy: Optional[float] = None,
+        self, depth: np.ndarray, focal_length_px: float, baseline_m: float, cx: Optional[float] = None, cy: Optional[float] = None
     ) -> np.ndarray:
         """Generate a 3D point cloud from a depth map.
 
@@ -359,50 +510,41 @@ class StereoDepthProcessor:
         return np.argmin(cost_volume, axis=0).astype(np.float32) + self.config.min_disparity
 
     def _sgm_aggregate(self, cost_volume: np.ndarray) -> np.ndarray:
-        """Aggregate the cost volume along four scanline paths (SGM-lite).
+        """Aggregate the cost volume along scanline paths (full SGM).
 
-        Approximates full SGM by using left-right, right-left, top-bottom,
-        and bottom-top paths with P1/P2 smoothness penalties.
+        Runs the standard SGM recursion with P1/P2 smoothness penalties along
+        the four cardinal paths, plus the four diagonal paths when
+        ``config.sgm_paths`` is 8. Uses numba kernels when installed and
+        enabled; the pure-numpy fallback produces identical results.
         """
         num_disp, height, width = cost_volume.shape
         p1, p2 = self.config.sgm_p1, self.config.sgm_p2
         aggregated = np.zeros((height, width, num_disp), dtype=np.float64)
 
-        def step(prev: np.ndarray, current: np.ndarray) -> np.ndarray:
-            """One SGM recursion step over a batch of scanline positions."""
-            prev_min = prev.min(axis=-1, keepdims=True)
-            left_neighbor = np.concatenate([np.full_like(prev[:, :1], np.inf), prev[:, :-1]], axis=1)
-            right_neighbor = np.concatenate([prev[:, 1:], np.full_like(prev[:, -1:], np.inf)], axis=1)
-            candidates = np.stack([prev, left_neighbor + p1, right_neighbor + p1, np.broadcast_to(prev_min + p2, prev.shape)])
-            return current + candidates.min(axis=0) - prev_min
+        use_numba = self.config.use_numba and NUMBA_AVAILABLE
+        if use_numba:
+            scan_rows, scan_cols = _sgm_scan_rows_numba, _sgm_scan_cols_numba
+        else:
+            logger.debug("SGM aggregation using numpy backend (numba %s)", "disabled" if NUMBA_AVAILABLE else "unavailable")
+            scan_rows, scan_cols = _sgm_scan_rows_numpy, _sgm_scan_cols_numpy
 
-        # Horizontal paths: vectorized over rows, loop over columns
-        forward = np.zeros((height, num_disp), dtype=np.float64)
-        backward = np.zeros((height, num_disp), dtype=np.float64)
-        for x in range(width):
-            forward = step(forward, cost_volume[:, :, x].transpose()) if x else cost_volume[:, :, x].transpose().astype(np.float64)
-            aggregated[:, x, :] += forward
-        for x in range(width - 1, -1, -1):
-            backward = (
-                step(backward, cost_volume[:, :, x].transpose())
-                if x < width - 1
-                else cost_volume[:, :, x].transpose().astype(np.float64)
+        path_specs = [
+            (scan_rows, False, 0),  # top -> bottom
+            (scan_rows, True, 0),  # bottom -> top
+            (scan_cols, False, 0),  # left -> right
+            (scan_cols, True, 0),  # right -> left
+        ]
+        if self.config.sgm_paths == 8:
+            path_specs.extend(
+                [
+                    (scan_rows, False, 1),  # top-left -> bottom-right
+                    (scan_rows, False, -1),  # top-right -> bottom-left
+                    (scan_rows, True, 1),  # bottom-left -> top-right
+                    (scan_rows, True, -1),  # bottom-right -> top-left
+                ]
             )
-            aggregated[:, x, :] += backward
-
-        # Vertical paths: vectorized over columns, loop over rows
-        forward = np.zeros((width, num_disp), dtype=np.float64)
-        backward = np.zeros((width, num_disp), dtype=np.float64)
-        for y in range(height):
-            forward = step(forward, cost_volume[:, y, :].transpose()) if y else cost_volume[:, y, :].transpose().astype(np.float64)
-            aggregated[y, :, :] += forward
-        for y in range(height - 1, -1, -1):
-            backward = (
-                step(backward, cost_volume[:, y, :].transpose())
-                if y < height - 1
-                else cost_volume[:, y, :].transpose().astype(np.float64)
-            )
-            aggregated[y, :, :] += backward
+        for scan, reverse, shift in path_specs:
+            scan(cost_volume, p1, p2, reverse, shift, aggregated)
 
         return np.argmin(aggregated, axis=2).astype(np.float32)
 
