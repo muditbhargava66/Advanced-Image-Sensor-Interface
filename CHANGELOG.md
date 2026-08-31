@@ -30,11 +30,13 @@ This release introduces explicit typed result objects for all image processing p
 - **Simulation Delay Configuration**: `SimulationDelayConfig` wired into the MIPI D-PHY, GigE/RoCE, CoaXPress CXP-12, and USB3 streaming drivers, replacing hardcoded sleeps with configurable per-operation delays (connection, streaming, control, power, security) plus optional randomized jitter for testing
 - **3D/Depth Module** (`utils/depth.py`): `StereoDepthProcessor` with
   - Block Matching (SAD cost volume with box-filter windowing)
-  - SGM-lite (4-path semi-global matching approximation with P1/P2 penalties)
+  - Full 8-path semi-global matching (4 cardinal + 4 diagonal scanline paths with P1/P2 penalties), optionally accelerated with numba `@njit` kernels; a pure-numpy fallback produces bit-identical results
   - Optional ORB feature alignment via OpenCV with graceful numpy-only fallback
-  - Disparity-to-depth conversion (pinhole stereo model), point cloud generation, and ASCII/binary PLY export
+  - Disparity-to-depth conversion (pinhole stereo model), point cloud generation, ASCII/binary PLY export, and trimesh-backed mesh PLY export (`export_mesh_ply`, requires the optional trimesh dependency)
   - `DepthResult` dataclass added to the `ProcessingResult` union
-- **Test Suites**: New `tests/test_depth_module.py` and `tests/test_simulation_delays.py`
+- **Native Calibration Solver** (`sensor_interface/calibration/photogrammetry.py`): OpenCV-free camera calibration with numpy/scipy — `calibrate_camera` (Zhang's method: normalized DLT homographies, closed-form intrinsics, per-view extrinsics, Levenberg-Marquardt reprojection refinement) and `solve_projection_matrix` (DLT + RQ decomposition); opt-in for `MultiSensorSynchronizer.calibrate_sensors()` via `SyncConfiguration.prefer_native_calibration`
+- **Optional Extras**: PyWavelets and trimesh added to the `[full]` extra (guarded imports only; no new required dependencies)
+- **Test Suites**: New `tests/test_depth_module.py`, `tests/test_simulation_delays.py`, and `tests/test_calibration_solver.py` (387 tests passing, 394 collected)
 
 ### Fixed
 
@@ -44,6 +46,8 @@ This release introduces explicit typed result objects for all image processing p
 - **Power optimization stub**: `AdvancedPowerManager._optimize_component_power()` has a real implementation instead of a bare `pass`
 - **Calibration feature extraction**: `neural_tuner.py` now uses OpenCV `Canny`/`goodFeaturesToTrack` when available instead of numpy-only placeholders
 - **Flaky power efficiency test**: `test_power_efficiency` disabled simulated measurement noise so it verifies the efficiency model deterministically (previously failed intermittently)
+- **Calibration argument bug**: `calibrate_sensors()` passed a duplicated, nested object-point list and an over-wrapped image-point list to `cv2.calibrateCamera`; it now passes the correct per-view lists
+- **Silent calibration failure without OpenCV**: `calibrate_sensors()` previously raised a swallowed `AttributeError` when OpenCV was unavailable; it now logs an explicit error and returns `False`
 
 ### Security Fixes
 
@@ -53,6 +57,7 @@ This release introduces explicit typed result objects for all image processing p
 
 ### Changed
 
+- **SGM default upgraded**: SGM aggregation now runs full 8-path by default (`DepthConfig.sgm_paths=8`); set `sgm_paths=4` to restore the previous 4-path cardinal behavior, and `use_numba=False` to force the numpy backend
 - **Dependency ranges widened** (dependabot-equivalent updates): websockets `<18.0.0`, zarr `<4.0.0`, rich `<16.0.0`, tkinter-tooltip `<4.0.0`, plotly `<8.0.0`, photutils `<4.0.0`, docs numpy `<3.0.0`, sphinxcontrib applehelp/devhelp/serializinghtml `>=2.0.0`
 - **Tooling targets**: black/ruff target `py311`; tox envlist drops `py310`
 - **Version references**: `pyproject.toml`, docs, README, ROADMAP, and package docstrings aligned to 3.2.0
@@ -75,6 +80,10 @@ This release introduces explicit typed result objects for all image processing p
 - **`.github/ISSUE_TEMPLATE/bug_report.md`**: Updated example Python version to 3.11.5
 - **`.github/ISSUE_TEMPLATE/hardware_support.md`**: Updated example Python version to 3.11.5
 - **`.github/pull_request_template.md`**: Updated example Python version to 3.11.5
+- **`docs/calibration.md`**: Documented the native photogrammetry solver, the `prefer_native_calibration` flag, and the zero-distortion limitation
+- **`docs/design_specs.md`**: Added stereo depth (full 8-path SGM) and native calibration solver specifications
+- **`docs/api_reference.md`**: Added 3D depth and native calibration API sections
+- **Test counts refreshed to 387**: README badge/bullets, `docs/testing_guide.md`, `docs/performance_analysis.md`, `docs/system_architecture.md`, `docs/index.rst`, and `assets/system-architecture-v3.2.0.svg`
 
 ### Dependency Updates
 

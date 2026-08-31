@@ -131,7 +131,7 @@ Improved thermal management allows for sustained high-performance operation even
 
 Voltage stability improvements lead to more reliable operation and reduced noise.
 
-## 5. Test Suite Performance (v3.1.0: 329 tests)
+## 5. Test Suite Performance (v3.2.0: 387 tests)
 
 ### 5.1 Test Coverage
 
@@ -147,7 +147,7 @@ Voltage stability improvements lead to more reliable operation and reduced noise
 | Security         | 96%           | 11         |
 | Integration      | 92%           | 18         |
 
-Our comprehensive test suite ensures high code quality and reliability (329 total tests).
+Our comprehensive test suite ensures high code quality and reliability (387 total tests).
 
 ### 5.2 Testing Performance
 
@@ -159,7 +159,11 @@ Our comprehensive test suite ensures high code quality and reliability (329 tota
 | Protocol Tests  | 18.2s         | 52         |
 | AI/ML Tests     | 22.1s         | 31         |
 | Security Tests  | 8.9s          | 24         |
-| Total           | 82.5s         | 329        |
+| Total           | 82.0s         | 387        |
+
+> Note: the per-category breakdown reflects the v3.1.0 suite; v3.2.0 added 58 tests
+> (3D/depth module, simulation delays, native calibration solver, trimesh export)
+> that are included in the total above.
 
 Fast test execution enables rapid development and continuous integration.
 

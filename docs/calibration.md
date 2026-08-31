@@ -69,6 +69,31 @@ print(status["statistics"])
 
 For larger rigs, `create_multi_camera_sync_config(num_cameras=4)` builds a multi-camera configuration with one master sensor and multiple slaves.
 
+### Native photogrammetry solver (no OpenCV required)
+
+The `calibration.photogrammetry` module solves camera calibration entirely with numpy/scipy, so it works in environments where OpenCV is not installed.
+
+Two functions are provided:
+
+- `calibrate_camera(object_points_per_view, image_points_per_view, image_size)` — Zhang-style planar-pattern calibration. Per-view homographies are estimated with a normalized DLT, intrinsics are solved in closed form from the homography constraints, per-view extrinsics follow from each homography, and everything is refined by minimizing reprojection error with Levenberg-Marquardt (`scipy.optimize.least_squares`). Requires at least 3 views of a planar pattern with at least 4 points each and returns a `CalibrationResult`.
+- `solve_projection_matrix(object_points, image_points)` — general DLT projection-matrix estimation from at least six non-coplanar 3D-2D correspondences, decomposed into intrinsics and pose via RQ factorization.
+
+```python
+from advanced_image_sensor_interface.sensor_interface.calibration import (
+    calibrate_camera,
+    solve_projection_matrix,
+)
+
+result = calibrate_camera(object_points_per_view, image_points_per_view, image_size=(640, 480))
+print(result.camera_matrix, result.rms_reprojection_error)
+
+intrinsic, rotation, translation = solve_projection_matrix(object_points, image_points)
+```
+
+**Limitations (v1):** lens distortion is not estimated; `distortion_coefficients` are returned as zeros. For lenses with significant distortion, prefer the OpenCV calibration path. Degenerate view configurations (e.g. identical poses) are rejected with a `ValueError`.
+
+`MultiSensorSynchronizer.calibrate_sensors()` uses OpenCV for checkerboard corner detection in both modes, but you can opt in to the native solver for the solve step with `SyncConfiguration(prefer_native_calibration=True)`; the default remains `cv2.calibrateCamera`.
+
 ## Calibration Models
 
 The `advanced_image_sensor_interface.sensor_interface.calibration` package contains structured result objects and storage helpers:
@@ -273,6 +298,7 @@ signal_config = SignalConfig(
 ## Current Scope and Limitations
 
 - Lens correction is fully implemented in NumPy and intended for simulation and algorithm work.
-- `calibrate_sensors()` currently fills placeholder calibration matrices rather than solving a full photogrammetry problem.
+- `calibrate_sensors()` solves geometric calibration with `cv2.calibrateCamera` by default, or with the native numpy/scipy solver when `prefer_native_calibration=True`; corner detection still requires OpenCV in both modes, and the method returns `False` with an explicit log message when OpenCV is unavailable.
+- The native photogrammetry solver does not estimate lens distortion (coefficients are zeros); use the OpenCV path for lenses with significant distortion.
 - `NeuralCalibrationTuner` is a lightweight simulation tool using scikit-learn MLPRegressor, not a TensorFlow or PyTorch training pipeline.
 - If you need full checkerboard detection, stereo rectification, or camera pose solving, you will need to integrate external computer-vision tooling on top of these data models.

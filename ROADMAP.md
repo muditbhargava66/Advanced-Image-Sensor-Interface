@@ -4,14 +4,16 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 
 ## Completed Milestones
 
-### v3.2.0 Features (Typed Results, Simulation Delays, 3D/Depth) - **RELEASED 2026-08-27**
+### v3.2.0 Features (Typed Results, Simulation Delays, 3D/Depth)
 - [x] **ProcessingResult Dataclasses**: SignalProcessingResult, HDRProcessingResult, RAWProcessingResult, LensCorrectionResult replace silent None returns with explicit success/error/metrics.
 - [x] **Simulation Delay Config**: SimulationDelayConfig wired into MIPI, GigE/RoCE, CoaXPress CXP-12, and USB3 drivers for configurable simulated latencies.
-- [x] **3D / Depth Module**: StereoDepthProcessor with Block Matching and SGM-lite disparity, disparity-to-depth conversion, point cloud generation, and PLY export.
+- [x] **3D / Depth Module**: StereoDepthProcessor with Block Matching and full 8-path semi-global matching (4 cardinal + 4 diagonal paths, optionally numba-accelerated with a bit-identical numpy fallback), disparity-to-depth conversion, point cloud generation, dependency-free PLY export, and trimesh-backed mesh PLY export.
+- [x] **Native Calibration Solver**: numpy/scipy photogrammetry solver (`calibrate_camera` via Zhang's method, `solve_projection_matrix` via DLT + RQ) calibrates without OpenCV; opt-in for multi-sensor sync via `SyncConfiguration.prefer_native_calibration`.
+- [x] **Optional Extras**: PyWavelets and trimesh added to the `[full]` extra with guarded imports (no new required dependencies).
 - [x] **Python 3.11+ Requirement**: Security fixes for keras (deserialization, path traversal CVEs) and astropy (RCE CVE); Python 3.10 support removed.
-- [x] **Test Coverage**: Added suites for the depth module and simulation delays; existing CXP12, RoCE, D-PHY, USB3 streaming, MIPI Security, and Lens Correction coverage retained.
+- [x] **Test Coverage**: Added suites for the depth module (incl. 8-path SGM), simulation delays, native calibration solver, and trimesh export; 387 tests passing (394 collected, 7 skipped without optional extras).
 
-### v3.1.0 Features (AI/ML & Implementation Completion) - **RELEASED 2026-08-21**
+### v3.1.0 Features (AI/ML & Implementation Completion)
 - [x] **AI/ML Integration Complete**: Neural Calibration Tuner with scikit-learn MLPRegressor fallback.
 - [x] **AI/ML Enhancements**: SceneClassifier, NoisePredictor, QualityAssessor with scene-aware processing.
 - [x] **Custom Extensions**: AINoiseReducer with scikit-learn denoising, AdaptiveColorCorrector.
@@ -58,8 +60,4 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 - [ ] **AI Denoising**: Integration of ML-based noise reduction models (torch/tensorflow backends).
 - [ ] **Smart ISP**: AI-driven image signal processor for automatic parameter tuning.
 - [ ] **Predictive Power**: AI-based power consumption forecasting.
-
-### Medium Priority
-- [ ] **Full 8-Path SGM**: Upgrade SGM-lite (4-path) to full 8-path semi-global matching with numba acceleration.
-- [ ] **Calibration Solver**: Replace placeholder calibration matrices with a photogrammetry solver.
 

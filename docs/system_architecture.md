@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Advanced Image Sensor Interface is a simulation framework for developing and testing image sensor interfaces across multiple protocols. Version 3.2.0 introduces typed ProcessingResult objects for explicit error handling, configurable simulation delays across all protocol drivers, and a 3D/Depth module for stereo disparity and point cloud generation, on top of Python 3.11+ security hardening.
+The Advanced Image Sensor Interface is a simulation framework for developing and testing image sensor interfaces across multiple protocols. Version 3.2.0 introduces typed ProcessingResult objects for explicit error handling, configurable simulation delays across all protocol drivers, a 3D/Depth module with full 8-path semi-global matching (optionally numba-accelerated) and point cloud generation, and a native numpy/scipy photogrammetry calibration solver that works without OpenCV, on top of Python 3.11+ security hardening.
 
 This document describes the system architecture organized in seven logical layers, from sensor input through processed output.
 
@@ -196,7 +196,7 @@ Layer 6: Power Management · Performance · Neural Calibration · Buffer Managem
 │  · priority-based   │   parallelism    │   · sklearn MLPRegr. │ • pool_optimize() │
 │• Component ctrl:    │   (threading/    │   (no TF/PyTorch)    │   · resize_pool() │
 │  sensor/proc/       │   async)         │                      │                   │
-│  mem/IO             │ • 329 tests      │ ✦ neural_tuner.py ·  │ ✦ get_buffer_     │
+│  mem/IO             │ • 387 tests      │ ✦ neural_tuner.py ·  │ ✦ get_buffer_     │
 │  • PowerMode:       │   passing        │   CalibrationResult  │   manager()       │
 │  PERF/BAL/SAVER/    │ · 60%+ coverage  │   CalibrationDB      │   · ManagedBuffer │
 │  ULTRA_LOW          │ · AI/ML ready    │   · neural_tuner.py  │                   │
@@ -208,7 +208,7 @@ Layer 7: Output · Calibration DB · Metrics · Testing
 │ Processed Output  │ Calibration DB    │ Performance       │ Testing &        │
 │                   │                   │ Metrics           │ Validation       │
 ├───────────────────┼───────────────────┼───────────────────┼──────────────────┤
-│• 8K @ 30fps /     │ • CalibrationDB:  │ • calculate_snr() │ • 329 tests pass │
+│• 8K @ 30fps /     │ • CalibrationDB:  │ • calculate_snr() │ • 387 tests pass │
 │  4K @ 120fps sim  │   store/list/     │   · calculate_    │ (pytest/asyncio) │
 │• Multi-sensor     │   export cals     │   dynamic_range() │ • ruff+black+    │
 │  fused output     │ • Calibration     │   · calculate_    │   pyright+mypy   │
@@ -664,7 +664,7 @@ Integrated into Layer 6 for runtime calibration optimization:
 - SNR improvement: 35–100% depending on algorithm (Gaussian 35%, Bilateral 100%)
 
 ### Testing and Validation
-- **329 tests passing** (pytest/asyncio)
+- **387 tests passing** (pytest/asyncio)
 - **Quality gates**: pytest, ruff, black, compileall, mypy, pyright
 - **Coverage**: 60%+ coverage available on demand
 - **Multi-Python**: 3.11–3.13
@@ -696,7 +696,7 @@ All processors document silent-failure behavior in docstrings (WARNING: SILENT F
 ## Verification Status
 
 All quality gates pass:
-- 329/329 tests passing
+- 387/394 tests passing (7 skipped without optional extras: numba, trimesh, OpenCV)
 - Ruff linting: All checks passed
 - Black formatting: Clean
 - Pyright type checking: 0 errors

@@ -8,7 +8,7 @@ This document provides comprehensive guidance on testing the Advanced Image Sens
 
 The project uses the following testing tools:
 
-- **pytest**: Main testing framework for the full suite (329 collected tests in the current workspace)
+- **pytest**: Main testing framework for the full suite (394 collected tests in the current workspace: 387 passing, 7 skipped when optional extras like numba, trimesh, or OpenCV are not installed)
 - **unittest.mock**: For mocking dependencies during testing
 - **pytest-cov**: For measuring test coverage
 - **pytest-asyncio**: For async test support

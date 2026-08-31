@@ -272,6 +272,31 @@ class GPUAccelerator:
 - **Memory Management**: GPU memory pooling and optimization
 - **Performance Monitoring**: Detailed GPU performance metrics
 
+#### 2.5.4 3D Depth Estimation (Stereo)
+
+`utils/depth.py` provides simulation-grade stereo depth estimation via
+`StereoDepthProcessor`:
+
+- **Disparity Algorithms**: Block Matching (SAD cost volume with box-filter
+  windowing), full 8-path Semi-Global Matching, and optional ORB-based
+  alignment (OpenCV) with graceful fallback to Block Matching.
+- **Full 8-path SGM**: per-path recursion
+  `L = C + min(L_prev[d], L_prev[d±1]+P1, min(L_prev)+P2) − min(L_prev)`
+  aggregated along 4 cardinal and 4 diagonal scanline directions with
+  smoothness penalties `sgm_p1`/`sgm_p2`. `DepthConfig.sgm_paths=4` restores
+  the cardinal-only variant. When `use_numba=True` and numba is installed,
+  `@njit` scan kernels accelerate aggregation; the pure-numpy fallback
+  produces bit-identical results.
+- **Depth Model**: pinhole stereo geometry `Z = f · B / d`; invalid
+  disparities map to depth 0.
+- **Export**: point cloud generation and ASCII/binary PLY export without
+  external dependencies; `export_mesh_ply` writes PLY through the optional
+  trimesh exporter (`[full]` extra).
+
+**Scope**: left-right consistency checks and sub-pixel refinement are
+omitted; ORB alignment uses a global shift from matched keypoints rather
+than a full homography.
+
 ### 2.6 Buffer Management Architecture
 
 #### 2.6.1 Memory Pool Design
@@ -355,6 +380,13 @@ Calibration is implemented through the following components:
   and `SignalConfig`.
 - **Multi-Sensor Sync**: `MultiSensorSynchronizer` in
   `sensor_interface/multi_sensor_sync.py` handles temporal alignment.
+- **Native Photogrammetry Solver**: `calibrate_camera` (Zhang-style
+  planar-pattern calibration: normalized DLT homographies, closed-form
+  intrinsics, Levenberg-Marquardt refinement) and `solve_projection_matrix`
+  (DLT + RQ decomposition) in `sensor_interface/calibration/photogrammetry.py`
+  solve calibration with numpy/scipy only. Lens distortion is not estimated
+  (coefficients are zeros); `calibrate_sensors()` dispatches to this solver
+  when `SyncConfiguration.prefer_native_calibration=True`.
 
 The calibration framework is designed to be extensible: new calibration
 types can be added by implementing the `TimingStrategy`-style protocol

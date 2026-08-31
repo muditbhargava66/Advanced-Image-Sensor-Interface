@@ -551,6 +551,70 @@ corrected = color_corrector.process_image(image, measured_colors=reference_color
 stats = color_corrector.get_adaptation_stats()
 ```
 
+## 3D Depth and Native Calibration (v3.2.0)
+
+### Stereo Depth Processing
+
+```python
+from advanced_image_sensor_interface import (
+    DepthConfig,
+    DisparityAlgorithm,
+    StereoDepthProcessor,
+)
+
+# Full 8-path semi-global matching (default); use sgm_paths=4 for the
+# cardinal-only variant, and use_numba=False to force the numpy backend.
+config = DepthConfig(
+    algorithm=DisparityAlgorithm.SEMI_GLOBAL_MATCHING,
+    sgm_paths=8,
+    use_numba=True,  # numba-accelerated kernels when numba is installed
+)
+processor = StereoDepthProcessor(config)
+
+# Full pipeline: disparity -> depth -> point cloud -> optional PLY export
+result = processor.process_stereo_pair(
+    left_image,
+    right_image,
+    focal_length_px=800.0,
+    baseline_m=0.12,
+    export_path="scene.ply",
+)
+
+# Dependency-free PLY export of an existing point cloud
+processor.export_ply(result.point_cloud, "cloud.ply", binary=True)
+
+# trimesh-backed PLY export directly from a depth map (requires the
+# optional trimesh dependency from the [full] extra)
+processor.export_mesh_ply(result.depth_map, focal_length_px=800.0, baseline_m=0.12, path="mesh.ply")
+```
+
+Key `DepthConfig` options for SGM:
+
+- `sgm_paths`: 8 (full: 4 cardinal + 4 diagonal paths, default) or 4 (cardinal only)
+- `use_numba`: prefer numba-accelerated scan kernels when numba is installed; the pure-numpy fallback produces identical results
+- `sgm_p1` / `sgm_p2`: smoothness penalties along each path (require `0 < sgm_p1 < sgm_p2`)
+
+### Native Photogrammetry Calibration Solver
+
+```python
+from advanced_image_sensor_interface.sensor_interface.calibration import (
+    calibrate_camera,
+    solve_projection_matrix,
+)
+
+# Zhang-style calibration from >= 3 planar-pattern views (no OpenCV required)
+result = calibrate_camera(object_points_per_view, image_points_per_view, image_size=(640, 480))
+print(result.camera_matrix, result.rms_reprojection_error)
+
+# DLT projection-matrix solve from >= 6 non-coplanar 3D-2D correspondences
+intrinsic, rotation, translation = solve_projection_matrix(object_points, image_points)
+```
+
+Notes:
+
+- Lens distortion is not estimated by the native solver (coefficients are zeros); prefer the OpenCV path for lenses with significant distortion.
+- `MultiSensorSynchronizer.calibrate_sensors()` dispatches to the native solver when `SyncConfiguration(prefer_native_calibration=True)` is set; corner detection still uses OpenCV in both modes.
+
 ## Best Practices
 
 ### Memory Management

@@ -8,7 +8,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![CodeQL](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/actions/workflows/github-code-scanning/codeql)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
-![Test Suite](https://img.shields.io/badge/tests-329%20passing-brightgreen.svg)
+![Test Suite](https://img.shields.io/badge/tests-387%20passing-brightgreen.svg)
 [![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Type Checking: Mypy & Pyright](https://img.shields.io/badge/types-mypy%20%7C%20pyright-%23eedc5b)](https://github.com/microsoft/pyright)
@@ -48,7 +48,7 @@ The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera i
 - **Data Integrity**: CRC-32 validation and Reed-Solomon FEC
 - **Lens Correction**: Radial and tangential distortion correction
 - **Multi-System Power**: Coordinated power budgeting for sensor arrays
-- **329 Tests Passing**: Release verification completed against the current suite
+- **387 Tests Passing**: Release verification completed against the current suite
 
 ### What This Is / Isn't
 
@@ -85,7 +85,7 @@ This diagram illustrates the key components and data flow of our Advanced Image 
 - **Comprehensive Image Validation**: Bit-depth safety and format validation across 8-16 bit depths
 - **Automated Calibration**: Neural network and parametric calibration tuning
 - **Flexible Architecture**: Modular design for easy customization and extension
-- **Comprehensive Testing Suite**: 329 automated tests across core, protocol, and integration flows
+- **Comprehensive Testing Suite**: 387 automated tests across core, protocol, and integration flows
 - **Type Checking Support**: MyPy and Pyright are configured for maintained source modules
 
 ### New Features (v2.0.0)

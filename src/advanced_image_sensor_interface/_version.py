@@ -24,14 +24,18 @@ __url__ = "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface"
 # Version history
 VERSION_HISTORY = {
     "3.2.0": {
-        "release_date": "2026-08-27",
+        "release_date": "2026-08-31",
         "major_features": [
             "Python 3.11+ requirement (security fix for keras/astropy)",
             "ProcessingResult dataclasses for explicit error handling (SignalProcessor, HDRProcessor, RAWProcessor, LensCorrection)",
             "Per-driver configurable simulation delays (MIPI, GigE, CXP12, USB3)",
-            "3D/Depth module: stereo disparity (Block Matching, SGM, ORB), depth calculation, point cloud generation",
+            "3D/Depth module: stereo disparity (Block Matching, full 8-path SGM, ORB), depth calculation, point cloud generation",
+            "Full 8-path semi-global matching with optional numba acceleration and bit-identical numpy fallback",
+            "Native numpy/scipy photogrammetry calibration solver (Zhang's method + DLT), no OpenCV required",
+            "PyWavelets and trimesh optional extras with trimesh-backed mesh PLY export",
             "Security fixes: astropy 5.3.4 (RCE), keras 3.15.1 (deserialization, path traversal)",
             "Enhanced test coverage for CXP12, RoCE, D-PHY, USB3 streaming, MIPI Security, Lens Correction",
+            "387 tests passing (394 collected), Ruff + Black clean, mypy baseline maintained",
         ],
         "breaking_changes": [
             "Python 3.11+ required (removed 3.10 support)",
