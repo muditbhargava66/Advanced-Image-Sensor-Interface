@@ -383,9 +383,7 @@ class DepthResult:
 
 
 # Union type for all processing results
-ProcessingResult = Union[
-    SignalProcessingResult, HDRProcessingResult, RAWProcessingResult, LensCorrectionResult, DepthResult
-]
+ProcessingResult = Union[SignalProcessingResult, HDRProcessingResult, RAWProcessingResult, LensCorrectionResult, DepthResult]
 
 
 # Simulation Delay Configuration (v3.2.0+)

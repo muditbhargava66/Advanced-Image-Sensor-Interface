@@ -37,24 +37,13 @@ class TestSimulationDelayConfigValidation:
                 assert value >= 0, field_name
 
     @pytest.mark.parametrize(
-        "kwargs",
-        [
-            {"device_discovery_delay": -0.1},
-            {"frame_capture_delay": -0.001},
-            {"register_write_delay": -1.0},
-        ],
+        "kwargs", [{"device_discovery_delay": -0.1}, {"frame_capture_delay": -0.001}, {"register_write_delay": -1.0}]
     )
     def test_negative_delay_rejected(self, kwargs):
         with pytest.raises(ValueError):
             SimulationDelayConfig(**kwargs)
 
-    @pytest.mark.parametrize(
-        "kwargs",
-        [
-            {"random_delay_range_ms": (-1.0, 5.0)},
-            {"random_delay_range_ms": (5.0, 1.0)},
-        ],
-    )
+    @pytest.mark.parametrize("kwargs", [{"random_delay_range_ms": (-1.0, 5.0)}, {"random_delay_range_ms": (5.0, 1.0)}])
     def test_invalid_random_range_rejected(self, kwargs):
         with pytest.raises(ValueError):
             SimulationDelayConfig(**kwargs)
@@ -101,9 +90,7 @@ class TestMIPIDelayWiring:
 
     def test_control_transfer_delays(self, sleep_calls):
         delays = SimulationDelayConfig(
-            link_initialization_delay=0.00011,
-            command_transfer_delay=0.00042,
-            register_read_delay=0.00021,
+            link_initialization_delay=0.00011, command_transfer_delay=0.00042, register_read_delay=0.00021
         )
         driver = MIPIProtocolDriver(MIPIConfig(simulation_delays=delays))
 
@@ -153,9 +140,7 @@ class TestUSB3DelayWiring:
 
     def test_streaming_lifecycle_delays(self, sleep_calls):
         delays = SimulationDelayConfig(
-            buffer_allocation_delay=0.00051,
-            streaming_setup_delay=0.00061,
-            streaming_teardown_delay=0.00071,
+            buffer_allocation_delay=0.00051, streaming_setup_delay=0.00061, streaming_teardown_delay=0.00071
         )
         manager = USB3StreamingManager(StreamConfig(simulation_delays=delays))
 
