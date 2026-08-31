@@ -53,6 +53,14 @@ except ImportError:
     njit = None
     NUMBA_AVAILABLE = False
 
+try:
+    import trimesh
+
+    TRIMESH_AVAILABLE = True
+except ImportError:
+    trimesh = None
+    TRIMESH_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -429,6 +437,43 @@ class StereoDepthProcessor:
                 for x, y, z in points:
                     f.write(f"{x:.6f} {y:.6f} {z:.6f}\n")
         logger.debug("Exported %d points to %s", points.shape[0], path)
+        return True
+
+    def export_mesh_ply(
+        self, depth_map: np.ndarray, focal_length_px: float, baseline_m: float, path: Union[str, Path], binary: bool = True
+    ) -> bool:
+        """Export a depth map as a PLY point cloud using trimesh.
+
+        Converts the depth map to a 3D point cloud and writes it with the
+        trimesh exporter. Unlike :meth:`export_ply`, this requires the
+        optional ``trimesh`` dependency (part of the ``[full]`` extra).
+
+        Args:
+            depth_map: Depth map in meters (0 marks invalid pixels)
+            focal_length_px: Focal length in pixels
+            baseline_m: Stereo baseline in meters
+            path: Output file path
+            binary: Write binary little-endian PLY (True) or ASCII PLY (False)
+
+        Returns:
+            True when the file was written.
+
+        Raises:
+            RuntimeError: If trimesh is not installed.
+            ValueError: If the depth map contains no valid points.
+        """
+        if not TRIMESH_AVAILABLE:
+            raise RuntimeError(
+                "export_mesh_ply requires trimesh; install it with `pip install advanced-image-sensor-interface[full]`"
+            )
+
+        points = self.generate_point_cloud(depth_map, focal_length_px, baseline_m)
+        if points.shape[0] == 0:
+            raise ValueError("depth_map contains no valid points")
+
+        cloud = trimesh.PointCloud(points)
+        cloud.export(str(path), encoding="binary" if binary else "ascii")
+        logger.debug("Exported %d-point cloud via trimesh to %s", points.shape[0], path)
         return True
 
     def process_stereo_pair(  # noqa: PLR0917

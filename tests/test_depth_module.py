@@ -291,6 +291,55 @@ class TestPointCloudAndExport:
             processor.export_ply(np.zeros((0, 3), dtype=np.float32), tmp_path / "empty.ply")
 
 
+class TestTrimeshMeshExport:
+    """trimesh-backed PLY export (export_mesh_ply)."""
+
+    @staticmethod
+    def _depth_map() -> np.ndarray:
+        depth = np.zeros((4, 6), dtype=np.float64)
+        depth[1:3, 2:4] = 2.0
+        return depth
+
+    @pytest.mark.skipif(not depth_module.TRIMESH_AVAILABLE, reason="trimesh not installed")
+    def test_export_mesh_ply_binary_round_trip(self, tmp_path):
+        processor = StereoDepthProcessor()
+        path = tmp_path / "mesh.ply"
+
+        assert processor.export_mesh_ply(self._depth_map(), focal_length_px=100.0, baseline_m=0.1, path=path)
+        assert path.stat().st_size > 0
+
+        loaded = depth_module.trimesh.load(path, process=False)
+        expected = processor.generate_point_cloud(self._depth_map(), focal_length_px=100.0, baseline_m=0.1)
+        assert loaded.vertices.shape == expected.shape
+        np.testing.assert_allclose(loaded.vertices, expected, atol=1e-6)
+
+    @pytest.mark.skipif(not depth_module.TRIMESH_AVAILABLE, reason="trimesh not installed")
+    def test_export_mesh_ply_ascii_round_trip(self, tmp_path):
+        processor = StereoDepthProcessor()
+        path = tmp_path / "mesh_ascii.ply"
+
+        assert processor.export_mesh_ply(self._depth_map(), focal_length_px=100.0, baseline_m=0.1, path=path, binary=False)
+
+        text = path.read_text(encoding="ascii", errors="ignore")
+        assert "format ascii 1.0" in text
+        assert "element vertex 4" in text
+
+    def test_export_mesh_ply_requires_trimesh(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(depth_module, "TRIMESH_AVAILABLE", False)
+        processor = StereoDepthProcessor()
+
+        with pytest.raises(RuntimeError, match="trimesh"):
+            processor.export_mesh_ply(self._depth_map(), focal_length_px=100.0, baseline_m=0.1, path=tmp_path / "mesh.ply")
+
+    def test_export_mesh_ply_rejects_empty_depth(self, tmp_path):
+        if not depth_module.TRIMESH_AVAILABLE:
+            pytest.skip("trimesh not installed")
+        processor = StereoDepthProcessor()
+
+        with pytest.raises(ValueError):
+            processor.export_mesh_ply(np.zeros((4, 6)), focal_length_px=100.0, baseline_m=0.1, path=tmp_path / "empty.ply")
+
+
 class TestFullPipeline:
     """process_stereo_pair end-to-end."""
 
