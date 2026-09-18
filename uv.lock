@@ -168,7 +168,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "astropy", marker = "extra == 'full'", specifier = ">=5.3.3,<6.0.0" },
+    { name = "astropy", marker = "extra == 'full'", specifier = ">=5.3.3,<9.0.0" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.10.0" },
     { name = "bleach", marker = "extra == 'docs'", specifier = ">=6.4.0" },
     { name = "bokeh", marker = "extra == 'full'", specifier = ">=3.2.0,<4.0.0" },
@@ -199,8 +199,8 @@ requires-dist = [
     { name = "numba", marker = "extra == 'full'", specifier = ">=0.58.0,<1.0.0" },
     { name = "numpy", specifier = ">=1.23.5" },
     { name = "numpy", marker = "extra == 'core'", specifier = ">=1.23.5" },
-    { name = "opencv-python", marker = "extra == 'full'", specifier = ">=4.8.1,<5.0.0" },
-    { name = "pandas", marker = "extra == 'full'", specifier = ">=2.1.0,<3.0.0" },
+    { name = "opencv-python", marker = "extra == 'full'", specifier = ">=4.8.1,<6.0.0" },
+    { name = "pandas", marker = "extra == 'full'", specifier = ">=2.1.0,<4.0.0" },
     { name = "photutils", marker = "extra == 'full'", specifier = ">=1.9.0,<4.0.0" },
     { name = "pillow", specifier = ">=12.3.0,<13.0.0" },
     { name = "pillow", marker = "extra == 'core'", specifier = ">=12.3.0,<13.0.0" },
@@ -223,7 +223,7 @@ requires-dist = [
     { name = "pyusb", marker = "extra == 'full'", specifier = ">=1.2.0,<2.0.0" },
     { name = "pywavelets", marker = "extra == 'full'", specifier = ">=1.4.0,<2.0.0" },
     { name = "pyzmq", marker = "extra == 'docs'", specifier = ">=26.0.0" },
-    { name = "pyzmq", marker = "extra == 'full'", specifier = ">=26.0.0,<27.0.0" },
+    { name = "pyzmq", marker = "extra == 'full'", specifier = ">=26.0.0,<28.0.0" },
     { name = "rawpy", marker = "extra == 'full'", specifier = ">=0.18.0,<1.0.0" },
     { name = "requests", marker = "extra == 'full'", specifier = ">=2.31.0,<3.0.0" },
     { name = "requests", marker = "extra == 'full'", specifier = ">=2.33.0" },
@@ -251,7 +251,7 @@ requires-dist = [
     { name = "tox", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "tqdm", specifier = ">=4.66.0" },
     { name = "tqdm", marker = "extra == 'core'", specifier = ">=4.66.0" },
-    { name = "trimesh", marker = "extra == 'full'", specifier = ">=4.0.0,<5.0.0" },
+    { name = "trimesh", marker = "extra == 'full'", specifier = ">=4.0.0,<6.0.0" },
     { name = "typer", marker = "extra == 'full'", specifier = ">=0.9.0,<1.0.0" },
     { name = "urllib3", marker = "extra == 'full'", specifier = ">=2.7.0" },
     { name = "websockets", marker = "extra == 'full'", specifier = ">=11.0.0,<18.0.0" },
