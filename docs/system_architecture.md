@@ -1,8 +1,8 @@
-# Advanced Image Sensor Interface v3.2.0 — System Architecture
+# Advanced Image Sensor Interface v3.3.0 — System Architecture
 
 ## Overview
 
-The Advanced Image Sensor Interface is a simulation framework for developing and testing image sensor interfaces across multiple protocols. Version 3.2.0 introduces typed ProcessingResult objects for explicit error handling, configurable simulation delays across all protocol drivers, a 3D/Depth module with full 8-path semi-global matching (optionally numba-accelerated) and point cloud generation, and a native numpy/scipy photogrammetry calibration solver that works without OpenCV, on top of Python 3.11+ security hardening.
+The Advanced Image Sensor Interface is a simulation framework for developing and testing image sensor interfaces across multiple protocols. Version 3.3.0 is a dependency maintenance release (widened optional dependency ceilings and refreshed CI tooling, no API changes) on top of the v3.2.0 foundation: typed ProcessingResult objects for explicit error handling, configurable simulation delays across all protocol drivers, a 3D/Depth module with full 8-path semi-global matching (optionally numba-accelerated) and point cloud generation, and a native numpy/scipy photogrammetry calibration solver that works without OpenCV, all on Python 3.11+.
 
 This document describes the system architecture organized in seven logical layers, from sensor input through processed output.
 

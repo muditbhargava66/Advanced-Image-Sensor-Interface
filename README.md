@@ -21,9 +21,17 @@
 
 ## Overview
 
-The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera interface framework** supporting MIPI CSI-2, CoaXPress, GigE Vision, and USB3 Vision protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities. Version 3.2.0 introduces typed ProcessingResult objects for explicit error handling, configurable simulation delays across all protocol drivers, a 3D/Depth module with full 8-path semi-global matching for stereo disparity and point cloud generation, an OpenCV-free native photogrammetry calibration solver, and Python 3.11+ security hardening.
+The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera interface framework** supporting MIPI CSI-2, CoaXPress, GigE Vision, and USB3 Vision protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities. Version 3.3.0 is a dependency maintenance release with no API changes; the v3.2.0 foundation introduced typed ProcessingResult objects for explicit error handling, configurable simulation delays across all protocol drivers, a 3D/Depth module with full 8-path semi-global matching for stereo disparity and point cloud generation, an OpenCV-free native photogrammetry calibration solver, and Python 3.11+ security hardening.
 
-### New in Version 3.2.0
+### New in Version 3.3.0
+
+- **Dependency Range Widening**: Optional dependency ceilings raised — opencv-python `<6.0.0`, pandas `<4.0.0`, astropy `<9.0.0`, trimesh `<6.0.0`, pyzmq `<28.0.0` — completing all nine open dependabot PRs on the release branch with bot authorship preserved
+- **Docs Requirements Updated**: psutil `<8.0.0`, linkify-it-py `>=2.2.0`, sphinxcontrib-htmlhelp `>=2.1.0` for the ReadTheDocs build
+- **CI Tooling**: astral-sh/setup-uv action bumped from v9.0.0 to v10.0.1
+- **No API or Behavior Changes**: v3.2.0 typed results, depth, and calibration APIs are unchanged; locked package versions stay in place, only the allowed ranges widen
+- **388 Tests Passing**: Same verified suite as v3.2.0 (395 collected, 7 skipped without optional extras)
+
+### Version 3.2.0 Features (Retained)
 
 - **Typed Processing Results**: `SignalProcessingResult`, `HDRProcessingResult`, `RAWProcessingResult`, and `LensCorrectionResult` dataclasses replace silent `None` returns with explicit success/error/metrics information
 - **Configurable Simulation Delays**: `SimulationDelayConfig` gives per-driver control over simulated latencies in MIPI, GigE/RoCE, CoaXPress CXP-12, and USB3 drivers

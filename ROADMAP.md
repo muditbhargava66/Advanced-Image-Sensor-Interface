@@ -4,6 +4,12 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 
 ## Completed Milestones
 
+### v3.3.0 Features (Dependency Maintenance)
+- [x] **Dependabot Completion**: All nine open dependabot PRs folded into the release branch with bot authorship preserved.
+- [x] **Widened Dependency Ceilings**: opencv-python <6.0.0, pandas <4.0.0, astropy <9.0.0, trimesh <6.0.0, pyzmq <28.0.0; docs requirements updated (psutil <8.0.0, linkify-it-py >=2.2.0, sphinxcontrib-htmlhelp >=2.1.0).
+- [x] **CI Tooling**: astral-sh/setup-uv bumped from v9.0.0 to v10.0.1; workflows retargeted to the version-3.3.0 branch.
+- [x] **No API or Behavior Changes**: v3.2.0 typed results, depth, and calibration APIs unchanged; 388 tests passing, mypy baseline held at 136.
+
 ### v3.2.0 Features (Typed Results, Simulation Delays, 3D/Depth)
 - [x] **ProcessingResult Dataclasses**: SignalProcessingResult, HDRProcessingResult, RAWProcessingResult, LensCorrectionResult replace silent None returns with explicit success/error/metrics.
 - [x] **Simulation Delay Config**: SimulationDelayConfig wired into MIPI, GigE/RoCE, CoaXPress CXP-12, and USB3 drivers for configurable simulated latencies.

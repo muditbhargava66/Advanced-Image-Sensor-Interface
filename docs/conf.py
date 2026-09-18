@@ -20,8 +20,8 @@ copyright = f"{current_year}, Mudit Bhargava"
 author = "Mudit Bhargava"
 
 # The full version, including alpha/beta/rc tags
-release = "v3.2.0"
-version = "3.2.0"
+release = "v3.3.0"
+version = "3.3.0"
 
 # -- General configuration ---------------------------------------------------
 

@@ -5,6 +5,41 @@ All notable changes to the Advanced Image Sensor Interface project will be docum
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-09-18
+
+### Maintenance Release - Dependency Range Widening and CI Tooling Refresh
+
+This release completes the nine open dependabot pull requests (#32-#40) by folding their constraint changes into the release branch with bot authorship preserved. There are no API or behavior changes: the v3.2.0 typed results, depth, and calibration APIs are untouched, and locked package versions stay in place — only the allowed ranges widen.
+
+### Changed
+
+- **Dependency ceilings widened** (`[full]` extra, dependabot PRs #33, #34, #35, #38, #40): opencv-python `<6.0.0`, pandas `<4.0.0`, astropy `<9.0.0`, trimesh `<6.0.0`, pyzmq `<28.0.0`
+- **Docs requirements updated** (`docs/requirements.txt`, dependabot PRs #36, #37, #39): `sphinxcontrib-htmlhelp>=2.1.0`, `linkify-it-py>=2.2.0`, psutil ceiling `<8.0.0` (the pyproject psutil constraint already carried no ceiling)
+- **opencv-python ceiling widened in `docs/requirements.txt`** alongside the pyproject change (PR #33 touched both files)
+
+### Build / CI
+
+- **astral-sh/setup-uv**: bumped from v9.0.0 to v10.0.1 in `.github/workflows/ci.yml` (dependabot PR #32)
+- **Workflow branch targets**: `ci.yml` and `benchmark.yml` trigger lists moved from `version-3.2.0` to `version-3.3.0`
+
+### Documentation Updates
+
+- **Version references**: `pyproject.toml`, `_version.py` (`__version__` and a new VERSION_HISTORY entry), `CITATION.cff` (version and release date 2026-09-18), `docs/conf.py`, `docs/index.rst`, the `docs/*.md` version headers (api_documentation, api_reference, calibration, design_specs, performance_analysis, system_architecture, testing_guide), the package docstring, README, and ROADMAP aligned to 3.3.0
+
+### Dependency Updates
+
+- **opencv-python**: `<5.0.0` → `<6.0.0` ceiling
+- **pandas**: `<3.0.0` → `<4.0.0` ceiling
+- **astropy**: `<6.0.0` → `<9.0.0` ceiling
+- **trimesh**: `<5.0.0` → `<6.0.0` ceiling
+- **pyzmq**: `<27.0.0` → `<28.0.0` ceiling
+- **psutil** (docs): `<6.0.0` → `<8.0.0` ceiling
+- **linkify-it-py** (docs): `>=2.0.0` → `>=2.2.0` floor
+- **sphinxcontrib-htmlhelp** (docs): `>=2.0.1` → `>=2.1.0` floor
+- **uv.lock**: Regenerated for the widened ranges; no pinned package versions changed
+
+---
+
 ## [3.2.0] - 2026-08-31
 
 ### Minor Release - Typed Processing Results, Simulation Delays, and 3D/Depth Module
