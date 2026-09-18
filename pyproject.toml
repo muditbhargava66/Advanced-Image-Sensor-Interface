@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "advanced_image_sensor_interface"
-version = "3.2.0"
+version = "3.3.0"
 description = "A high-performance interface for next-generation camera modules with AI/ML enhancements"
 readme = "README.md"
 authors = [{ name = "Mudit Bhargava", email = "muditbhargava666@gmail.com" }]

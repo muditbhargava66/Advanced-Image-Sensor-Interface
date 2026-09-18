@@ -1,12 +1,20 @@
 """
-Advanced Image Sensor Interface v3.2.0
+Advanced Image Sensor Interface v3.3.0
 
 A high-performance simulation and interface model for next-generation camera modules.
 This package provides comprehensive sensor interface capabilities including MIPI CSI-2
 simulation, advanced signal processing, HDR imaging, RAW processing, multi-sensor
 synchronization, GPU acceleration, and advanced power management.
 
-Version 3.2.0 Features:
+Version 3.3.0 (Dependency Maintenance):
+- No API or behavior changes; fully compatible with v3.2.0 code
+- Widened optional dependency ceilings: opencv-python <6.0.0, pandas <4.0.0,
+  astropy <9.0.0, trimesh <6.0.0, pyzmq <28.0.0
+- Docs requirements updated: psutil <8.0.0, linkify-it-py >=2.2.0,
+  sphinxcontrib-htmlhelp >=2.1.0
+- CI: astral-sh/setup-uv bumped to v10.0.1
+
+Previous Features (v3.2.0):
 - Typed ProcessingResult dataclasses (SignalProcessingResult, HDRProcessingResult,
   RAWProcessingResult, LensCorrectionResult) for explicit error handling
 - SimulationDelayConfig for configurable per-driver simulated latencies

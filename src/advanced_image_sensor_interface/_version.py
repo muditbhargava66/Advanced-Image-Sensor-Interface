@@ -1,7 +1,7 @@
 """Version information for Advanced Image Sensor Interface."""
 
-__version__ = "3.2.0"
-__version_info__ = (3, 2, 0)
+__version__ = "3.3.0"
+__version_info__ = (3, 3, 0)
 
 # Breaking changes for v3.2.0
 BREAKING_CHANGES_3_2_0 = [
@@ -23,6 +23,17 @@ __url__ = "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface"
 
 # Version history
 VERSION_HISTORY = {
+    "3.3.0": {
+        "release_date": "2026-09-18",
+        "major_features": [
+            "Dependency maintenance release: no API or behavior changes",
+            "Widened optional dependency ceilings: opencv-python <6.0.0, pandas <4.0.0, astropy <9.0.0, trimesh <6.0.0, pyzmq <28.0.0",
+            "Docs requirements updated: psutil <8.0.0, linkify-it-py >=2.2.0, sphinxcontrib-htmlhelp >=2.1.0",
+            "CI: astral-sh/setup-uv action bumped from v9.0.0 to v10.0.1",
+            "All nine open dependabot updates folded into the release branch with bot authorship preserved",
+            "388 tests passing (395 collected), Ruff + Black clean, mypy baseline unchanged at 136",
+        ],
+    },
     "3.2.0": {
         "release_date": "2026-08-31",
         "major_features": [
