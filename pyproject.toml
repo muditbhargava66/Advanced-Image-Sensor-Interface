@@ -76,7 +76,7 @@ full = [
     "smbus2>=0.4.0,<1.0.0; sys_platform == 'linux'",
     # Performance monitoring
     "memory-profiler>=0.61.0,<1.0.0",
-    "line-profiler>=4.1.0,<5.0.0",
+    "line-profiler>=4.1.0,<6.0.0",
     "py-spy>=0.3.0,<1.0.0",
     # Data formats and serialization
     "h5py>=3.8.0,<4.0.0",
