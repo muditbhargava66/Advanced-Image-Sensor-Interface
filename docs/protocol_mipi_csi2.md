@@ -1,6 +1,6 @@
 # MIPI CSI-2 Protocol - Simple Guide
 
-## 🤔 What is MIPI CSI-2? (Explain Like I'm 5)
+## What is MIPI CSI-2? (Explain Like I'm 5)
 
 Imagine you have a camera in your phone that needs to send pictures to the phone's brain (processor). MIPI CSI-2 is like a super-fast highway that carries these pictures.
 
@@ -10,14 +10,14 @@ Imagine you have a camera in your phone that needs to send pictures to the phone
 - MIPI CSI-2 is like a conveyor belt that moves photos from the camera to the album
 - This conveyor belt is REALLY fast and can carry multiple photos at the same time!
 
-### 🏃‍♂️ Why is it Special?
+###Why is it Special?
 
 1. **Super Fast**: It can send pictures so quickly that you can record smooth videos
 2. **Power Saver**: It doesn't drain your phone battery much
 3. **Multiple Lanes**: Like having 1-4 conveyor belts working together
 4. **Error Checking**: It makes sure pictures don't get damaged while traveling
 
-## 🔧 How We Use It in Our Code
+## How We Use It in Our Code
 
 ### Basic Setup (Simple Example)
 
@@ -87,7 +87,7 @@ for camera in cameras:
 print(f"Got {len(pictures)} pictures at the same time!")
 ```
 
-## 📊 Picture Formats (Types of Photos)
+## Picture Formats (Types of Photos)
 
 ### RAW Formats (Like Film Negatives)
 ```python
@@ -123,7 +123,7 @@ config = MIPIConfig(
 )
 ```
 
-## 🛠️ Real-World Examples
+## Real-World Examples
 
 ### Example 1: Phone Camera
 ```python
@@ -176,7 +176,7 @@ drone_camera_config = MIPIConfig(
 drone_camera = MIPIDriver(drone_camera_config)
 ```
 
-## 🔍 Error Handling (When Things Go Wrong)
+## Error Handling (When Things Go Wrong)
 
 ### Basic Error Checking
 ```python
@@ -205,10 +205,10 @@ def check_picture_quality(picture_data):
     result = validator.validate_packet(picture_data)
     
     if result.is_valid:
-        print("Picture is perfect! ✅")
+        print("Picture is perfect!")
         return True
     else:
-        print(f"Picture has problems: {result.error_message} ❌")
+        print(f"Picture has problems: {result.error_message}")
         return False
 
 # Use it when taking pictures
@@ -222,7 +222,7 @@ else:
     picture = camera.capture_frame()
 ```
 
-## ⚡ Performance Tips (Making It Faster)
+## Performance Tips (Making It Faster)
 
 ### Tip 1: Use More Lanes
 ```python
@@ -264,7 +264,7 @@ with buffer_manager.get_buffer(1920*1080*3) as picture_buffer:
     # Picture is automatically managed
 ```
 
-## 🎯 Common Use Cases
+## Common Use Cases
 
 ### 1. Smartphone Camera App
 ```python
@@ -353,7 +353,7 @@ class VehicleCamera:
             self.send_to_autopilot(objects, lanes, signs)
 ```
 
-## 🚨 Troubleshooting (Fixing Problems)
+## Troubleshooting (Fixing Problems)
 
 ### Problem 1: Pictures are Blurry
 ```python
@@ -393,7 +393,7 @@ def robust_camera_operation():
         return camera.capture_frame()
 ```
 
-## 📈 Performance Monitoring
+## Performance Monitoring
 
 ```python
 from advanced_image_sensor_interface.performance.monitor import PerformanceMonitor

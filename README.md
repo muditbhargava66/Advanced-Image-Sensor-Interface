@@ -6,9 +6,10 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-4.0.0-blue)
 [![CodeQL](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/actions/workflows/github-code-scanning/codeql)
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
-![Test Suite](https://img.shields.io/badge/tests-388%20passing-brightgreen.svg)
+[![CI](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/actions/workflows/ci.yml/badge.svg)](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/actions/workflows/ci.yml)
+![Test Suite](https://img.shields.io/badge/tests-640%20passing-brightgreen.svg)
 [![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Type Checking: Mypy & Pyright](https://img.shields.io/badge/types-mypy%20%7C%20pyright-%23eedc5b)](https://github.com/microsoft/pyright)
@@ -17,48 +18,22 @@
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
 ![Last Commit](https://img.shields.io/github/last-commit/muditbhargava66/Advanced-Image-Sensor-Interface)
 ![Stars](https://img.shields.io/github/stars/muditbhargava66/Advanced-Image-Sensor-Interface?style=social)
+
 </div>
 
 ## Overview
 
-The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera interface framework** supporting MIPI CSI-2, CoaXPress, GigE Vision, and USB3 Vision protocols with advanced image processing, multi-sensor synchronization, and professional-grade calibration capabilities. Version 3.3.0 is a dependency maintenance release with no API changes; the v3.2.0 foundation introduced typed ProcessingResult objects for explicit error handling, configurable simulation delays across all protocol drivers, a 3D/Depth module with full 8-path semi-global matching for stereo disparity and point cloud generation, an OpenCV-free native photogrammetry calibration solver, and Python 3.11+ security hardening.
+The Advanced Image Sensor Interface is a Python simulation framework for multi-protocol camera interfaces (MIPI CSI-2, CoaXPress, GigE Vision, and USB3 Vision), with image processing, multi-sensor synchronization, and camera calibration. Version 4.0.0 adds real AES-GCM authenticated encryption through the optional `[security]` extra, an explicit `FrameCodec`/`FramePipeline` capture-to-processing path with unpacked 8/10/12/14/16/20-bit frame storage, fail-closed integrity verification, measured protocol lifecycle metrics, stricter processing format validation, and security-focused dependency and CI remediation.
 
-### New in Version 3.3.0
+### New in Version 4.0.0
 
-- **Dependency Range Widening**: Optional dependency ceilings raised — opencv-python `<6.0.0`, pandas `<4.0.0`, astropy `<9.0.0`, trimesh `<6.0.0`, pyzmq `<28.0.0` — completing all nine open dependabot PRs on the release branch with bot authorship preserved
-- **Docs Requirements Updated**: psutil `<8.0.0`, linkify-it-py `>=2.2.0`, sphinxcontrib-htmlhelp `>=2.1.0` for the ReadTheDocs build
-- **CI Tooling**: astral-sh/setup-uv action bumped from v9.0.0 to v10.0.1
-- **No API or Behavior Changes**: v3.2.0 typed results, depth, and calibration APIs are unchanged; locked package versions stay in place, only the allowed ranges widen
-- **388 Tests Passing**: Same verified suite as v3.2.0 (395 collected, 7 skipped without optional extras)
-
-### Version 3.2.0 Features (Retained)
-
-- **Typed Processing Results**: `SignalProcessingResult`, `HDRProcessingResult`, `RAWProcessingResult`, and `LensCorrectionResult` dataclasses replace silent `None` returns with explicit success/error/metrics information
-- **Configurable Simulation Delays**: `SimulationDelayConfig` gives per-driver control over simulated latencies in MIPI, GigE/RoCE, CoaXPress CXP-12, and USB3 drivers
-- **3D/Depth Module**: `StereoDepthProcessor` with Block Matching and full 8-path semi-global matching (4 cardinal + 4 diagonal paths, optionally numba-accelerated with a bit-identical numpy fallback), disparity-to-depth conversion, point cloud generation, ASCII/binary PLY export, and trimesh-backed mesh PLY export
-- **Native Calibration Solver**: OpenCV-free camera calibration with numpy/scipy — `calibrate_camera` (Zhang's method) and `solve_projection_matrix` (DLT + RQ decomposition); opt-in for multi-sensor sync via `SyncConfiguration.prefer_native_calibration`
-- **Optional Extras**: PyWavelets and trimesh added to the `[full]` extra with guarded imports (no new required dependencies)
-- **Python 3.11+ Required**: Security fixes for keras (deserialization, path traversal) and astropy (RCE) transitive dependencies
-- **Security Hardening**: Dependency constraints updated for CVE-fixed versions; Python 3.10 support removed
-- **388 Tests Passing**: Release verification completed against the current suite (395 collected, 7 skipped without optional extras)
-
-### Version 3.1.0 Features (Retained)
-
-- **AI/ML Integration**: Neural Calibration Tuner (scikit-learn MLPRegressor), SceneClassifier, NoisePredictor, QualityAssessor, AINoiseReducer, AdaptiveColorCorrector
-- **Multi-Sensor Synchronization**: Feature-based alignment with ORB+RANSAC, Phase Correlation with sub-pixel precision, sensor validation, timeout handling
-- **MIPI Security Framework**: PRE_SHARED_KEY authentication method support in SecurityConfig
-
-### Version 3.0.0 Features (Retained)
-
-- **CoaXPress CXP-12**: 50Gbps aggregate bandwidth with 4-lane support
-- **GigE Vision RoCE**: RDMA over Converged Ethernet for zero-copy transfers
-- **MIPI D-PHY v2.5**: 4.5Gbps per lane with adaptive equalization
-- **MIPI Security Framework**: AES-GCM encryption with key management
-- **USB3 Enhanced Streaming**: Buffer pooling and async frame capture
-- **USB3 Device Discovery**: Hot-plug detection and device filtering
-- **Data Integrity**: CRC-32 validation and Reed-Solomon FEC
-- **Lens Correction**: Radial and tangential distortion correction
-- **Multi-System Power**: Coordinated power budgeting for sensor arrays
+- **Real AES-GCM Security**: Optional `[security]` extra (`cryptography`) implements AES-128/256-GCM with 12-byte nonces, 16-byte tags, guarded imports, and fail-closed encryption requests; AES-CBC rejected; identity-bound single-use expiring challenges; per-session TX counters and authenticated RX replay windows; credentials excluded from `repr`
+- **Explicit Frame Pipeline**: `FrameCodec` and `FramePipeline` validate declared formats, decode little-endian unpacked frames into owned arrays, measure capture latency and throughput, and hand samples to typed signal/RAW/stereo processing without hiding failures
+- **Integrity Fail-Closed**: CRC mismatches are never reported valid; Hamming corrections are re-checked against the original trailer; the legacy Reed-Solomon mode is documented as checksum detection, not correction
+- **Protocol Lifecycle Contracts**: Unpacked frame storage and format validation across MIPI, GigE/RoCE, CoaXPress, and USB3; unknown and bit-packed formats raise; measured traffic and frame rates replace configured link capacity; stop/disconnect failures stay visible; USB3 buffers use locked FIFO ownership with copy-on-read frames
+- **Processing Format Repair**: 20-bit uint32 support, RAW20 stored as uint32, typed RAW failures without fallback images, explicit rejection of float64 and non-finite frames, and depth PLY export failure propagation
+- **Security Remediation**: Pillow 13.0.0 floor plus virtualenv, filelock, certifi, urllib3, tornado, nbconvert, Werkzeug, setuptools, black, soupsieve 3.0.2, and msgpack 1.2.3 floors; SHA-pinned GitHub Actions (setup-uv v10.3.3); profile-based dependency audits; docs built on pull requests
+- **640 Tests Passing**: 646 collected; 640 passed, 6 skipped with OpenCV and without numba/trimesh
 
 ### What This Is / Isn't
 
@@ -69,6 +44,8 @@ The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera i
 - Power management simulation and modeling
 - Algorithm prototyping and benchmarking framework
 - Educational tool for understanding sensor interfaces
+
+**Use it for:** validating protocol frame formats and lifecycles, prototyping signal/HDR/RAW/stereo-depth algorithms, testing calibration and multi-sensor synchronization, benchmarking on CPU (CUDA optional), and teaching sensor-interface concepts.
 
 **What This Is NOT:**
 - Hardware PHY or kernel driver implementation
@@ -81,51 +58,63 @@ The Advanced Image Sensor Interface is a **comprehensive multi-protocol camera i
 
 ## System Overview
 
-![Advanced Image Sensor Interface System Diagram](./assets/system-architecture-v3.2.0.svg)
+![Advanced Image Sensor Interface System Diagram](./assets/system-architecture-v4.0.0.svg)
 
-This diagram illustrates the key components and data flow of our Advanced Image Sensor Interface system.
+The diagram shows the current module boundaries and data flow. The accompanying
+[System Architecture](docs/system_architecture.md) document records the layer
+responsibilities, frame-storage contract, integrity and security semantics, and
+the source files behind each claim. The SVG is generated by
+`scripts/generate_architecture_diagram.py`; a 2x PNG is available at
+`assets/system-architecture-v4.0.0.png`.
 
 ## Key Features
 
 ### Core Features (v1.x)
 - **MIPI CSI-2 Protocol Simulation**: Complete packet-level simulation with ECC/CRC validation
-- **Advanced Signal Processing**: Sophisticated noise reduction and image enhancement algorithms
+- **Signal Processing**: Noise reduction and image enhancement algorithms
 - **Power Management Modeling**: Simulates power delivery and noise characteristics
 - **Multi-Protocol Support**: MIPI CSI-2, GigE Vision, and CoaXPress protocol models
-- **Comprehensive Image Validation**: Bit-depth safety and format validation across 8-16 bit depths
+- **Image Validation**: Bit-depth safety and format validation across 8-20 bit depths
 - **Automated Calibration**: Neural network and parametric calibration tuning
 - **Flexible Architecture**: Modular design for easy customization and extension
-- **Comprehensive Testing Suite**: 388 automated tests across core, protocol, and integration flows
+- **Test Suite**: 640 automated tests across core, protocol, and integration flows
 - **Type Checking Support**: MyPy and Pyright are configured for maintained source modules
 
 ### New Features (v2.0.0)
-- **Enhanced Sensor Interface**: Support for resolutions up to 8K (7680x4320) with advanced timing controls
+- **Enhanced Sensor Interface**: Support for resolutions up to 8K (7680x4320) with timing controls
 - **HDR Image Processing**: Multiple tone mapping algorithms (Reinhard, Drago, Adaptive) with exposure fusion
 - **RAW Image Processing**: Complete RAW pipeline with Bayer demosaicing, white balance, and color correction
 - **Multi-Sensor Synchronization**: Hardware and software synchronization for stereo and multi-camera setups
-- **GPU Acceleration**: CUDA and OpenCL support with automatic fallback to optimized CPU processing
+- **GPU Acceleration**: CUDA (CuPy/Numba) with automatic CPU fallback; OpenCL is enumerated but unimplemented and Apple MPS is not yet supported (Apple Silicon runs on CPU)
 - **Advanced Power Management**: Dynamic power states, thermal monitoring, and battery management
 - **Application-Specific Optimizations**: Pre-configured settings for automotive, surveillance, and mobile applications
-- **Real-World Scenario Testing**: Comprehensive test patterns and validation for production environments
+- **Real-World Scenario Testing**: Test patterns and validation for production environments
+
+### Retained Features (v3.0.0–v3.3.0)
+
+- **v3.3.0 — Dependency maintenance**: widened optional-dependency ceilings (opencv-python, pandas, astropy, trimesh, pyzmq) and docs/CI tooling; no API changes
+- **v3.2.0 — Typed results & 3D**: typed `SignalProcessingResult`/`HDRProcessingResult`/`RAWProcessingResult`/`LensCorrectionResult`; `SimulationDelayConfig`; `StereoDepthProcessor` (Block Matching + 8-path SGM, PLY/mesh export); native numpy/scipy calibration (`calibrate_camera`, `solve_projection_matrix`); Python 3.11+
+- **v3.1.0 — AI/ML & sync**: Neural Calibration Tuner and noise-reduction framework (package modules); example-only `SceneClassifier`/`NoisePredictor`/`QualityAssessor`/`AINoiseReducer`/`AdaptiveColorCorrector`; ORB+RANSAC and phase-correlation multi-sensor alignment; PRE_SHARED_KEY auth
+- **v3.0.0 — Protocols & imaging**: CoaXPress CXP-12 (50 Gbps), GigE Vision RoCE simulation, MIPI D-PHY v2.5, USB3 streaming/discovery, CRC-32 fail-closed integrity, lens correction, multi-system power budgeting
 
 ### Simulation Targets (Not Hardware Measurements)
 
 These are **algorithmic/theoretical targets** for the simulation framework, not measured performance:
 
-- **MIPI Transfer Rate**: Up to 10.5 Gbps (simulated target)
-- **Processing Speed**: 120 fps at 4K, 30 fps at 8K (simulated targets)
+- **MIPI Lane Rate**: Up to 4.5 Gbps per lane; 18 Gbps aggregate model with 4 lanes
+- **Processing Speed**: Simulated targets of 120 fps at 4K and 30 fps at 8K; actual results depend on CPU and input
 - **Power Efficiency**: <500 mW at 4K/60fps, <2W at 8K/30fps (modeled)
-- **SNR Improvement**: +6.2 dB / 30%+ (algorithmic - verified: 35-100% depending on algorithm)
-- **HDR Dynamic Range**: 14+ stops with tone mapping
-- **Multi-Sensor Sync Accuracy**: ~1ms synchronization tolerance (measured in Python simulation)
+- **SNR Improvement**: Computed per run by `utils/performance_metrics.py`; results depend on input and algorithm
+- **HDR Processing**: Multiple implemented tone-mapping and fusion operators; dynamic range depends on input
+- **Multi-Sensor Sync Accuracy**: Modeled timing tolerance, measured in Python simulation
 
 ## Technical Specifications
 
 ### Core Specifications
-- **MIPI CSI-2 Compatibility**: Supports up to 4 data lanes at 2.5 Gbps each
+- **MIPI CSI-2 Compatibility**: D-PHY v2.5 model with 1-4 data lanes and up to 4.5 Gbps per lane
 - **Image Processing**: 8-20 bit depth with support for resolutions up to 8K (7680x4320)
-- **Noise Reduction**: Achieves 30% improvement in Signal-to-Noise Ratio (SNR)
-- **Color Accuracy**: Delta E < 2.0 across standard color checker
+- **Noise Reduction**: Exposes a measured SNR change per run; no fixed improvement is guaranteed
+- **Color Accuracy**: Computes mean Delta E per run against reference colors
 - **Power Efficiency**: < 500 mW at 4K/60fps, < 2W at 8K/30fps (modeled)
 
 ### v2.0.0 Enhanced Specifications
@@ -133,156 +122,95 @@ These are **algorithmic/theoretical targets** for the simulation framework, not 
 - **HDR Processing**: 14+ stops dynamic range with multiple tone mapping algorithms
 - **RAW Formats**: Support for 8-20 bit RAW with RGGB, BGGR, GRBG, GBRG Bayer patterns
 - **Multi-Sensor**: Up to 8 synchronized sensors with ~1ms timing accuracy (measured in simulation)
-- **GPU Acceleration**: CUDA/OpenCL support with automatic CPU fallback
+- **GPU Acceleration**: CUDA (CuPy/Numba) with CPU fallback; OpenCL stub, no Apple MPS backend yet
 - **Power States**: 7 power states from active to hibernate with thermal monitoring
-- **Frame Rates**: Up to 240 fps (resolution dependent), optimized for real-world scenarios
+- **Frame Rates**: Simulated frame rates depend on resolution, algorithm, and CPU; benchmark values vary per machine
 
 ## Project Structure
 
 ```
 advanced_image_sensor_interface/
-├── src/
+├── src/advanced_image_sensor_interface/
+│   ├── __init__.py                     # Public exports
+│   ├── _version.py
+│   ├── types.py                        # Typed results, configs, interfaces
+│   ├── config/constants.py             # ConfigManager and limits
+│   ├── error_handling/                 # Exceptions, circuit breaker, retry, recovery
+│   ├── performance/                    # Profiler, monitor, cache, optimizer
+│   ├── test_patterns/pattern_generator.py
 │   ├── sensor_interface/
-│   │   ├── __init__.py
-│   │   ├── mipi_driver.py              # Legacy MIPI driver
-│   │   ├── power_management.py         # Legacy power management
-│   │   ├── signal_processing.py        # Legacy signal processing
-│   │   ├── enhanced_sensor.py          # v2.0.0: Enhanced sensor interface
-│   │   ├── hdr_processing.py           # v2.0.0: HDR image processing
-│   │   ├── raw_processing.py           # v2.0.0: RAW image processing
-│   │   ├── multi_sensor_sync.py        # v2.0.0: Multi-sensor synchronization
-│   │   ├── gpu_acceleration.py         # v2.0.0: GPU acceleration
-│   │   ├── advanced_power_management.py # v3.0.0: Multi-system power management
-│   │   ├── protocol_selector.py        # v2.0.0: Protocol selection
-│   │   ├── mipi_protocol.py            # v1.x: MIPI protocol definitions
-│   │   ├── buffer_management.py        # v1.x: Buffer management
-│   │   ├── image_validation.py         # v1.x: Image validation
-│   │   ├── noise_reduction.py          # v1.x: Noise reduction
-│   │   ├── performance_metrics.py      # v1.x: Performance metrics
-│   │   ├── security.py                 # v3.0.0: Security framework
-│   │   ├── advanced_processing.py      # v2.0.0: Advanced processing
-│   │   ├── power_backends.py           # v3.0.0: Power backends
-│   │   ├── power_management.py         # v3.0.0: Power management (legacy compat)
-│   │   ├── calibration/                # v2.0.0: Calibration module
-│   │   │   ├── __init__.py
+│   │   ├── pipeline.py                 # v4.0.0: FrameCodec, FramePipeline
+│   │   ├── enhanced_sensor.py
+│   │   ├── hdr_processing.py
+│   │   ├── raw_processing.py
+│   │   ├── signal_processing.py
+│   │   ├── image_validation.py
+│   │   ├── multi_sensor_sync.py
+│   │   ├── gpu_acceleration.py
+│   │   ├── advanced_processing.py
+│   │   ├── advanced_power_management.py
+│   │   ├── power_backends.py
+│   │   ├── buffer_management.py
+│   │   ├── security.py                 # Input and buffer validation
+│   │   ├── mipi_protocol.py
+│   │   ├── mipi_driver.py              # Legacy MIPI compatibility
+│   │   ├── power_management.py         # Legacy power compatibility
+│   │   ├── protocol_selector.py
+│   │   ├── calibration/
 │   │   │   ├── models.py
-│   │   │   ├── neural_tuner.py
-│   │   │   ├── photogrammetry.py       # v3.2.0: Native numpy/scipy calibration solver
-│   │   │   └── database.py
-│   │   ├── error_handling/             # v3.0.0: Error handling framework
-│   │   │   ├── __init__.py
-│   │   │   ├── circuit_breaker.py
-│   │   │   ├── exceptions.py
-│   │   │   ├── monitoring.py
-│   │   │   ├── recovery.py
-│   │   │   └── retry.py
-│   │   ├── performance/                # v3.0.0: Performance monitoring
-│   │   │   ├── __init__.py
-│   │   │   ├── cache.py
-│   │   │   ├── monitor.py
-│   │   │   ├── optimizer.py
-│   │   │   └── profiler.py
-│   │   └── protocol/                   # Protocol implementations
-│   │       ├── __init__.py
-│   │       ├── base.py                 # Protocol base classes
-│   │       ├── mipi/
-│   │       │   ├── __init__.py
-│   │       │   ├── driver.py           # Enhanced MIPI CSI-2 driver
-│   │       │   ├── v4_1.py             # v3.0.0: D-PHY v2.5 support
-│   │       │   └── security.py         # v3.0.0: Security framework
-│   │       ├── coaxpress/
-│   │       │   ├── __init__.py
-│   │       │   ├── driver.py           # CoaXPress protocol driver
-│   │       │   └── cxp12.py            # v3.0.0: CXP-12 extension
-│   │       ├── gige/
-│   │       │   ├── __init__.py
-│   │       │   ├── driver.py           # GigE Vision protocol driver
-│   │       │   └── roce.py             # v3.0.0: RoCE transport
-│   │       └── usb3/
-│   │           ├── __init__.py
-│   │           ├── driver.py           # USB3 Vision protocol driver
-│   │           ├── streaming.py        # v3.0.0: Streaming manager
-│   │           └── discovery.py        # v3.0.0: Device discovery
-│   ├── config/
-│   │   ├── __init__.py
-│   │   └── constants.py                # Configuration management
-│   ├── test_patterns/
-│   │   ├── __init__.py
-│   │   └── pattern_generator.py
+│   │   │   ├── photogrammetry.py       # Native numpy/scipy solver
+│   │   │   └── neural_tuner.py
+│   │   └── protocol/
+│   │       ├── base.py
+│   │       ├── mipi/                   # driver.py, security.py, v4_1.py
+│   │       ├── coaxpress/              # driver.py, cxp12.py
+│   │       ├── gige/                   # driver.py, roce.py
+│   │       └── usb3/                   # driver.py, streaming.py, discovery.py
 │   └── utils/
-│       ├── __init__.py
-│       ├── buffer_manager.py           # Advanced buffer management
-│       ├── data_integrity.py           # v3.0.0: CRC/FEC validation
-│       ├── depth.py                    # v3.2.0: Stereo depth (BM, 8-path SGM, point clouds)
-│       ├── lens_correction.py          # v3.0.0: Distortion correction
+│       ├── buffer_manager.py
+│       ├── data_integrity.py
+│       ├── depth.py                    # Block matching, 4/8-path SGM, PLY
+│       ├── lens_correction.py
 │       ├── noise_reduction.py
 │       └── performance_metrics.py
-├── examples/
-│   ├── basic_usage.py
-│   ├── comprehensive_demo.py
-│   ├── protocol_demo.py
-│   ├── protocol_implementations.py
-│   ├── ai_ml_enhancements.py           # AI/ML enhancements with SceneClassifier, NoisePredictor, QualityAssessor
-│   ├── custom_extension.py             # Custom extensions: AINoiseReducer, AdaptiveColorCorrector
-│   ├── stereo_depth_example.py         # v3.2.0: Stereo depth (BM, 8-path SGM, PLY export)
-│   ├── native_calibration_example.py   # v3.2.0: Native photogrammetry calibration solver
-│   ├── integration_example.py
-│   ├── advanced_integration_example.py
-│   └── interactive_demo.ipynb
-├── tests/
-│   ├── __init__.py
-│   ├── conftest.py
-│   ├── test_protocols.py               # v3.0.0: Protocol driver tests
-│   ├── test_protocol_extensions.py     # v3.0.0: CXP-12, RoCE, D-PHY, streaming
-│   ├── test_imaging_features.py        # v3.0.0: D-PHY, data integrity, lens
-│   ├── test_enhanced_features.py       # v2.0.0: HDR, RAW, GPU
-│   ├── test_depth_module.py            # v3.2.0: Stereo depth incl. 8-path SGM
-│   ├── test_calibration_solver.py      # v3.2.0: Native photogrammetry solver
-│   ├── test_simulation_delays.py       # v3.2.0: SimulationDelayConfig
-│   ├── test_integration_pipelines.py   # Integration tests
-│   ├── test_buffer_manager.py
-│   ├── test_config.py
-│   ├── test_noise_reduction_coverage.py
-│   ├── test_performance_metrics.py
-│   ├── test_power_management.py
-│   ├── test_security.py
-│   ├── test_signal_processing.py
-│   ├── test_image_validation.py        # v1.x: Image validation
-│   ├── test_mipi_driver.py             # v1.x: Legacy MIPI driver
-│   └── test_mipi_protocol.py           # v1.x: MIPI protocol validation
+├── examples/                           # 9 Python examples + interactive_demo.ipynb
+│   ├── ai_ml_enhancements.py           # Example-only AI/ML pipeline
+│   ├── custom_extension.py             # Example-only custom extensions
+│   ├── stereo_depth_example.py
+│   └── native_calibration_example.py
+├── scripts/
+│   ├── simulation.py
+│   ├── automated_testing.py
+│   ├── data_analysis.py
+│   └── generate_architecture_diagram.py
+├── benchmarks/                         # Buffer, depth, noise, speed, performance
+├── stubs/                              # cupy, skimage, smbus
+├── assets/
+│   ├── README.md
+│   ├── system-architecture-v4.0.0.svg
+│   ├── system-architecture-v4.0.0.png
+│   └── historical diagrams
 ├── docs/
+│   ├── system_architecture.md          # v4.0.0 architecture and evidence index
 │   ├── design_specs.md
 │   ├── performance_analysis.md
 │   ├── api_documentation.md
 │   ├── testing_guide.md
-│   ├── protocols.md                    # v2.0.0: Protocol documentation
-│   ├── calibration.md                  # v2.0.0: Calibration guide
-│   └── hardware_integration.md         # v2.0.0: Hardware integration guide
-├── scripts/
-│   ├── simulation.py
-│   ├── data_analysis.py
-│   └── automated_testing.py
-├── benchmarks/
-│   ├── __init__.py
-│   ├── buffer_benchmarks.py            # Buffer management benchmarks
-│   ├── depth_benchmarks.py             # v3.2.0: Stereo depth (BM vs SGM, numba vs numpy)
-│   ├── noise_analysis.py               # Noise reduction and SNR analysis
-│   ├── performance_benchmark.py        # System performance benchmarks
-│   └── speed_tests.py                  # Processing speed tests
-├── stubs/                              # Type stubs for optional dependencies
-│   ├── cupy/
-│   ├── skimage/
-│   └── smbus/
-├── assets/
-│   ├── image-sensor-interface-logo.png
-│   ├── image-sensor-interface-logo.svg
-│   ├── legacy-system-diagram-v3.0.0.png
-│   └── legacy-system-diagram-v3.0.0.svg
+│   └── protocol_*.md, calibration.md, hardware_integration.md
+├── tests/                              # 646 collected tests
+│   ├── test_capture_pipeline.py        # v4.0.0: frame codec and pipeline
+│   ├── test_integrity_contracts.py     # v4.0.0: integrity semantics
+│   ├── test_mipi_security.py           # v4.0.0: AES-GCM and replay windows
+│   ├── test_processing_contracts.py    # v4.0.0: typed processing formats
+│   ├── test_protocol_contracts.py      # v4.0.0: frame and lifecycle contracts
+│   ├── test_depth_module.py
+│   ├── test_calibration_solver.py
+│   └── ...                             # protocol, imaging, power, buffer tests
 ├── README.md
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── requirements.txt
-├── pyproject.toml                      # Build, formatter, linter, and pyright configuration
+├── pyproject.toml
 ├── tox.ini
 ├── mypy.ini
 └── .gitignore
@@ -299,14 +227,17 @@ advanced_image_sensor_interface/
 git clone https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface.git
 cd Advanced-Image-Sensor-Interface
 
-# Install the package in editable mode with all dependencies
-uv sync --all-groups
+# Install the package with all dependency groups and optional extras
+uv sync --all-groups --all-extras
 
-# Or install specific dependency groups:
+# Or install specific dependency groups (tooling):
 uv sync --group dev      # Development dependencies (pytest, ruff, mypy, black)
 uv sync --group docs     # Documentation dependencies (sphinx, myst-parser)
-uv sync --group full     # Full optional feature set (opencv, scikit-image, etc.)
-uv sync --group performance  # Performance testing dependencies
+
+# Or install specific optional extras (features):
+uv sync --extra security     # Real AES-GCM backend (cryptography)
+uv sync --extra full         # Full optional feature set (opencv, scikit-image, etc.)
+uv sync --extra performance  # Performance profiling tools
 ```
 
 ### Traditional pip Installation
@@ -340,6 +271,9 @@ If you prefer pip, you can still use the traditional method:
    # Full optional feature set (opencv, scikit-image, requests, etc.)
    pip install -e ".[full]"
 
+   # Real AES-GCM MIPI security backend (cryptography)
+   pip install -e ".[security]"
+
    # Development and test dependencies (pytest, ruff, mypy, black)
    pip install -e ".[dev]"
 
@@ -371,6 +305,47 @@ If you prefer pip, you can still use the traditional method:
    ```
 
 ## Usage
+
+### v4.0.0 Frame Capture and Processing
+
+`FrameCodec` serializes an explicitly declared integer format (little-endian,
+unpacked) and `FramePipeline` captures through the selected streaming driver,
+decodes to an owned array, and hands samples to a typed operation while recording
+measured latency and throughput.
+
+```python
+import numpy as np
+from advanced_image_sensor_interface import FrameCodec, FramePipeline
+from advanced_image_sensor_interface.sensor_interface.image_validation import ImageFormat, SupportedDType
+from advanced_image_sensor_interface.sensor_interface.protocol_selector import ProtocolSelector, ProtocolType
+from advanced_image_sensor_interface.sensor_interface.protocol.mipi import MIPIConfig, MIPIProtocolDriver
+from advanced_image_sensor_interface.sensor_interface.signal_processing import SignalConfig, SignalProcessor
+
+# Declare the wire format: 160x120, 1 channel, 12-bit unpacked uint16
+fmt = ImageFormat(120, 160, 1, 12, SupportedDType.UINT16)
+driver = MIPIProtocolDriver(MIPIConfig(lanes=4, data_rate_mbps=2500.0, pixel_format="RAW12", resolution=(160, 120)))
+
+selector = ProtocolSelector()
+selector.register_protocol(ProtocolType.MIPI, driver, {})
+selector.activate_protocol(ProtocolType.MIPI)
+driver.connect()
+driver.start_streaming()
+
+pipeline = FramePipeline(selector, FrameCodec(fmt))
+frame = pipeline.capture_frame()  # decoded, owned uint16 array
+
+processor = SignalProcessor(SignalConfig(bit_depth=12, noise_reduction_strength=0.1, color_correction_matrix=np.eye(3)))
+result = pipeline.process_frame(processor.process_frame)  # typed SignalProcessingResult
+print(result.success, frame.shape)
+
+driver.stop_streaming()
+driver.disconnect()
+
+# FrameCodec round-trip (optionally pass an IntegrityChecker to protect/verify)
+codec = FrameCodec(fmt)
+decoded = codec.decode(codec.encode(frame))
+assert np.array_equal(decoded, frame)
+```
 
 ### Legacy Usage (v1.x - Backward Compatible)
 
@@ -519,27 +494,39 @@ print(f"Packets sent: {stats.packets_sent}")
 #### MIPI Security Framework
 
 ```python
+import hashlib
+import hmac
+
 from advanced_image_sensor_interface.sensor_interface.protocol.mipi import (
-    MIPISecurityManager, SecurityCredentials, PrivilegeLevel, SecurityConfig, AuthenticationMethod
+    AuthenticationMethod,
+    EncryptionAlgorithm,
+    MIPISecurityManager,
+    PrivilegeLevel,
+    SecurityConfig,
+    SecurityCredentials,
 )
 
-# Configure security with pre-shared key authentication
+# AES-GCM requires the optional security extra: pip install ".[security]"
 config = SecurityConfig(
     authentication=AuthenticationMethod.PRE_SHARED_KEY,
-    security_level=SecurityLevel.STANDARD
+    encryption=EncryptionAlgorithm.AES_128_GCM,
 )
 manager = MIPISecurityManager(config)
 
-# Register device credentials
-creds = SecurityCredentials(
+psk = b"0123456789abcdef0123456789abcdef"
+credentials = SecurityCredentials(
     identity="camera_01",
     privilege_level=PrivilegeLevel.ADMIN,
-    pre_shared_key=b"secure_key_128bit"
+    pre_shared_key=psk,
 )
-manager.register_identity(creds)
+manager.register_identity(credentials)
 
-# Create authenticated session
-session = manager.create_session("camera_01", b"secure_key_128bit")
+# The manager issues a single-use challenge; the client proves possession of the PSK
+challenge = manager.authenticator.generate_challenge("camera_01")
+proof = hmac.new(psk, challenge, hashlib.sha256).digest()
+session = manager.create_session("camera_01", proof, challenge)
+if session is None:
+    raise RuntimeError("authentication failed")
 print(f"Session ID: {session.session_id}")
 ```
 
@@ -563,23 +550,31 @@ stats = manager.get_statistics()
 print(f"Frames captured: {stats.frames_captured}")
 ```
 
-#### Data Integrity (CRC/FEC)
+#### Data Integrity (CRC and Redundancy)
 
 ```python
 from advanced_image_sensor_interface.utils.data_integrity import (
-    IntegrityChecker, CRCValidator, ForwardErrorCorrection
+    CRCValidator,
+    ErrorCorrectionMode,
+    ForwardErrorCorrection,
+    IntegrityChecker,
 )
 
-# CRC-32 validation
+# CRC-32 detection; verify_crc returns (valid, original_payload)
 crc = CRCValidator()
 data = b"critical_image_data"
 protected = crc.append_crc(data)
 is_valid, original = crc.verify_crc(protected)
 
-# Reed-Solomon FEC
+# REED_SOLOMON is a checksum simulation: a mismatch returns -1 and cannot repair bytes
 fec = ForwardErrorCorrection(mode=ErrorCorrectionMode.REED_SOLOMON)
 encoded = fec.encode(data)
 decoded, errors = fec.decode(encoded)
+
+# End-to-end application envelope: protect before sending, then fail closed on verify
+checker = IntegrityChecker()
+status, received, metrics = checker.verify(checker.protect(data))
+print(f"Integrity status: {status.value}")
 ```
 
 #### Lens Distortion Correction
@@ -922,15 +917,16 @@ from advanced_image_sensor_interface import (
 gpu_config = create_gpu_config_for_automotive()
 gpu_accelerator = GPUAccelerator(gpu_config)
 
-# Check GPU availability
+# Check the selected backend. On Apple Silicon (no CUDA) this is "none" and
+# processing runs on the CPU; the CUDA backends require an NVIDIA GPU.
 device_info = gpu_accelerator.get_device_info()
 print(f"GPU backend: {device_info['backend']}")
 
-# Process image batch
+# Process image batch (CPU fallback when no CUDA backend is available)
 test_images = [np.random.randint(0, 256, (480, 640, 3), dtype=np.uint8) for _ in range(4)]
 results = gpu_accelerator.process_image_batch(test_images, "gaussian_blur", sigma=2.0)
 
-print(f"Processed {len(results)} images with GPU acceleration")
+print(f"Processed {len(results)} images (backend: {device_info['backend']})")
 ```
 
 #### Advanced Power Management
@@ -962,7 +958,7 @@ power_manager.optimize_for_workload("streaming")
 power_manager.stop_monitoring()
 ```
 
-#### Complete Comprehensive Demo
+#### Comprehensive Demo
 
 ```python
 # Run the comprehensive demo
@@ -971,89 +967,48 @@ python examples/comprehensive_demo.py
 
 ### Demo Output Analysis
 
-The comprehensive demo generates detailed output and visualizations demonstrating all enhanced features:
+`examples/comprehensive_demo.py` exercises the enhanced sensor, HDR, RAW,
+multi-sensor sync, GPU, and power-management paths and writes
+`output/comprehensive_demo_results.png`. The capture below is from a run on
+2026-11-14 (Apple Silicon, CPU path; numba and CuPy absent). These are Python
+simulation results and vary by machine and optional dependencies.
 
-#### Performance Metrics from Demo Run
-```
-=== Enhanced Sensor Interface ===
-✓ 4K Resolution: 3840x2160 at 60fps
-✓ Data Rate: 5971.97 Mbps (simulated)
-✓ Frame Capture: 3 frames captured successfully
-✓ RAW Processing: Enabled with 12-bit depth
+#### Capture Summary (v4.0.0 demo run)
 
-=== HDR Processing ===
-✓ Tone Mapping: Adaptive algorithm
-✓ Exposure Fusion: Mertens method
-✓ Dynamic Range: 14+ stops simulated
-✓ Processing Time: <1s for 640x480 images
+| Stage | Observed result |
+|-------|-----------------|
+| Enhanced sensor | 4K config (3840x2160) at 60 fps; modeled data rate 5971.97 Mbps |
+| Frame capture | 3 frames, shape (2160, 3840), dtype uint16; 0.99 s wall time, 3.04 fps measured |
+| HDR | Adaptive tone mapping + Mertens fusion; single-image and 3-exposure stack both (480, 640, 3) uint8 |
+| RAW | RGGB Bayer, Malvar demosaic; (480, 640) uint16 to (480, 640, 3) uint8; 4.09 s per frame |
+| Multi-sensor sync | 2-sensor stereo; sync error 1142-1237 µs against a 50 µs tolerance; 3 errors, 0 successful syncs |
+| GPU | Backend `none`; 16 operations, 100% CPU fallback |
+| Power | performance 4.40 W / 69 °C / 1200 MHz; balanced 3.30 W / 58 °C / 650 MHz; power_saver 2.20 W / 47 °C / 100 MHz |
 
-=== RAW Processing ===
-✓ Bayer Pattern: RGGB demosaicing (Malvar-He-Cutler)
-✓ Processing Time: ~4.4s per frame (640x480, Python simulation)
-✓ Color Correction: Applied with white balance
-✓ Output Format: 8-bit RGB
+GPU batch timings (4 images each, CPU): gaussian_blur 0.066 s, edge_detection
+0.026 s, histogram_equalization 0.180 s, noise_reduction 0.044 s. Application
+power targets: streaming 3.68 W, processing 4.40 W, idle 2.00 W.
 
-=== Multi-Sensor Synchronization ===
-✓ Stereo Setup: 2 sensors configured
-✓ Sync Tolerance: ~1.1ms measured (target: <100μs; simulation shows timing challenges)
-✓ Frame Alignment: Timestamp-based correlation
-✓ Multi-Camera: 4-sensor configuration ready
+#### Generated Visualization
 
-=== GPU Acceleration ===
-✓ Backend: CPU fallback (CUDA not available)
-✓ Operations: 16 images processed
-✓ Performance: 4 operations (gaussian_blur, edge_detection, etc.)
-✓ Throughput: ~60-170ms per batch
+The demo writes `output/comprehensive_demo_results.png` with the HDR result, the
+RAW-to-RGB conversion, and summary charts for the processing stages above.
 
-=== Advanced Power Management ===
-✓ Power Modes: Performance (4.4W) → Balanced (3.3W) → Power Saver (2.2W)
-✓ Thermal Management: 47-69°C range with dynamic scaling
-✓ Frequency Scaling: 100-1200 MHz based on workload
-✓ Component Control: Individual sensor/processing/memory/IO control
-```
+#### Reading the Results
 
-#### Generated Visualizations
+- The capture and processing pipelines run end to end and return typed results.
+- Multi-sensor synchronization does not meet its 50 µs tolerance in this software
+  simulation: the worker threads and timestamp correlation produce
+  millisecond-scale errors, so `successful_syncs` is 0. This is a simulation
+  limitation, not a hardware timing claim.
+- GPU acceleration reports backend `none` on Apple Silicon and falls back to CPU
+  (NumPy/SciPy). The CUDA backends require an NVIDIA GPU.
+- The 4K stream is captured frame-by-frame in Python; the measured 3.04 fps
+  reflects simulation overhead, not the configured 60 fps link rate.
 
-The demo creates `output/comprehensive_demo_results.png` containing:
+### Running Feature Examples
 
-1. **HDR Processed Image**: Demonstration of tone mapping results
-2. **RAW to RGB Conversion**: Bayer demosaicing output
-3. **Performance Charts**: 
-   - Frame rates by resolution (HD: 120fps, FHD: 60fps, 4K: 30fps, 8K: 15fps)
-   - Power consumption by mode (Performance: 5.2W, Balanced: 3.1W, Power Saver: 1.8W)
-
-#### Key Insights from Demo
-
-**Successful Features:**
-- All core processing pipelines functional
-- Proper error handling and graceful degradation
-- Comprehensive logging and monitoring
-- Real-time performance metrics
-- Application-specific optimizations working
-
-**Simulation Limitations:**
-- Multi-sensor sync shows timing challenges (expected in simulation)
-- GPU acceleration falls back to CPU (no CUDA hardware)
-- 8K processing limited by data rate constraints (realistic limitation)
-
-**Production Readiness:**
-- All APIs stable and well-documented
-- Comprehensive error handling
-- Performance monitoring and statistics
-- Backward compatibility maintained
-- Extensive test coverage across HDR, RAW, protocol, and integration paths
-
-### Running Simulations
-
-To run a simulation of the entire image processing pipeline:
-
-```
-python scripts/simulation.py --resolution 3840x2160 --frames 500 --noise 0.03 --output simulation_results.json
-```
-
-Add `--fast` to zero the simulated driver delays for quick runs.
-
-To explore the v3.2.0 features on synthetic data:
+To explore the v4.0.0 processing, depth, and calibration features on synthetic data:
 
 ```
 # Stereo depth: Block Matching vs 8-path SGM, numba vs numpy backends, PLY export
@@ -1066,13 +1021,25 @@ python examples/native_calibration_example.py --views 8 --noise 0.15
 python benchmarks/depth_benchmarks.py
 ```
 
-### Analyzing Results
+### Running the Scripts
 
-To analyze simulation or real-world test results:
+The scripts were verified on 2026-10-26 against the local v4.0.0 environment:
 
+```bash
+# Simulation with default simulated delays, or zeroed delays for quick runs
+python scripts/simulation.py --resolution 640x480 --frames 30 --noise 0.03
+python scripts/simulation.py --resolution 640x480 --frames 30 --noise 0.03 --fast
+
+# Unit tests, integration tests, and benchmarks
+python scripts/automated_testing.py --unit-tests --integration-tests --benchmarks --output test_results.json
+
+# Analyze one or more result JSON files; --compare requires at least two inputs
+python scripts/data_analysis.py --plot --compare --output analysis.json simulation_results.json test_results.json
 ```
-python scripts/data_analysis.py --plot --output analysis_results.json simulation_results.json
-```
+
+`scripts/data_analysis.py` requires at least one input file; running it without
+arguments exits with argparse status 2. The `--plot` path writes one PNG per
+metric group next to the output prefix.
 
 ### Running Tests
 
@@ -1092,50 +1059,88 @@ For more information on testing, see the [Testing Guide](docs/testing_guide.md).
 
 ## Performance Benchmarks
 
-### Legacy Performance (v1.x)
-| Metric | Value | Improvement |
-|--------|-------|-------------|
-| MIPI Transfer Rate | 10.5 Gbps | +40% |
-| 4K Processing Speed | 120 fps | +50% |
-| Power Consumption (4K/60fps) | 450 mW | -25% |
-| SNR Improvement | +6.2 dB | +38% |
+All numbers below are Python simulation measurements, not hardware throughput.
+The v4.0.0 captures were taken on this workspace (Apple Silicon, 8-core CPU,
+16 GB, Python 3.11.13, NumPy 2.4.6) with the dev + security extras, OpenCV
+present, and numba/trimesh absent. Run `benchmarks/` and `scripts/` for values
+on your machine.
 
-### Enhanced Performance (v2.0.0) — Targets
+### v4.0.0 Measured Capture (2026-11-14, Apple Silicon, CPU)
 
-| Metric | v1.x | v2.0.0 Target | Improvement |
-|--------|------|--------|-------------|
-| **Resolution Support** | Up to 4K | Up to 8K | +100% |
-| **8K Processing Speed** | N/A | 30 fps | New |
-| **4K Processing Speed** | 120 fps | 240 fps | +100% |
-| **HDR Dynamic Range** | N/A | 14+ stops | New |
-| **Multi-Sensor Sync** | N/A | <100μs | New |
-| **Power Efficiency (8K)** | N/A | <2W | New |
-| **GPU Acceleration** | N/A | 5-10x speedup* | New |
-| **RAW Processing** | N/A | Full pipeline | New |
+| Metric | Value | Source |
+|--------|-------|--------|
+| Test suite | 640 passed, 6 skipped, 646 collected | `pytest -q` |
+| Dynamic range (12-bit synthetic frame) | 72.245 dB | `scripts/simulation.py --fast` |
+| SNR (clean vs processed residual) | 25.47 dB | `scripts/simulation.py --fast` |
+| Noise reduction (Gaussian NR) | 71.71% | `benchmarks/noise_analysis.py` |
+| SNR improvement (noise benchmark) | +10.97 dB | `benchmarks/noise_analysis.py` |
+| GPU backend on Apple Silicon | none (CPU fallback) | `gpu_acceleration.GPUAccelerator` |
 
-> *GPU acceleration requires optional dependencies (numba, cupy). Falls back to optimized CPU if unavailable.
+### Component Throughput (`benchmarks/speed_tests.py`)
 
-### Performance Benchmarks (Measured in Python Simulation)
-| Metric | Measured (Python Sim) | Simulated Target | Real HW Expectation |
-|--------|----------------------|------------------|---------------------|
-| HDR Processing (640x480) | 0.017s | <1s | Real-time with GPU |
-| RAW Demosaicing (640x480) | 4.4s | <0.4s target | <100ms optimized |
-| HDR Stack (3x 640x480) | 0.045s | <1s | Real-time with GPU |
-| MIPI Transfer (simulated) | N/A | 10.5 Gbps target | Hardware dependent |
-| 4K Processing (simulated) | N/A | 120 fps target | 30-60 fps (embedded) |
-| 8K Processing (simulated) | N/A | 30 fps target | 5-15 fps (high-end) |
-| Multi-Sensor Sync (2 sensors) | ~1.1ms | <100μs target | <100μs (hardware) |
-| SNR Improvement (Gaussian NR) | +7.8 dB (35%) | +6.2 dB (30%) | 20-30% |
-| SNR Improvement (Bilateral NR) | +22.1 dB (100%) | +6.2 dB (30%) | 20-30% |
-| Color Accuracy (Delta E) | <0.5 | <2.0 | <1.0 |
+| Component | Throughput | Per-op latency | Peak memory |
+|-----------|-----------|----------------|-------------|
+| MIPI simulation | 6964.4 ops/s | 28.72 ms | 0.0 MB |
+| Signal processing | 11.1 ops/s | 89.71 ms | 407.6 MB |
+| Power modeling | 18.5 ops/s | — | — |
+
+Power modeling runs a monitoring loop, so its per-op latency and memory deltas
+are not meaningful single-operation figures; only the operation rate is reported.
+
+### Stereo Depth (`benchmarks/depth_benchmarks.py`, NumPy backend)
+
+| Resolution | Algorithm | Mean latency | Throughput |
+|-----------|-----------|--------------|------------|
+| 160x120 | Block matching | 7.9 ms | 126.5 fps |
+| 160x120 | SGM (8 paths) | 88.7 ms | 11.3 fps |
+| 320x240 | Block matching | 28.1 ms | 35.5 fps |
+| 320x240 | SGM (8 paths) | 330.8 ms | 3.0 fps |
+
+SGM path-count scaling at 320x240: 4 cardinal paths 248.7 ms (4.0 fps), 8 full
+paths 458.1 ms (2.2 fps). Numba JIT, when installed, accelerates the SGM kernels;
+these figures are the pure-NumPy baseline.
+
+### Processing Latency (v4.0.0 demo, 640x480, CPU)
+
+| Operation | Latency | Source |
+|-----------|---------|--------|
+| RAW demosaic (RGGB, Malvar) | 4.09 s/frame | `examples/comprehensive_demo.py` |
+| gaussian_blur (4-image batch) | 0.066 s | `examples/comprehensive_demo.py` |
+| edge_detection (4-image batch) | 0.026 s | `examples/comprehensive_demo.py` |
+| histogram_equalization (4-image batch) | 0.180 s | `examples/comprehensive_demo.py` |
+| noise_reduction (4-image batch) | 0.044 s | `examples/comprehensive_demo.py` |
+
+The GPU rows above run on the CPU fallback path (backend `none`); the RAW figure
+is pure Python and not optimized for real time.
+
+### Historical Design Targets (v1.x / v2.0.0, not current measurements)
+
+The table below is retained from earlier releases as design targets. It is not a
+v4.0.0 measurement and should not be read as current performance.
+
+<details>
+<summary>v1.x baseline and v2.0.0 targets</summary>
+
+| Metric | v1.x | v2.0.0 target |
+|--------|------|---------------|
+| Resolution support | Up to 4K | Up to 8K |
+| 4K processing speed | 120 fps | 240 fps |
+| 8K processing speed | N/A | 30 fps |
+| HDR dynamic range | N/A | 14+ stops |
+| Multi-sensor sync | N/A | <100 µs |
+| Power efficiency (8K) | N/A | <2 W |
+| MIPI transfer rate | 10.5 Gbps | 18 Gbps aggregate |
+| GPU acceleration | N/A | 5-10x speedup (optional numba/cupy) |
+
+</details>
 
 ### Protocol Performance (Theoretical Maximums)
 | Protocol | Max Bandwidth | Distance | Power | Features |
 |----------|--------------|----------|-------|----------|
 | **MIPI D-PHY v2.5** | 18 Gbps (4-lane) | 30cm | Low | Security, adaptive EQ |
-| **CoaXPress CXP-12** | 50 Gbps (4-lane) | 35m | PoCXP | Link aggregation |
-| **GigE Vision RoCE** | 100 Gbps | 100m+ | Separate | Zero-copy RDMA |
-| **USB3 Vision** | 5 Gbps | 5m | Bus power | Hot-plug, streaming |
+| **CoaXPress CXP-12** | 50 Gbps (4-link) | 35m | PoCXP | Link aggregation |
+| **GigE Vision RoCE** | 10 GigE model | 100m+ | Separate | NumPy-backed RoCE simulation |
+| **USB3 Vision** | 10 Gbps (SuperSpeedPlus) | 5m | Bus power | Hot-plug, streaming |
 
 ### Hardware Integration Expectations
 For **production deployment** with real hardware:
@@ -1144,7 +1149,7 @@ For **production deployment** with real hardware:
 - **FPGA/ASIC**: May significantly exceed simulated performance
 - **Mobile Devices**: Typically 20-30% of simulated performance
 
-> **Note on GPU Acceleration**: The framework supports CUDA (via CuPy) and JIT compilation (via Numba) as optional dependencies. If unavailable, it automatically falls back to optimized CPU processing. Install with `pip install "advanced_image_sensor_interface[gpu]"` to enable.
+> **Note on GPU Acceleration**: The implemented GPU backends are CUDA (via CuPy or Numba CUDA); both require an NVIDIA GPU and are unavailable on macOS. OpenCL is enumerated but not implemented, and there is no Apple MPS backend yet, so Apple Silicon runs on the CPU (NumPy/SciPy) path. Numba provides CPU JIT acceleration for the depth kernels. These are optional dependencies in the `[full]` extra (`uv sync --extra full`); without them the framework falls back to optimized CPU processing.
 
 *Note: This is a **simulation framework** for algorithm development and testing. For production use, integrate with appropriate hardware drivers and optimization libraries.*
 
@@ -1152,6 +1157,7 @@ For **production deployment** with real hardware:
 
 Detailed documentation is available in the `docs/` directory:
 
+- [System Architecture](docs/system_architecture.md)
 - [Design Specifications](docs/design_specs.md)
 - [API Documentation](docs/api_documentation.md)
 - [Performance Analysis](docs/performance_analysis.md)
@@ -1176,7 +1182,7 @@ Contributions to the Advanced Image Sensor Interface project are welcome. Please
 
 ---
 
-Star the repo and consider contributing!  
+Issues and contributions are welcome.  
   
 **Contact**: [@muditbhargava66](https://github.com/muditbhargava66)
 **Report Issues**: [Issue Tracker](https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface/issues)

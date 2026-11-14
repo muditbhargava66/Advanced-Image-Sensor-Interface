@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project (v3.3.0). It covers all supported protocols, advanced image processing, multi-sensor synchronization, calibration, AI/ML enhancements, and buffer management interfaces.
+This document provides comprehensive documentation for the API of the Advanced Image Sensor Interface project. It covers all supported protocols, advanced image processing, multi-sensor synchronization, calibration, AI/ML enhancements, and buffer management interfaces.
 
 ## Table of Contents
 
@@ -585,8 +585,8 @@ print(f"Frames captured: {stats.frames_captured}")
 - `prepare(width: int, height: int, pixel_format: str) -> bool`: Prepare streaming buffers
 - `start_streaming() -> bool`: Start image acquisition
 - `stop_streaming() -> bool`: Stop image acquisition
-- `get_frame() -> Tuple[bytes, FrameInfo]`: Get next frame
-- `get_statistics() -> StreamingStatistics`: Get streaming statistics
+- `get_frame(timeout_ms: Optional[int] = None) -> Optional[Tuple[np.ndarray, FrameInfo]]`: Get the next frame as an owned flat `uint8` array plus metadata
+- `get_statistics() -> StreamStatistics`: Get streaming statistics
 
 ### USB3 Device Discovery
 
@@ -1059,7 +1059,7 @@ def main():
         # Initialize MIPI Driver with error handling
         mipi_config = MIPIConfig(lanes=4, data_rate=2.5, channel=0)
         mipi_driver = MIPIDriver(mipi_config)
-        print("✓ MIPI Driver initialized successfully")
+        print("MIPI Driver initialized successfully")
 
         # Initialize Signal Processor with proper color correction matrix
         color_correction_matrix = np.array([
@@ -1073,30 +1073,30 @@ def main():
             color_correction_matrix=color_correction_matrix
         )
         signal_processor = SignalProcessor(signal_config)
-        print("✓ Signal Processor initialized successfully")
+        print("Signal Processor initialized successfully")
 
         # Initialize Power Manager with validation
         power_config = PowerConfig(voltage_main=1.8, voltage_io=3.3, current_limit=1.0)
         power_manager = PowerManager(power_config)
-        print("✓ Power Manager initialized successfully")
+        print("Power Manager initialized successfully")
 
         # Generate synthetic test frame (in real usage, this comes from sensor)
         test_frame = np.random.randint(0, 4095, frame_size, dtype=np.uint16)
-        print(f"✓ Generated test frame: {test_frame.shape}")
+        print(f"Generated test frame: {test_frame.shape}")
 
         # Process the frame with error handling
         try:
             processed_frame = signal_processor.process_frame(test_frame)
-            print(f"✓ Frame processed successfully: {processed_frame.shape}")
+            print(f"Frame processed successfully: {processed_frame.shape}")
         except ValueError as e:
-            print(f"✗ Frame processing failed: {e}")
+            print(f"Frame processing failed: {e}")
             return
 
         # Optimize performance
         mipi_driver.optimize_performance()
         signal_processor.optimize_performance()
         power_manager.optimize_noise_reduction()
-        print("✓ Performance optimization completed")
+        print("Performance optimization completed")
 
         # Get system status with error handling
         try:
@@ -1106,7 +1106,7 @@ def main():
             print(f"MIPI Status: {mipi_status}")
             print(f"Power Status: {power_status}")
         except Exception as e:
-            print(f"✗ Status retrieval failed: {e}")
+            print(f"Status retrieval failed: {e}")
 
         # Calculate performance metrics with proper reference data
         try:
@@ -1126,14 +1126,14 @@ def main():
             print(f"Color Accuracy (Mean Delta E): {color_accuracy:.2f}")
             
         except ValueError as e:
-            print(f"✗ Performance metrics calculation failed: {e}")
+            print(f"Performance metrics calculation failed: {e}")
         except Exception as e:
-            print(f"✗ Unexpected error in metrics: {e}")
+            print(f"Unexpected error in metrics: {e}")
 
     except ValueError as e:
-        print(f"✗ Configuration error: {e}")
+        print(f"Configuration error: {e}")
     except Exception as e:
-        print(f"✗ Unexpected error: {e}")
+        print(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
     main()
@@ -1182,12 +1182,12 @@ def advanced_usage_example():
             try:
                 processed_frame = signal_processor.process_frame(test_frame)
                 processed_frames.append(processed_frame)
-                print(f"✓ Processed frame {i+1}/{num_frames}")
+                print(f"Processed frame {i+1}/{num_frames}")
             except Exception as e:
-                print(f"✗ Failed to process frame {i+1}: {e}")
+                print(f"Failed to process frame {i+1}: {e}")
                 continue
         
-        print(f"✓ Successfully processed {len(processed_frames)}/{num_frames} frames")
+        print(f"Successfully processed {len(processed_frames)}/{num_frames} frames")
         
         # Performance analysis
         if processed_frames:
@@ -1199,7 +1199,7 @@ def advanced_usage_example():
             print(f"Average SNR: {avg_snr:.2f} dB")
         
     except Exception as e:
-        print(f"✗ Advanced usage failed: {e}")
+        print(f"Advanced usage failed: {e}")
 
 if __name__ == "__main__":
     advanced_usage_example()
@@ -1239,4 +1239,4 @@ except Exception as e:
 
 ## 9. Version Compatibility
 
-This API documentation is for version 3.0.0 of the Advanced Image Sensor Interface project. Future versions will maintain backwards compatibility for major version numbers.
+This API documentation is for version 4.0.0 of the Advanced Image Sensor Interface project. Future versions will maintain backwards compatibility for major version numbers.

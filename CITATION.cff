@@ -4,13 +4,44 @@ authors:
 - family-names: "Bhargava"
   given-names: "Mudit"
 title: "Advanced Image Sensor Interface"
-version: 3.3.0
-date-released: 2026-09-18
+version: 4.0.0
+date-released: 2026-11-14
+license: MIT
+repository-code: "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface"
 url: "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface"
+abstract: >
+  The Advanced Image Sensor Interface is a Python simulation and interface
+  framework for modeling and validating multi-protocol camera systems. It
+  provides packet-level simulations of MIPI CSI-2, CoaXPress, GigE Vision, and
+  USB3 Vision, together with an explicit frame codec and capture-to-processing
+  pipeline that stores unpacked 8- to 20-bit samples and reports measured
+  latency and throughput. The image-processing layer returns typed signal, HDR,
+  RAW, lens-correction, and stereo-depth results, and adds native numpy/scipy
+  camera calibration, multi-sensor synchronization, and power-management
+  modeling. Version 4.0.0 introduces real AES-GCM authenticated encryption
+  through an optional security extra, fail-closed integrity verification, and
+  stricter processing-format validation. The framework targets algorithm
+  development, protocol validation, benchmarking, and education; it simulates
+  hardware behavior and is not a production camera driver or hardware PHY
+  implementation.
+keywords:
+  - image sensor
+  - image processing
+  - MIPI CSI-2
+  - CoaXPress
+  - GigE Vision
+  - USB3 Vision
+  - stereo depth
+  - camera calibration
+  - protocol simulation
+  - AES-GCM
+  - Python
 preferred-citation:
   type: software
   authors:
   - family-names: "Bhargava"
     given-names: "Mudit"
   title: "Advanced Image Sensor Interface: A High-Performance Camera Framework"
+  version: 4.0.0
   year: 2026
+  url: "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface"

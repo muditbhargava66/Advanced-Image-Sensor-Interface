@@ -1,40 +1,40 @@
 # Camera Protocols Documentation
 
-## 📚 Complete Protocol Documentation
+## Complete Protocol Documentation
 
-Welcome to the comprehensive camera protocol documentation for the Advanced Image Sensor Interface! This documentation is designed to help you understand and use all supported camera protocols, from beginner-friendly explanations to advanced implementation details.
+Documentation for the camera protocols supported by the Advanced Image Sensor Interface, with an introductory guide and a technical reference for each protocol.
 
-## 🎯 Quick Navigation
+## Quick Navigation
 
-### 🔍 **Start Here: Which Protocol Should I Use?**
+### **Start Here: Which Protocol Should I Use?**
 - **[Protocol Comparison Guide](protocol_comparison_guide.md)** - Interactive guide to help you choose the right protocol for your application
 
-### 📖 **Individual Protocol Guides (ELI5 + Technical)**
+### **Individual Protocol Guides (ELI5 + Technical)**
 
-#### 🔵 MIPI CSI-2 Protocol
+#### MIPI CSI-2 Protocol
 - **[MIPI CSI-2 Simple Guide](protocol_mipi_csi2.md)** - Complete guide from basics to advanced usage
 - **Best for:** Mobile devices, embedded systems, drones, IoT devices
 - **Key features:** Ultra-low power, very fast, compact, short distance
 
-#### 🟠 CoaXPress Protocol  
+#### CoaXPress Protocol  
 - **[CoaXPress Simple Guide](protocol_coaxpress.md)** - Industrial-grade camera interface guide
 - **Best for:** Factory inspection, scientific imaging, medical equipment
 - **Key features:** Highest performance, long distance, industrial reliability, expensive
 
-#### 🟢 GigE Vision Protocol
+#### GigE Vision Protocol
 - **[GigE Vision Simple Guide](protocol_gige_vision.md)** - Network-based camera system guide  
 - **Best for:** Security systems, multiple cameras, remote monitoring
 - **Key features:** Network integration, multiple cameras, moderate cost, remote access
 
-#### 🔴 USB3 Vision Protocol
+#### USB3 Vision Protocol
 - **[USB3 Vision Simple Guide](protocol_usb3_vision.md)** - Plug-and-play camera guide
 - **Best for:** Desktop applications, laboratory equipment, development
 - **Key features:** Plug-and-play, good performance, cost-effective, simple setup
 
-### 📋 **Technical Reference**
+### **Technical Reference**
 - **[Complete Technical Protocols Guide](protocols.md)** - Comprehensive technical documentation for all protocols
 
-## 🚀 Getting Started
+## Getting Started
 
 ### For Beginners
 1. **Start with the [Protocol Comparison Guide](protocol_comparison_guide.md)** to understand which protocol fits your needs
@@ -47,16 +47,18 @@ Welcome to the comprehensive camera protocol documentation for the Advanced Imag
 2. **Use the individual protocol guides** for implementation examples and best practices
 3. **Check the comparison guide** when evaluating protocol alternatives
 
-## 📊 Protocol Quick Reference
+## Protocol Quick Reference
+
+Ratings are on a 1-5 scale (higher is a stronger rating).
 
 | Protocol | Speed | Distance | Cost | Complexity | Best Use Case |
 |----------|-------|----------|------|------------|---------------|
-| **MIPI CSI-2** | ⭐⭐⭐⭐⭐ | ⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐ | Mobile/Embedded |
-| **CoaXPress** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐ | ⭐⭐ | Industrial |
-| **GigE Vision** | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | Security/Multi-camera |
-| **USB3 Vision** | ⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Desktop/Lab |
+| **MIPI CSI-2** | 5/5 | 1/5 | 5/5 | 2/5 | Mobile/Embedded |
+| **CoaXPress** | 5/5 | 5/5 | 1/5 | 2/5 | Industrial |
+| **GigE Vision** | 3/5 | 4/5 | 3/5 | 3/5 | Security/Multi-camera |
+| **USB3 Vision** | 4/5 | 2/5 | 4/5 | 5/5 | Desktop/Lab |
 
-## 🎓 Learning Path
+## Learning Path
 
 ### Beginner Path
 ```
@@ -84,7 +86,7 @@ Welcome to the comprehensive camera protocol documentation for the Advanced Imag
 5. Best practices implementation
 ```
 
-## 🛠️ Code Examples by Use Case
+## Code Examples by Use Case
 
 ### Mobile/Embedded Applications
 ```python
@@ -148,7 +150,7 @@ config = USB3Config(
 camera = USB3Driver(config)
 ```
 
-## 🔧 Implementation Support
+## Implementation Support
 
 ### Protocol Selection Helper
 ```python
@@ -185,7 +187,7 @@ selector.configure_protocol(ProtocolType.COAXPRESS, coaxpress_config)
 selector.activate_protocol(ProtocolType.GIGE)
 ```
 
-## 📈 Performance Optimization
+## Performance Optimization
 
 Each protocol guide includes specific optimization sections:
 
@@ -194,7 +196,7 @@ Each protocol guide includes specific optimization sections:
 - **GigE Vision**: Network tuning, bandwidth optimization, multi-camera setup
 - **USB3 Vision**: Transfer optimization, bandwidth sharing, multi-camera considerations
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 Common issues and solutions are covered in each protocol guide:
 
@@ -203,41 +205,41 @@ Common issues and solutions are covered in each protocol guide:
 - **Compatibility issues**: Hardware, driver, and software conflicts
 - **Quality issues**: Image artifacts, synchronization, and timing problems
 
-## 🎯 Real-World Applications
+## Real-World Applications
 
 ### By Industry
 
-**📱 Consumer Electronics**
+**Consumer Electronics**
 - Smartphones: MIPI CSI-2
 - Tablets: MIPI CSI-2  
 - Laptops: USB3 Vision
 - Gaming: USB3 Vision
 
-**🏭 Industrial**
+**Industrial**
 - Quality Control: CoaXPress
 - Assembly Line Monitoring: GigE Vision
 - Robotics: MIPI CSI-2 or GigE Vision
 - Process Control: CoaXPress
 
-**🔒 Security**
+**Security**
 - Building Security: GigE Vision
 - Traffic Monitoring: GigE Vision
 - Perimeter Security: GigE Vision
 - Access Control: USB3 Vision
 
-**🔬 Scientific/Medical**
+**Scientific/Medical**
 - Laboratory Equipment: USB3 Vision
 - Medical Imaging: CoaXPress
 - Research Cameras: CoaXPress
 - Microscopy: USB3 Vision
 
-**🚗 Automotive**
+**Automotive**
 - ADAS Cameras: MIPI CSI-2
 - Backup Cameras: MIPI CSI-2
 - Dashboard Cameras: USB3 Vision
 - Fleet Monitoring: GigE Vision
 
-## 📞 Getting Help
+## Getting Help
 
 ### Documentation Structure
 - **ELI5 Sections**: Simple explanations for beginners
@@ -253,7 +255,7 @@ Common issues and solutions are covered in each protocol guide:
 - **Performance Analysis**: Benchmarking and optimization
 - **Testing Guide**: Validation and quality assurance
 
-## 🎉 Quick Start Examples
+## Quick Start Examples
 
 ### 30-Second Quick Start
 ```python
@@ -284,9 +286,9 @@ See the individual protocol guides for complete setup examples including:
 ---
 
 **Ready to get started?** Choose your path:
-- 🆕 **New to camera protocols?** → [Protocol Comparison Guide](protocol_comparison_guide.md)
-- 📱 **Building mobile/embedded?** → [MIPI CSI-2 Guide](protocol_mipi_csi2.md)
-- 🏭 **Industrial application?** → [CoaXPress Guide](protocol_coaxpress.md)
-- 🔒 **Security/multi-camera?** → [GigE Vision Guide](protocol_gige_vision.md)
-- 💻 **Desktop/lab equipment?** → [USB3 Vision Guide](protocol_usb3_vision.md)
-- 🔧 **Need technical details?** → [Technical Protocols Guide](protocols.md)
+- **New to camera protocols?** → [Protocol Comparison Guide](protocol_comparison_guide.md)
+- **Building mobile/embedded?** → [MIPI CSI-2 Guide](protocol_mipi_csi2.md)
+- **Industrial application?** → [CoaXPress Guide](protocol_coaxpress.md)
+- **Security/multi-camera?** → [GigE Vision Guide](protocol_gige_vision.md)
+- **Desktop/lab equipment?** → [USB3 Vision Guide](protocol_usb3_vision.md)
+- **Need technical details?** → [Technical Protocols Guide](protocols.md)

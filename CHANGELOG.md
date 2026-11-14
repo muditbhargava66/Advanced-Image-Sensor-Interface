@@ -5,6 +5,97 @@ All notable changes to the Advanced Image Sensor Interface project will be docum
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-11-14
+
+### Major Release - Real AES-GCM Security, Explicit Frame Pipeline, and Protocol Lifecycle Contracts
+
+This release replaces the simulated MIPI encryption path with real AES-GCM authenticated encryption, adds an explicit frame codec and capture-to-processing pipeline, makes integrity verification fail closed, and aligns protocol frame storage and lifecycle reporting with their documented contracts. Processing format validation is stricter, several verified dead internals are removed, and optional dependency and CI security are remediated.
+
+### Breaking Changes
+
+- **MIPI encryption**: AES-GCM requires the optional `[security]` extra (`cryptography>=50.0.2,<51.0.0`); encryption requests raise `ImportError` when the backend is absent. AES-CBC is rejected. Keys must be 16 bytes (AES-128) or 32 bytes (AES-256), nonces 12 bytes, and tags 16 bytes.
+- **Challenge API**: `MIPISecurityManager.generate_challenge(identity, size=32)` now requires an identity; challenges are single-use, expiring, and pending challenges are bounded.
+- **Session packets**: replay protection uses per-session transmit counters and authenticated receive windows; packet and session counts are bounded by `SecurityConfig`.
+- **Signal processing**: float64 and non-finite frames are rejected with a typed failure instead of being silently converted; 20-bit uint32 frames are supported.
+- **Raw processing**: only supported ndarray dtypes are accepted; failures return a typed result instead of a fabricated fallback image.
+- **Frame storage**: protocol frames are generated and decoded as little-endian unpacked 8/10/12/14/16/20-bit samples. Unknown and bit-packed pixel formats (`RAW10p`, `RGB565`, `RGB666`, `Mono12Packed`) raise `ValueError` instead of being silently treated as 1 byte per pixel.
+- **Integrity**: `IntegrityChecker.verify()` fails closed on CRC mismatch. `REED_SOLOMON` is a checksum-detection simulation, not error correction; Hamming corrections are accepted only after re-checking the original CRC.
+
+### Added
+
+- **`FrameCodec`**: validates and serializes explicitly declared image formats, optionally applies a sender-side integrity envelope, and returns owned arrays from `decode()`.
+- **`FramePipeline`**: captures through the selected streaming protocol, decodes frames, records measured latency/throughput, runs typed signal/RAW operations without hiding failures, and performs sequential stereo capture with typed depth results.
+- **`[security]` extra**: optional `cryptography` backend for real AES-GCM; the `[full]` extra includes it.
+- Regression suites for processing formats (19 cases), capture pipeline and integrity (51 + 47 cases), protocol frames and lifecycles (81 cases), and MIPI security (52 cases).
+
+### Changed
+
+- Protocol drivers generate unpacked little-endian frames for every advertised format, validate formats on capture, and report measured frame rates, uptime, and throughput instead of configured link capacity.
+- `disconnect()` propagates `stop_streaming()` and transport-close failures instead of hiding them; failed connects release acquired resources.
+- USB3 streaming uses locked FIFO buffer ownership, copy-on-read payloads, bounded waits, and explicit buffer states; callbacks run outside locks.
+- RoCE remains a NumPy-backed simulation and is documented as such; queue-pair and memory-region lifecycles are released on shutdown.
+- Depth PLY export failures return a failed `DepthResult` instead of being ignored.
+- `sensor_interface` and `test_patterns` import the package version instead of carrying stale copies.
+- Examples now use the current APIs: `comprehensive_demo.py` reads `HDRProcessingResult.data` and `RAWProcessingResult.data`, `custom_extension.py` and `protocol_implementations.py` build `MIPIConfig` with `data_rate_mbps`/`lanes`, and the custom driver connects before transferring. Stale v2/v3 version labels were corrected.
+
+### Fixed
+
+- Dynamic range returned 0 dB for every frame containing a zero-valued pixel. Integer frames now use a one-LSB floor and float frames use the smallest positive sample, so a clipped-black 12-bit frame reports 72.2 dB instead of 0 dB.
+- `scripts/simulation.py` cast the signed clean-minus-processed residual to `uint16` before the SNR calculation, wrapping negative residuals and understating SNR; the residual now stays `float32`.
+- `benchmarks/speed_tests.py` generated `uint16` frames for every bit depth, so the 8-bit case failed the v4 dtype check ("expected uint8, got uint16"). Frames now use the per-bit-depth dtype (8-bit `uint8`, 20-bit `uint32`, otherwise `uint16`).
+
+### Build / CI
+
+- `tox.ini` rewritten for tox 4: `py311`-`py313` test environments with the dev extra, dedicated lint, format, mypy, pyright, docs, and benchmark environments, and removal of the ignored `[pytest]`/`[flake8]` sections and PYTHONPATH injection.
+- `mypy.ini` synchronized with the pyproject protocol scope and compatibility flags so both configuration paths report the same result.
+- Read the Docs installs `libgl1` and `libglib2.0-0` so OpenCV imports resolve on the headless builder.
+- `CITATION.cff` carries 4.0.0 metadata with license, repository, abstract, keywords, and a 4.0.0 preferred citation; it validates against schema 1.2.0.
+- `.gitignore` now covers isolated worktrees, local virtual environments, pyright caches, PLY outputs, patch remnants, example output directories, and generated analysis plots.
+- `scripts/automated_testing.py` uses `unittest.TestLoader` instead of the `unittest.makeSuite` API removed in Python 3.13.
+- `scripts/data_analysis.py --plot` now groups flattened mean/std/min/max metrics and writes one PNG per metric group instead of reporting success with no plots.
+
+### Removed
+
+- Silent float64-to-uint16 conversion and fallback image generation in the signal and raw processing paths.
+- Unused neural-tuner model factory, unused lens-corrector fields, no-op version self-assignments, stale `noqa` directives, unused locals, and an unused USB3 register helper.
+- Stale duplicate `examples/advanced_integration_example.py` that called non-existent `AsyncBufferManager` methods; `examples/integration_example.py` is retained.
+- `pillow-simd` from optional dependencies (it installs the `PIL` namespace and conflicts with Pillow).
+
+### Security
+
+- Pin security floors: Pillow 13.0.0, virtualenv 21.14.9, filelock 4.2.1, certifi 2026.10.19, urllib3 2.8.0, tornado 6.5.9, nbconvert 7.17.2, Werkzeug 3.1.9, setuptools 84.1.0, black 26.10.1, soupsieve 3.0.2, msgpack 1.2.3.
+- Raise the transitive `soupsieve` floor to 3.0.2 (locked 4.1) for the docs CSS-selector ReDoS advisories, scoped to Python >=3.11.5 so the universal lock still resolves on 3.11.0-3.11.4; raise `msgpack` to 1.2.3 (pulled by pip-audit's cachecontrol). Remove the unused direct `msgpack` entry from `[full]`. Pillow is retained: it is not imported directly but matplotlib requires it transitively.
+- Bump the SHA-pinned `astral-sh/setup-uv` action to v10.3.3, superseding Dependabot PR #46; PRs #44 (line-profiler) and #45 (Pillow) were already folded into this branch.
+- GitHub Actions are pinned by commit SHA; dependency audits cover core, security, and full profiles; documentation builds run on pull requests.
+- Credential fields are excluded from `repr`; nonce, key, and tag sizes are validated before use.
+- Bandit reports no findings: demonstration `assert` statements were replaced with explicit checks, and simulation-only `random` calls are narrowly suppressed with `# nosec B311`.
+
+### Documentation Updates
+
+- Version references aligned to 4.0.0 in `pyproject.toml`, `_version.py`, `CITATION.cff`, `docs/conf.py`, `docs/index.rst`, the `docs/*.md` version headers, README, ROADMAP, and package docstrings.
+- Added the `[security]` installation path and clarified that RoCE, CRC/FEC envelopes, and protocol drivers are simulations.
+- Rewrote `docs/system_architecture.md` against source evidence: removed the stale silent-failure warning, Castagnoli/32-byte Reed-Solomon claims, PBKDF2/HKDF and three-tier privilege claims, core AI/ML class claims, and unsupported Charuco/ArUco and fisheye claims; documented the v4 frame path, integrity semantics, AES-GCM session model, depth, native calibration, and actual HDR/RAW operator coverage.
+- Added `assets/system-architecture-v4.0.0.svg` and a 2x PNG export generated by `scripts/generate_architecture_diagram.py`, with `assets/README.md` regeneration notes. The README now embeds the v4.0.0 diagram and lists the real module layout.
+- Corrected README examples for MIPI security challenge/proof flow and integrity verification, and labeled the example-only AI/ML scene classifiers and custom extensions as non-core.
+- Aligned the remaining `Version:` module docstrings (depth, lens_correction, photogrammetry, roce, cxp12, v4_1, security, usb3 driver/discovery, coaxpress driver) and the `docs/api_documentation.md` version claim to 4.0.0.
+
+### Verification
+
+- **Tests**: 646 collected; 640 passed, 6 skipped with OpenCV installed and numba/trimesh absent (3 numba + 3 trimesh skips), or 639 passed, 7 skipped without OpenCV (`pytest -q`, CPython 3.11.13, dev + security extras)
+- **Lint/format**: `ruff check .` and `black --check src/ examples/ benchmarks/ stubs/` clean
+- **Types**: mypy configured scope (protocol drivers and selector) reports 0 errors, down from 125 at v3.3.0; `mypy.ini` and pyright report 0 errors as well
+- **Security scan**: Bandit reports 0 issues after explicit checks and 10 narrowly justified simulation-jitter suppressions
+- **Dependency audits**: 40 profile/target sets covering 72 targets, 0 vulnerabilities; wheel resolution succeeds for 9 of 12 Python/platform combinations (`cryptography 50.0.2` has no x86_64 macOS wheel, so that combination is excluded)
+- **Docs**: `sphinx-build -b html docs` succeeds with the v4.0.0 configuration; `CITATION.cff` validates against schema 1.2.0
+- **Examples and scripts**: all runnable examples and scripts complete successfully under the local v4 environment (nine Python examples, the interactive notebook's code cells, and three scripts); `scripts/data_analysis.py` exits 2 without its required input files, which is expected argparse behavior
+- **Script verification**: `scripts/simulation.py` passes with default and `--fast` delays; `scripts/automated_testing.py` runs 9 unit tests and 1 integration test with 0 failures and 0 errors plus the benchmark suite; `scripts/data_analysis.py --plot --compare` writes 16 plots and 23 comparison metrics from two simulation outputs
+- **Metric regression**: zero-min dynamic range now asserts 60 dB for `uint16` and `float32` inputs; a local 10-frame fast simulation reports 72.245 dB dynamic range and 25.4 dB mean SNR
+- **Architecture artifacts**: the v4.0.0 SVG parses as XML, the 2x PNG renders at 3200x4120, and the README embeds the generated diagram
+- **Configuration**: `tox c -e py311` parses under tox 4.61.1 and `uv lock --check` passes
+- **Scope**: all results are local; hosted GitHub Actions have not run for this branch
+
+---
+
 ## [3.3.0] - 2026-09-18
 
 ### Maintenance Release - Dependency Range Widening and CI Tooling Refresh
@@ -170,7 +261,7 @@ This release completes the incomplete implementations marked with "In a real imp
   - Implemented online learning with `train_on_image()` for continuous model improvement
   - Implemented `AdaptiveColorCorrector` with automatic color matrix adaptation based on measured color patches
   - Implemented custom `HighSpeedMIPIDriver` with burst mode and compression support
-  - Added noise reduction factory registration for seamless integration
+  - Added noise reduction factory registration for integration
 
 ### Multi-Sensor Synchronization Implementation
 
@@ -340,7 +431,7 @@ This release focuses on multi-protocol camera interface enhancements, comprehens
 
 ### Major Release - Multi-Protocol Camera Interface Framework
 
-This major release transforms the Advanced Image Sensor Interface into a comprehensive multi-protocol camera interface framework with professional-grade features, advanced image processing, and production-ready quality.
+This major release expands the Advanced Image Sensor Interface into a multi-protocol camera interface framework with image processing, multi-sensor synchronization, and calibration support.
 
 ### New Features
 
@@ -494,7 +585,7 @@ from advanced_image_sensor_interface.sensor_interface.multi_sensor_sync import M
 
 #### Comprehensive Guides
 - **Protocol Documentation**: Complete guides for all supported protocols
-- **Calibration Manual**: Professional-grade calibration procedures
+- **Calibration Manual**: Calibration procedures
 - **Hardware Integration**: Real hardware integration examples and best practices
 - **API Reference**: Complete API documentation with examples
 

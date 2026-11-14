@@ -4,6 +4,17 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 
 ## Completed Milestones
 
+### v4.0.0 Features (Security, Explicit Frames, Lifecycle Contracts)
+- [x] **Real AES-GCM Security**: Optional `[security]` extra (`cryptography`) implements AES-128/256-GCM with 12-byte nonces and 16-byte tags, guarded imports, and fail-closed encryption requests; AES-CBC rejected; identity-bound single-use expiring challenges; separate TX counters and authenticated RX replay windows; secrets excluded from reprs.
+- [x] **Explicit Frame Pipeline**: `FrameCodec` and `FramePipeline` connect a selected streaming driver to typed signal/RAW/stereo processing with owned arrays, strict length/dtype/range validation, measured latency and throughput, and an opt-in application-layer CRC/FEC envelope that is never presented as transport verification.
+- [x] **Integrity Fail-Closed**: A CRC mismatch is never reported valid; Hamming corrections are re-checked against the original trailer; REED_SOLOMON is documented and implemented as checksum detection, not correction.
+- [x] **Protocol Lifecycle Contracts**: Unpacked little-endian 8/10/12/14/16/20-bit frame storage across MIPI, GigE/RoCE, CoaXPress, and USB3; unknown and bit-packed pixel formats raise; measured traffic and frame rates replace configured link capacity; failed disconnect/stop operations stay visible; USB3 buffer ownership uses locked FIFO queues with copy-on-read frames.
+- [x] **Processing Format Repair**: 20-bit uint32 support, RAW20 stored as uint32, typed RAW failures without fallback images, explicit rejection of float64 and non-finite frames, and depth PLY export failures propagated as typed results.
+- [x] **Dependency and CI Remediation**: Security floors for Pillow 13.0.0, virtualenv 21.14.9, filelock 4.2.1, certifi 2026.10.19, urllib3 2.8.0, tornado 6.5.9, nbconvert 7.17.2, Werkzeug 3.1.9, setuptools 84.1.0, and black 26.10.1; SHA-pinned GitHub Actions; profile-based dependency audits; docs built on pull requests; workflows retargeted to `version-4.0.0`.
+- [x] **Dead Code and Wiring**: Removed the unused neural-tuner model factory, unused lens correctors, no-op version self-assignments, and an unused register helper; `FrameCodec`/`FramePipeline` exported from the package surface.
+- [x] **Verification**: Full pytest, Ruff, Black, mypy baseline, Bandit triage, dependency audits, wheel matrix, and a documentation build reported in the v4.0.0 changelog.
+- [x] **Release Configuration**: tox 4 environments aligned with CI, mypy.ini synced to the pyproject scope, Read the Docs build packages, citation metadata, and repository hygiene updated for v4.0.0.
+
 ### v3.3.0 Features (Dependency Maintenance)
 - [x] **Dependabot Completion**: All nine open dependabot PRs folded into the release branch with bot authorship preserved.
 - [x] **Widened Dependency Ceilings**: opencv-python <6.0.0, pandas <4.0.0, astropy <9.0.0, trimesh <6.0.0, pyzmq <28.0.0; docs requirements updated (psutil <8.0.0, linkify-it-py >=2.2.0, sphinxcontrib-htmlhelp >=2.1.0).
@@ -60,9 +71,10 @@ This roadmap outlines the future development tracking for the Advanced Image Sen
 
 ---
 
-## v3.3+ Planning (Next Release)
+## v4.0+ Planning (Next Release)
 
 ### High Priority
+- [ ] **Full-Tree Type Checking**: Extend the mypy gate beyond the protocol scope to the remaining modules and burn down the existing baseline.
 - [ ] **AI Denoising**: Integration of ML-based noise reduction models (torch/tensorflow backends).
 - [ ] **Smart ISP**: AI-driven image signal processor for automatic parameter tuning.
 - [ ] **Predictive Power**: AI-based power consumption forecasting.

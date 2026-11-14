@@ -408,13 +408,13 @@ selector.activate_protocol(optimal_protocol)
 
 | Requirement | MIPI CSI-2 | CoaXPress | GigE Vision | USB3 Vision |
 |-------------|------------|-----------|-------------|-------------|
-| **Mobile/Embedded** | ✅ Excellent | ❌ No | ❌ No | ⚠️ Limited |
-| **Industrial** | ⚠️ Limited | ✅ Excellent | ✅ Good | ⚠️ Limited |
-| **Long Distance** | ❌ No | ✅ Excellent | ✅ Excellent | ❌ No |
-| **High Bandwidth** | ✅ Good | ✅ Excellent | ⚠️ Limited | ✅ Good |
-| **Low Latency** | ✅ Excellent | ✅ Good | ⚠️ Medium | ✅ Good |
-| **Network Integration** | ❌ No | ❌ No | ✅ Excellent | ❌ No |
-| **Cost Effective** | ✅ Excellent | ❌ No | ✅ Good | ✅ Excellent |
+| **Mobile/Embedded** | Excellent | No | No | Limited |
+| **Industrial** | Limited | Excellent | Good | Limited |
+| **Long Distance** | No | Excellent | Excellent | No |
+| **High Bandwidth** | Good | Excellent | Limited | Good |
+| **Low Latency** | Excellent | Good | Medium | Good |
+| **Network Integration** | No | No | Excellent | No |
+| **Cost Effective** | Excellent | No | Good | Excellent |
 
 ## Best Practices
 

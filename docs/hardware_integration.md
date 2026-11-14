@@ -1049,7 +1049,7 @@ class JetsonOptimizedProcessor:
 1. **Algorithm Optimization**
    - Use NumPy vectorized operations
    - Implement critical paths in C/C++
-   - Leverage SIMD instructions
+   - Use SIMD instructions
 
 2. **Hardware Acceleration**
    - GPU processing with CUDA/OpenCL

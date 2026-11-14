@@ -1,6 +1,6 @@
 # USB3 Vision Protocol - Simple Guide
 
-## 🤔 What is USB3 Vision? (Explain Like I'm 5)
+## What is USB3 Vision? (Explain Like I'm 5)
 
 Imagine you want to connect a really good camera to your computer, just like plugging in a USB mouse or keyboard, but this camera can take AMAZING pictures super fast! USB3 Vision is like a special language that lets your computer talk to these professional cameras through a USB cable.
 
@@ -10,7 +10,7 @@ Imagine you want to connect a really good camera to your computer, just like plu
 - USB3 Vision is like the nerves that carry messages between your eyes and brain
 - The USB cable is like a super-fast highway for pictures
 
-### 🚀 Why is it Special?
+### Why is it Special?
 
 1. **Plug and Play**: Just plug it in and it works (like a USB mouse)
 2. **Super Fast**: Can send huge pictures very quickly
@@ -19,7 +19,7 @@ Imagine you want to connect a really good camera to your computer, just like plu
 5. **Hot Pluggable**: Can unplug and plug back in while computer is running
 6. **Standard USB**: Works with regular USB 3.0 ports
 
-## 🔧 How We Use It in Our Code
+## How We Use It in Our Code
 
 ### Basic Setup (Simple Example)
 
@@ -120,7 +120,7 @@ def setup_multiple_usb_cameras():
         camera = USB3Driver(config)
         cameras[cam_info["name"]] = camera
         
-        print(f"✅ Connected {cam_info['name']}")
+        print(f"Connected {cam_info['name']}")
     
     return cameras
 
@@ -130,19 +130,19 @@ cameras = setup_multiple_usb_cameras()
 # Start all cameras
 for name, camera in cameras.items():
     camera.start_streaming()
-    print(f"📹 {name} started")
+    print(f"{name} started")
 
 # Take pictures from all cameras
 all_pictures = {}
 for name, camera in cameras.items():
     picture = camera.capture_frame()
     all_pictures[name] = picture
-    print(f"📸 Got picture from {name}")
+    print(f"Got picture from {name}")
 
 print(f"Captured {len(all_pictures)} pictures simultaneously!")
 ```
 
-## 🔌 USB Configuration (Making It Work Better)
+## USB Configuration (Making It Work Better)
 
 ### USB Transfer Optimization
 ```python
@@ -178,13 +178,13 @@ def find_usb3_cameras():
     
     from advanced_image_sensor_interface.sensor_interface.protocol.usb3.discovery import discover_usb3_cameras
     
-    print("🔍 Searching for USB3 Vision cameras...")
+    print("Searching for USB3 Vision cameras...")
     
     # Scan all USB ports
     cameras = discover_usb3_cameras()
     
     if cameras:
-        print(f"✅ Found {len(cameras)} USB3 Vision cameras:")
+        print(f"Found {len(cameras)} USB3 Vision cameras:")
         
         for i, camera_info in enumerate(cameras):
             print(f"  Camera {i+1}:")
@@ -194,7 +194,7 @@ def find_usb3_cameras():
             print(f"    Serial: {camera_info.serial_number}")
             print(f"    USB Port: {camera_info.usb_port}")
     else:
-        print("❌ No USB3 Vision cameras found")
+        print("No USB3 Vision cameras found")
         print("Check:")
         print("  - Camera is plugged in")
         print("  - USB 3.0 port (blue connector)")
@@ -217,10 +217,10 @@ if available_cameras:
     )
     
     camera = USB3Driver(config)
-    print(f"✅ Connected to {first_camera.device_name}")
+    print(f"Connected to {first_camera.device_name}")
 ```
 
-## 🎮 Real-World Examples
+## Real-World Examples
 
 ### Example 1: Desktop Microscope Camera
 ```python
@@ -246,7 +246,7 @@ class MicroscopeCamera:
     def start_live_view(self):
         """Start live microscope view"""
         self.camera.start_streaming()
-        print("🔬 Microscope live view started")
+        print("Microscope live view started")
         
         while True:
             # Get live image
@@ -259,7 +259,7 @@ class MicroscopeCamera:
             if self.user_pressed_capture():
                 captured_image = self.capture_high_quality_image()
                 self.save_image(captured_image)
-                print("📸 High-quality image captured")
+                print("High-quality image captured")
     
     def capture_high_quality_image(self):
         """Capture highest quality image for analysis"""
@@ -327,7 +327,7 @@ class QualityControlCamera:
     def start_quality_inspection(self):
         """Start automated quality inspection"""
         self.camera.start_streaming()
-        print(f"🏭 Quality control started at {self.station_name}")
+        print(f"Quality control started at {self.station_name}")
         
         while production_line_running():
             # Wait for product to arrive (hardware trigger)
@@ -340,19 +340,19 @@ class QualityControlCamera:
             if inspection_result.has_defects:
                 self.defect_count += 1
                 self.reject_product(inspection_result.defects)
-                print(f"❌ Product {self.total_inspected} rejected: {inspection_result.defects}")
+                print(f"Product {self.total_inspected} rejected: {inspection_result.defects}")
                 
                 # Take detailed image of defect for analysis
                 defect_image = self.capture_defect_detail(product_image, inspection_result.defect_locations)
                 self.save_defect_image(defect_image)
             else:
                 self.accept_product()
-                print(f"✅ Product {self.total_inspected} passed inspection")
+                print(f"Product {self.total_inspected} passed inspection")
             
             # Report statistics every 100 products
             if self.total_inspected % 100 == 0:
                 defect_rate = (self.defect_count / self.total_inspected) * 100
-                print(f"📊 Defect rate: {defect_rate:.1f}% ({self.defect_count}/{self.total_inspected})")
+                print(f"Defect rate: {defect_rate:.1f}% ({self.defect_count}/{self.total_inspected})")
     
     def inspect_product(self, image):
         """Inspect product for various defects"""
@@ -421,7 +421,7 @@ class SportsAnalysisCamera:
     
     def analyze_tennis_serve(self):
         """Analyze tennis serve technique"""
-        print("🎾 Starting tennis serve analysis")
+        print("Starting tennis serve analysis")
         
         self.camera.start_streaming()
         
@@ -438,7 +438,7 @@ class SportsAnalysisCamera:
         # Analyze the serve
         analysis = self.analyze_serve_sequence(serve_sequence)
         
-        print(f"📊 Serve Analysis:")
+        print(f"Serve Analysis:")
         print(f"  Ball speed: {analysis.ball_speed_mph} mph")
         print(f"  Racket speed: {analysis.racket_speed_mph} mph")
         print(f"  Contact point height: {analysis.contact_height_ft} ft")
@@ -449,7 +449,7 @@ class SportsAnalysisCamera:
     
     def analyze_golf_swing(self):
         """Analyze golf swing technique"""
-        print("⛳ Starting golf swing analysis")
+        print("Starting golf swing analysis")
         
         self.camera.start_streaming()
         
@@ -466,7 +466,7 @@ class SportsAnalysisCamera:
         # Analyze the swing
         analysis = self.analyze_swing_sequence(swing_sequence)
         
-        print(f"📊 Swing Analysis:")
+        print(f"Swing Analysis:")
         print(f"  Club head speed: {analysis.club_speed_mph} mph")
         print(f"  Ball speed: {analysis.ball_speed_mph} mph")
         print(f"  Launch angle: {analysis.launch_angle_degrees}°")
@@ -476,14 +476,14 @@ class SportsAnalysisCamera:
         return analysis
 ```
 
-## 🔧 USB Troubleshooting
+## USB Troubleshooting
 
 ### Common USB Issues
 ```python
 def diagnose_usb_issues():
     """Diagnose common USB3 Vision camera issues"""
     
-    print("🔍 Diagnosing USB3 Vision camera issues...")
+    print("Diagnosing USB3 Vision camera issues...")
     
     # Check 1: USB port speed
     import usb.core
@@ -501,9 +501,9 @@ def diagnose_usb_issues():
             pass
     
     if usb3_devices:
-        print(f"✅ Found {len(usb3_devices)} USB 3.0+ devices")
+        print(f"Found {len(usb3_devices)} USB 3.0+ devices")
     else:
-        print("❌ No USB 3.0 devices found")
+        print("No USB 3.0 devices found")
         print("Check: USB 3.0 port (blue connector), USB 3.0 cable")
         return
     
@@ -514,19 +514,19 @@ def diagnose_usb_issues():
         bandwidth = 100  # Assume 100 Mbps per device
         total_bandwidth += bandwidth
     
-    print(f"📊 Estimated USB bandwidth usage: {total_bandwidth} Mbps")
+    print(f"Estimated USB bandwidth usage: {total_bandwidth} Mbps")
     
     if total_bandwidth > 4000:  # USB 3.0 limit is ~5000 Mbps
-        print("⚠️ High USB bandwidth usage")
+        print("High USB bandwidth usage")
         print("Consider: Reduce resolution, frame rate, or number of cameras")
     
     # Check 3: Power consumption
     total_power = len(usb3_devices) * 500  # Assume 500mA per device
     
-    print(f"🔋 Estimated USB power usage: {total_power} mA")
+    print(f"Estimated USB power usage: {total_power} mA")
     
     if total_power > 900:  # USB 3.0 limit is 900mA
-        print("⚠️ High USB power usage")
+        print("High USB power usage")
         print("Consider: External power supply, powered USB hub")
     
     # Check 4: Driver status
@@ -541,12 +541,12 @@ def diagnose_usb_issues():
         test_camera = USB3Driver(test_config)
         device_info = test_camera.get_device_info()
         
-        print("✅ Camera driver working")
+        print("Camera driver working")
         print(f"  Camera: {device_info.model_name}")
         print(f"  Driver version: {device_info.driver_version}")
         
     except Exception as e:
-        print(f"❌ Camera driver issue: {e}")
+        print(f"Camera driver issue: {e}")
         print("Check: Camera drivers installed, camera permissions")
 
 # Run diagnostics
@@ -559,7 +559,7 @@ def optimize_usb3_performance(cameras):
     """Optimize USB3 performance for multiple cameras"""
     
     num_cameras = len(cameras)
-    print(f"🚀 Optimizing USB3 performance for {num_cameras} cameras")
+    print(f"Optimizing USB3 performance for {num_cameras} cameras")
     
     # Calculate optimal settings
     if num_cameras == 1:
@@ -607,7 +607,7 @@ def optimize_usb3_performance(cameras):
         # Apply optimization
         camera.reconfigure(optimized_config)
         
-        print(f"✅ Optimized {camera_name}:")
+        print(f"Optimized {camera_name}:")
         print(f"  Transfer size: {optimal_settings['transfer_size']} bytes")
         print(f"  Transfers: {optimal_settings['num_transfers']}")
         print(f"  Frame rate: {optimized_config.frame_rate} fps")
@@ -624,7 +624,7 @@ cameras = {
 optimization_results = optimize_usb3_performance(cameras)
 ```
 
-## 📊 Performance Monitoring
+## Performance Monitoring
 
 ```python
 from advanced_image_sensor_interface.performance.monitor import PerformanceMonitor
@@ -637,7 +637,7 @@ class USB3PerformanceMonitor:
     def monitor_usb_performance(self, duration_seconds=60):
         """Monitor USB camera performance"""
         
-        print(f"📊 Monitoring USB3 camera performance for {duration_seconds} seconds...")
+        print(f"Monitoring USB3 camera performance for {duration_seconds} seconds...")
         
         self.monitor.start_monitoring()
         
@@ -672,7 +672,7 @@ class USB3PerformanceMonitor:
             except Exception as e:
                 # USB error occurred
                 usb_errors.append(1)
-                print(f"⚠️ USB error: {e}")
+                print(f"USB error: {e}")
         
         # Calculate statistics
         if frame_times:
@@ -681,7 +681,7 @@ class USB3PerformanceMonitor:
             avg_transfer_rate = sum(transfer_rates) / len(transfer_rates)
             error_rate = sum(usb_errors) / len(usb_errors)
             
-            print(f"📈 USB3 Performance Results:")
+            print(f"USB3 Performance Results:")
             print(f"  Frames captured: {frame_count}")
             print(f"  Average frame time: {avg_frame_time:.1f}ms")
             print(f"  Actual FPS: {actual_fps:.1f}")
@@ -690,13 +690,13 @@ class USB3PerformanceMonitor:
             
             # Performance warnings
             if avg_frame_time > 50:  # More than 50ms per frame
-                print("⚠️ Slow frame capture - check USB bandwidth")
+                print("Slow frame capture - check USB bandwidth")
             
             if error_rate > 0.01:  # More than 1% errors
-                print("⚠️ High USB error rate - check cable and connections")
+                print("High USB error rate - check cable and connections")
             
             if actual_fps < self.camera.config.frame_rate * 0.9:
-                print("⚠️ Low frame rate - reduce resolution or transfer size")
+                print("Low frame rate - reduce resolution or transfer size")
             
             return {
                 "avg_frame_time_ms": avg_frame_time,
@@ -706,7 +706,7 @@ class USB3PerformanceMonitor:
             }
         
         else:
-            print("❌ No frames captured - check camera connection")
+            print("No frames captured - check camera connection")
             return None
 
 # Use performance monitoring
@@ -714,36 +714,36 @@ monitor = USB3PerformanceMonitor(camera)
 performance_results = monitor.monitor_usb_performance(duration_seconds=30)
 ```
 
-## 🎯 Best Practices
+## Best Practices
 
 ### 1. USB Port Selection
 ```python
 def recommend_usb_setup(num_cameras):
     """Recommend optimal USB setup"""
     
-    print(f"💡 USB Setup Recommendations for {num_cameras} cameras:")
+    print(f"USB Setup Recommendations for {num_cameras} cameras:")
     
     if num_cameras == 1:
-        print("✅ Single camera setup:")
+        print("Single camera setup:")
         print("  - Use any USB 3.0 port")
         print("  - Maximum performance available")
         print("  - No special considerations")
     
     elif num_cameras <= 2:
-        print("✅ Dual camera setup:")
+        print("Dual camera setup:")
         print("  - Use separate USB controllers if possible")
         print("  - Check motherboard USB controller layout")
         print("  - Consider PCIe USB 3.0 card for more bandwidth")
     
     elif num_cameras <= 4:
-        print("⚠️ Multi-camera setup:")
+        print("Multi-camera setup:")
         print("  - Definitely need separate USB controllers")
         print("  - Use PCIe USB 3.0 cards")
         print("  - Reduce resolution/frame rate per camera")
         print("  - Consider powered USB hubs")
     
     else:
-        print("❌ Many cameras setup:")
+        print("Many cameras setup:")
         print("  - USB 3.0 may not be sufficient")
         print("  - Consider GigE Vision instead")
         print("  - If using USB, need multiple PCIe cards")
@@ -754,12 +754,12 @@ def recommend_usb_setup(num_cameras):
     total_bandwidth = estimated_bandwidth_per_camera * num_cameras
     usb3_limit = 500  # MB/s practical limit for USB 3.0
     
-    print(f"📊 Bandwidth Analysis:")
+    print(f"Bandwidth Analysis:")
     print(f"  Estimated total: {total_bandwidth} MB/s")
     print(f"  USB 3.0 limit: {usb3_limit} MB/s")
     
     if total_bandwidth > usb3_limit:
-        print("⚠️ Bandwidth limit exceeded!")
+        print("Bandwidth limit exceeded!")
         reduction_needed = total_bandwidth / usb3_limit
         print(f"  Need to reduce data rate by {reduction_needed:.1f}x")
 
@@ -836,7 +836,7 @@ monitoring_config = USB3CameraTemplates.real_time_monitoring()
 analysis_config = USB3CameraTemplates.high_speed_analysis()
 multi_config = USB3CameraTemplates.multi_camera_setup()
 
-print("📋 Available camera templates:")
+print("Available camera templates:")
 print("  - High Quality Photography")
 print("  - Real-time Monitoring") 
 print("  - High-speed Analysis")
