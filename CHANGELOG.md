@@ -53,6 +53,7 @@ This release replaces the simulated MIPI encryption path with real AES-GCM authe
 - `.gitignore` now covers isolated worktrees, local virtual environments, pyright caches, PLY outputs, patch remnants, example output directories, and generated analysis plots.
 - `scripts/automated_testing.py` uses `unittest.TestLoader` instead of the `unittest.makeSuite` API removed in Python 3.13.
 - `scripts/data_analysis.py --plot` now groups flattened mean/std/min/max metrics and writes one PNG per metric group instead of reporting success with no plots.
+- The full-extras CI smoke imports each ML library (cupy, keras, tensorflow, torch, torchvision) in its own subprocess; TensorFlow and PyTorch segfault when loaded into one process on conflicting OpenMP runtimes.
 
 ### Removed
 
@@ -63,8 +64,9 @@ This release replaces the simulated MIPI encryption path with real AES-GCM authe
 
 ### Security
 
-- Pin security floors: Pillow 13.0.0, virtualenv 21.14.9, filelock 4.2.1, certifi 2026.10.19, urllib3 2.8.0, tornado 6.5.9, nbconvert 7.17.2, Werkzeug 3.1.9, setuptools 84.1.0, black 26.10.1, soupsieve 3.0.2, msgpack 1.2.3.
+- Pin security floors: Pillow 13.0.0, virtualenv 21.14.9, filelock 4.2.1, certifi 2026.10.19, urllib3 2.8.0, tornado 6.6.1, nbconvert 7.17.2, Werkzeug 3.1.9, setuptools 84.1.0, black 26.10.1, soupsieve 3.0.2, msgpack 1.2.3.
 - Raise the transitive `soupsieve` floor to 3.0.2 (locked 4.1) for the docs CSS-selector ReDoS advisories, scoped to Python >=3.11.5 so the universal lock still resolves on 3.11.0-3.11.4; raise `msgpack` to 1.2.3 (pulled by pip-audit's cachecontrol). Remove the unused direct `msgpack` entry from `[full]`. Pillow is retained: it is not imported directly but matplotlib requires it transitively.
+- Raise `tornado` to 6.6.1 for CVE-2026-126347; the prior 6.5.9 floor allowed the vulnerable 6.6 release.
 - Bump the SHA-pinned `astral-sh/setup-uv` action to v10.3.3, superseding Dependabot PR #46; PRs #44 (line-profiler) and #45 (Pillow) were already folded into this branch.
 - GitHub Actions are pinned by commit SHA; dependency audits cover core, security, and full profiles; documentation builds run on pull requests.
 - Credential fields are excluded from `repr`; nonce, key, and tag sizes are validated before use.

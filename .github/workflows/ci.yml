@@ -161,10 +161,15 @@ jobs:
       - name: Smoke-test non-macOS ML imports
         # macOS excludes TensorFlow/Torch/CuPy. Keras needs a separately installed
         # backend there (even its NumPy backend imports JAX); do not claim coverage.
+        # Import each library in its own process: TensorFlow and PyTorch bundle
+        # conflicting OpenMP runtimes that segfault when loaded into one process.
         if: runner.os != 'macOS'
         env:
           KERAS_BACKEND: tensorflow
-        run: uv run --no-sync python -c "import cupy, keras, tensorflow, torch, torchvision"
+        run: |
+          for mod in cupy keras tensorflow torch torchvision; do
+            uv run --no-sync python -c "import $mod"
+          done
 
   build:
     runs-on: ubuntu-latest
