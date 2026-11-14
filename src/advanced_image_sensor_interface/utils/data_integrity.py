@@ -1,14 +1,13 @@
 """
 Data Integrity Module
 
-Provides advanced error detection and correction for high-speed data transfers.
-Includes CRC-32 validation, checksums, and forward error correction.
+Application-layer CRC-32 envelopes and optional redundancy encoding.
+The sender must protect data before transmission; this is separate from native
+protocol checksums (including MIPI CRC) and is not authentication.
 
-Key Features:
-- CRC-32 packet integrity verification
-- Forward Error Correction (FEC) with Reed-Solomon codes
-- Error statistics and metrics
-- Configurable error recovery strategies
+Hamming(7,4) supports single-bit correction, checked against the original CRC.
+Parity only detects errors. The legacy REED_SOLOMON mode is a CRC/checksum
+SIMULATION, not Reed-Solomon coding, and cannot correct errors.
 """
 
 import logging
@@ -74,9 +73,9 @@ class IntegrityMetrics:
     error_rate: float = 0.0
 
     def update_error_rate(self) -> None:
-        """Recalculate error rate."""
+        """Count each non-valid packet once, including successfully recovered ones."""
         if self.packets_checked > 0:
-            total_errors = self.crc_errors + self.packets_corrupted
+            total_errors = self.packets_checked - self.packets_valid
             self.error_rate = (total_errors / self.packets_checked) * 100
 
 
@@ -153,10 +152,11 @@ class CRCValidator:
 
 
 class ForwardErrorCorrection:
-    """
-    Forward Error Correction implementation.
+    """Redundancy codecs: Hamming correction and parity/checksum detection.
 
-    Provides ability to detect and correct errors without retransmission.
+    REED_SOLOMON retains the legacy CRC/checksum simulation wire format only;
+    it is not real RS. Hamming returns candidate corrections: multiple errors
+    can miscorrect, so use IntegrityChecker with CRC to verify recovery.
     """
 
     def __init__(self, mode: ErrorCorrectionMode = ErrorCorrectionMode.REED_SOLOMON, max_correctable: int = 4) -> None:
@@ -224,9 +224,9 @@ class ForwardErrorCorrection:
         return data + bytes([parity])
 
     def _decode_parity(self, data: bytes) -> tuple[bytes, int]:
-        """Verify parity and extract data."""
+        """Verify parity and extract data; parity cannot correct errors."""
         if len(data) < 1:
-            return b"", 0
+            return b"", -1
 
         original = data[:-1]
         received_parity = data[-1]
@@ -245,10 +245,10 @@ class ForwardErrorCorrection:
         """Encode with Hamming(7,4) codes.
 
         Each input byte is split into two 4-bit nibbles. Each nibble
-        is encoded into a 7-bit codeword stored in the upper 7 bits of
+        is encoded into a 7-bit codeword stored in the lower 7 bits of
         a byte. The bit layout of each encoded byte (MSB first) is:
 
-            [p1, p2, d0, p3, d1, d2, d3, 0]
+            [0, p1, p2, d0, p3, d1, d2, d3]
 
         Parity bits cover the following data bits (matching standard
         Hamming(7,4) with 1-indexed positions):
@@ -271,7 +271,7 @@ class ForwardErrorCorrection:
                 p2 = d0 ^ d2 ^ d3
                 p3 = d1 ^ d2 ^ d3
 
-                # Pack into byte: [p1, p2, d0, p3, d1, d2, d3, 0]
+                # Pack into byte: [0, p1, p2, d0, p3, d1, d2, d3]
                 encoded_byte = (p1 << 6) | (p2 << 5) | (d0 << 4)
                 encoded_byte |= (p3 << 3) | (d1 << 2) | (d2 << 1) | d3
                 encoded.append(encoded_byte)
@@ -293,8 +293,8 @@ class ForwardErrorCorrection:
             errors_corrected += high_errors + low_errors
             decoded.append((high_nibble << 4) | low_nibble)
 
-        self._metrics.fec_corrections += errors_corrected
-        self._metrics.total_errors_corrected += errors_corrected
+        # These are candidate corrections, not yet verified against a checksum.
+        # IntegrityChecker counts them only after final verification succeeds.
         return bytes(decoded), errors_corrected
 
     def _decode_hamming_nibble(self, encoded: int) -> tuple[int, int]:
@@ -316,7 +316,7 @@ class ForwardErrorCorrection:
             syndrome 4 -> p3 (bit 3), 5 -> d1 (bit 2), 6 -> d2 (bit 1)
             syndrome 7 -> d3 (bit 0)
         """
-        # Extract bits from encoded byte: [p1, p2, d0, p3, d1, d2, d3, 0]
+        # Extract bits from encoded byte: [0, p1, p2, d0, p3, d1, d2, d3]
         p1 = (encoded >> 6) & 1
         p2 = (encoded >> 5) & 1
         d0 = (encoded >> 4) & 1
@@ -391,24 +391,18 @@ class ForwardErrorCorrection:
         redundancy_bytes = min(32, max(8, self.max_correctable * 2))
 
         if len(data) < redundancy_bytes:
-            return data, 0
+            return b"", -1
 
         original = data[:-redundancy_bytes]
         received_redundancy = data[-redundancy_bytes:]
-
-        # Verify redundancy
         expected_redundancy = self._calculate_rs_redundancy(original, redundancy_bytes)
 
-        # Count differences as errors
-        errors = sum(1 for a, b in zip(received_redundancy, expected_redundancy) if a != b)
-
-        if errors <= self.max_correctable:
-            self._metrics.fec_corrections += errors
-            self._metrics.total_errors_corrected += errors
-            return original, errors
-        else:
+        # Checksum redundancy can detect a mismatch, but cannot repair payload
+        # or redundancy bytes. Never report simulated differences as corrections.
+        if received_redundancy != expected_redundancy:
             self._metrics.packets_corrupted += 1
             return original, -1
+        return original, 0
 
     def _calculate_rs_redundancy(self, data: bytes, size: int) -> bytes:
         """Calculate Reed-Solomon redundancy bytes."""
@@ -490,35 +484,45 @@ class IntegrityChecker:
         self._overall_metrics.packets_checked += 1
         current_data = data
         errors_corrected = 0
+        received_crc = None
 
-        # Verify CRC first
         if self.config.enable_crc:
-            is_valid, current_data = self._crc.verify_crc(current_data)
+            # A missing trailer cannot be recovered by decoding an empty frame.
+            if len(data) < 4:
+                self._overall_metrics.crc_errors += 1
+                self._overall_metrics.packets_corrupted += 1
+                return IntegrityCheckResult.CORRUPTED, b"", 0
+            received_crc = struct.unpack("<I", data[-4:])[0]
+            is_valid, current_data = self._crc.verify_crc(data)
             if not is_valid:
                 self._overall_metrics.crc_errors += 1
-                # Try FEC recovery if enabled
                 if not self.config.enable_fec:
                     self._overall_metrics.packets_corrupted += 1
                     return IntegrityCheckResult.CORRUPTED, current_data, 0
 
-        # Apply FEC decoding
         if self.config.enable_fec:
-            current_data, errors = self._fec.decode(current_data)
-            if errors > 0:
-                errors_corrected = errors
-                self._overall_metrics.packets_corrected += 1
-                self._overall_metrics.total_errors_corrected += errors
-            elif errors < 0:
+            current_data, errors_corrected = self._fec.decode(current_data)
+            if errors_corrected < 0:
+                self._overall_metrics.packets_corrupted += 1
+                return IntegrityCheckResult.CORRUPTED, current_data, 0
+
+        if received_crc is not None:
+            # protect() checksums the encoded payload, not decoded samples.
+            # Re-encode recovery candidates and compare to the ORIGINAL trailer;
+            # do not append a fresh CRC or count a second received packet.
+            recovered_wire = self._fec.encode(current_data) if self.config.enable_fec else current_data
+            if self._crc.calculate_crc(recovered_wire) != received_crc:
                 self._overall_metrics.packets_corrupted += 1
                 return IntegrityCheckResult.CORRUPTED, current_data, 0
 
         if errors_corrected > 0:
-            # CQ-6: packets_corrected is already incremented inside the
-            # FEC branch above; do not double-count here.
+            self._overall_metrics.packets_corrected += 1
+            self._overall_metrics.fec_corrections += errors_corrected
+            self._overall_metrics.total_errors_corrected += errors_corrected
             return IntegrityCheckResult.CORRECTABLE, current_data, errors_corrected
-        else:
-            self._overall_metrics.packets_valid += 1
-            return IntegrityCheckResult.VALID, current_data, 0
+
+        self._overall_metrics.packets_valid += 1
+        return IntegrityCheckResult.VALID, current_data, 0
 
     def get_metrics(self) -> IntegrityMetrics:
         """Get combined integrity metrics."""

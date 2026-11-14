@@ -1,4 +1,4 @@
-"""Multi-Sensor Synchronization for v2.0.0.
+"""Multi-Sensor Synchronization
 
 This module provides multi-sensor synchronization capabilities including:
 - Hardware-level synchronization
@@ -465,7 +465,7 @@ class MultiSensorSynchronizer:
             frame_pts = np.float32([kp[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
 
             # Find homography using RANSAC
-            H, mask = cv2.findHomography(frame_pts, ref_pts, cv2.RANSAC, 5.0)
+            H, _ = cv2.findHomography(frame_pts, ref_pts, cv2.RANSAC, 5.0)
 
             if H is None:
                 logger.warning(f"Homography estimation failed for sensor {sensor_id}")
@@ -473,7 +473,6 @@ class MultiSensorSynchronizer:
                 continue
 
             # Warp frame to align with reference
-            h, w = frame.shape[:2]
             aligned_frame = cv2.warpPerspective(frame, H, (frame.shape[1], frame.shape[0]))
 
             aligned_frames[sensor_id] = (aligned_frame, timestamp)

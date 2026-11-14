@@ -44,6 +44,9 @@ class TestMIPISecurity:
 
     def test_authenticator(self):
         """Test authentication flow."""
+        import hashlib
+        import hmac
+
         from advanced_image_sensor_interface.sensor_interface.protocol.mipi.security import (
             AuthenticationMethod,
             Authenticator,
@@ -58,17 +61,24 @@ class TestMIPISecurity:
         auth.register_credentials(creds)
 
         # Successful authentication
-        success, level = auth.authenticate("user1", b"secret_key_123")
+        challenge = auth.generate_challenge("user1")
+        proof = hmac.new(b"secret_key_123", challenge, hashlib.sha256).digest()
+        success, level = auth.authenticate("user1", proof, challenge)
         assert success
         assert level == PrivilegeLevel.ADMIN
 
         # Failed authentication
-        success, level = auth.authenticate("user1", b"wrong_key")
+        challenge = auth.generate_challenge("user1")
+        success, level = auth.authenticate("user1", b"wrong_key", challenge)
         assert not success
         assert level is None
 
     def test_security_manager_session(self):
         """Test security manager session lifecycle."""
+        import hashlib
+        import hmac
+
+        pytest.importorskip("cryptography.hazmat.primitives.ciphers.aead")
         from advanced_image_sensor_interface.sensor_interface.protocol.mipi.security import (
             MIPISecurityManager,
             PrivilegeLevel,
@@ -81,11 +91,11 @@ class TestMIPISecurity:
         creds = SecurityCredentials(identity="device_1", privilege_level=PrivilegeLevel.USER, pre_shared_key=b"device_secret")
         manager.register_identity(creds)
 
-        # Create challenge for HMAC auth
+        # Create session with a challenge-bound PSK proof
         manager.authenticator.method = manager.authenticator.method.PRE_SHARED_KEY
-
-        # Create session with PSK
-        session = manager.create_session("device_1", b"device_secret")
+        challenge = manager.authenticator.generate_challenge("device_1")
+        proof = hmac.new(b"device_secret", challenge, hashlib.sha256).digest()
+        session = manager.create_session("device_1", proof, challenge)
         assert session is not None
         assert session.identity == "device_1"
 

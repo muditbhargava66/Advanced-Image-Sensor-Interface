@@ -36,7 +36,7 @@ class ExponentialBackoff:
         delay = min(delay, self.policy.max_delay)
 
         if self.policy.jitter:
-            delay *= 0.5 + random.random() * 0.5
+            delay *= 0.5 + random.random() * 0.5  # nosec B311
 
         return delay
 

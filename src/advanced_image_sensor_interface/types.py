@@ -442,7 +442,7 @@ class SimulationDelayConfig:
         import random
 
         min_ms, max_ms = self.random_delay_range_ms
-        return random.uniform(min_ms, max_ms) / 1000.0
+        return random.uniform(min_ms, max_ms) / 1000.0  # nosec B311
 
     def apply_delay(self, base_delay: float) -> float:
         """Apply delay with optional random component.

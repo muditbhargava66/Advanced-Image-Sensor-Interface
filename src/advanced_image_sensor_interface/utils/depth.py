@@ -22,7 +22,7 @@ Note:
     shift derived from matched keypoints, not a full homography.
 
 Author: Advanced Image Sensor Interface Team
-Version: 3.2.0
+Version: 4.0.0
 """
 
 import logging
@@ -124,7 +124,7 @@ def _sgm_scan_numpy(  # noqa: PLR0917
     along the batch axis (diagonal paths); predecessors outside the image
     start a new path. Accumulates the per-path costs into ``aggregated``.
     """
-    num_disp, height, width = cost_volume.shape
+    _, height, width = cost_volume.shape
     n_steps = height if scan_rows else width
     prev: Optional[np.ndarray] = None
     for step_idx in range(n_steps):
@@ -508,8 +508,9 @@ class StereoDepthProcessor:
             depth = self.disparity_to_depth(result.disparity_map, focal_length_px, baseline_m)
             point_cloud = self.generate_point_cloud(depth, focal_length_px, baseline_m)
             if export_path is not None:
-                self.export_ply(point_cloud, export_path, binary=binary_ply)
-        except ValueError as exc:
+                if not self.export_ply(point_cloud, export_path, binary=binary_ply):
+                    raise ValueError(f"PLY export failed: {export_path}")
+        except (ValueError, OSError) as exc:
             return DepthResult(success=False, error=str(exc), warnings=result.warnings)
 
         result.depth_map = depth

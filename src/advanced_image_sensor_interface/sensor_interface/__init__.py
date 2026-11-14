@@ -35,6 +35,7 @@ of image sensor interfaces for development, testing, and validation purposes.
 
 # Legacy v1.x modules (maintained for compatibility)
 from .mipi_driver import MIPIConfig, MIPIDriver
+from .pipeline import FrameCodec, FramePipeline
 from .power_management import PowerConfig, PowerManager
 from .signal_processing import AutomatedTestSuite, SignalConfig, SignalProcessor
 
@@ -95,7 +96,18 @@ except ImportError as e:
     logging.getLogger(__name__).warning(f"v2.0.0 features not available: {e}")
 
 # Legacy exports (v1.x compatibility)
-__all__ = ["MIPIConfig", "MIPIDriver", "PowerConfig", "PowerManager", "SignalConfig", "SignalProcessor", "AutomatedTestSuite"]
+__all__ = [
+    "MIPIConfig",
+    "MIPIDriver",
+    "PowerConfig",
+    "PowerManager",
+    "SignalConfig",
+    "SignalProcessor",
+    "AutomatedTestSuite",
+    # v4.0.0 explicit frame pipeline
+    "FrameCodec",
+    "FramePipeline",
+]
 
 # Add v2.0.0 exports if available
 if V2_FEATURES_AVAILABLE:
@@ -147,6 +159,4 @@ if V2_FEATURES_AVAILABLE:
         ]
     )
 
-__version__ = "3.0.0"
-__author__ = "Mudit Bhargava"
-__license__ = "MIT"
+from .._version import __author__, __license__, __version__

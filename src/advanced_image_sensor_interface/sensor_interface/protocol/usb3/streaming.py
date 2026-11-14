@@ -1,31 +1,23 @@
-"""
-USB3 Vision Streaming Management
+"""USB3 Vision simulation with locked FIFO buffers and owned frame payloads.
 
-Provides buffer management, frame handling, and stream control
-for USB3 Vision cameras.
-
-Key Features:
-- Buffer pool with configurable size
-- Frame completion callbacks
-- Stream statistics and monitoring
-- Error recovery and retry logic
-- Multi-stream support
-- Configurable simulation delays for realistic hardware behavior
-
-Version: 3.2.0
+Frames use unpacked little-endian storage, exposed as flat uint8 arrays plus
+FrameInfo metadata. This is a synchronous simulator, not lock-free USB I/O.
 """
 
 import logging
 import threading
 import time
+from collections import deque
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
 import numpy as np
 
 from advanced_image_sensor_interface.types import SimulationDelayConfig
+
+from ..base import StreamingProtocolBase
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +34,11 @@ class StreamState(Enum):
 
 
 class BufferState(Enum):
-    """Buffer state in the pool."""
+    """Buffer ownership states."""
 
     FREE = "free"
     QUEUED = "queued"
+    FILLING = "filling"
     FILLED = "filled"
     PROCESSING = "processing"
 
@@ -67,7 +60,7 @@ class FrameInfo:
 
 @dataclass
 class StreamBuffer:
-    """Buffer for frame data."""
+    """Pool-owned storage; consumers must copy before returning it."""
 
     buffer_id: int
     capacity: int
@@ -80,45 +73,33 @@ class StreamBuffer:
 
 @dataclass
 class StreamConfig:
-    """Configuration for streaming.
-
-    Attributes:
-        buffer_count: Number of buffers in pool
-        buffer_size: Size of each buffer (0 = auto-calculate)
-        timeout_ms: Timeout for frame capture
-        payload_type: Type of payload (image, chunk, etc.)
-        enable_chunk_data: Enable chunk data support
-        enable_timestamps: Enable timestamp generation
-        max_retries: Maximum retry attempts
-        simulation_delays: Optional configurable simulation delays
-    """
+    """Configuration for streaming and simulated operation delays."""
 
     buffer_count: int = 10
-    buffer_size: int = 0  # 0 = auto-calculate
+    buffer_size: int = 0
     timeout_ms: int = 5000
     payload_type: str = "image"
     enable_chunk_data: bool = False
     enable_timestamps: bool = True
     max_retries: int = 3
-
-    # Simulation delay configuration (v3.2.0+)
-    simulation_delays: Optional[SimulationDelayConfig] = None
+    simulation_delays: SimulationDelayConfig = field(default_factory=SimulationDelayConfig)
 
     def __post_init__(self) -> None:
-        """Validate configuration."""
         if self.buffer_count < 2:
             raise ValueError("Buffer count must be at least 2")
-
+        if self.buffer_size < 0:
+            raise ValueError("Buffer size cannot be negative")
         if self.timeout_ms < 100:
             raise ValueError("Timeout must be at least 100ms")
-
         if self.simulation_delays is None:
             self.simulation_delays = SimulationDelayConfig()
+        elif isinstance(self.simulation_delays, dict):
+            self.simulation_delays = SimulationDelayConfig(**self.simulation_delays)
 
 
 @dataclass
 class StreamStatistics:
-    """Statistics for stream performance."""
+    """Measured statistics for the current capture session."""
 
     frames_captured: int = 0
     frames_dropped: int = 0
@@ -133,167 +114,115 @@ class StreamStatistics:
 
 
 class BufferPool:
-    """
-    Manages a pool of buffers for streaming.
-
-    Handles buffer allocation, queuing, and recycling.
-    """
+    """Locked buffer pool with O(1) FIFO acquisition and completion pops."""
 
     def __init__(self, config: StreamConfig) -> None:
-        """
-        Initialize buffer pool.
-
-        Args:
-            config: Stream configuration
-        """
         self.config = config
         self._buffers: list[StreamBuffer] = []
         self._lock = threading.Lock()
-        self._free_buffers: list[int] = []
-        self._queued_buffers: list[int] = []
-        self._filled_buffers: list[int] = []
+        self._free_buffers: deque[int] = deque()
+        self._queued_buffers: deque[int] = deque()
+        self._filled_buffers: deque[int] = deque()
 
     def allocate(self, buffer_size: int) -> bool:
-        """
-        Allocate buffers in the pool.
-
-        Args:
-            buffer_size: Size of each buffer in bytes
-
-        Returns:
-            True if allocation successful
-        """
-        try:
-            with self._lock:
-                for i in range(self.config.buffer_count):
-                    buffer = StreamBuffer(
-                        buffer_id=i, capacity=buffer_size, data=np.zeros(buffer_size, dtype=np.uint8), state=BufferState.FREE
-                    )
-                    self._buffers.append(buffer)
-                    self._free_buffers.append(i)
-
-            logger.info(f"Allocated {self.config.buffer_count} buffers, {buffer_size} bytes each")
+        with self._lock:
+            if buffer_size <= 0 or self._buffers:
+                return False
+            try:
+                buffers = [
+                    StreamBuffer(i, buffer_size, np.zeros(buffer_size, dtype=np.uint8)) for i in range(self.config.buffer_count)
+                ]
+            except (MemoryError, ValueError) as e:
+                logger.error(f"Buffer allocation failed: {e}")
+                return False
+            self._buffers = buffers
+            self._free_buffers.extend(range(len(buffers)))
             return True
 
-        except Exception as e:
-            logger.error(f"Buffer allocation failed: {e}")
-            return False
-
     def deallocate(self) -> None:
-        """Deallocate all buffers."""
         with self._lock:
             self._buffers.clear()
             self._free_buffers.clear()
             self._queued_buffers.clear()
             self._filled_buffers.clear()
 
-        logger.info("Buffer pool deallocated")
+    def _valid_id(self, buffer_id: int) -> bool:
+        return 0 <= buffer_id < len(self._buffers)
 
     def get_free_buffer(self) -> Optional[StreamBuffer]:
-        """
-        Get a free buffer from the pool.
-
-        Returns:
-            Free buffer or None if none available
-        """
+        """Reserve the oldest free buffer and queue it for capture."""
         with self._lock:
             if not self._free_buffers:
                 return None
-
-            buffer_id = self._free_buffers.pop(0)
-            buffer = self._buffers[buffer_id]
+            buffer = self._buffers[self._free_buffers.popleft()]
             buffer.state = BufferState.QUEUED
-            buffer.queue_time = time.time()
-            self._queued_buffers.append(buffer_id)
+            buffer.queue_time = time.monotonic()
+            self._queued_buffers.append(buffer.buffer_id)
             return buffer
 
     def queue_buffer(self, buffer_id: int) -> bool:
-        """
-        Queue a buffer for frame capture.
-
-        Args:
-            buffer_id: Buffer to queue
-
-        Returns:
-            True if queued successfully
-        """
         with self._lock:
-            if buffer_id >= len(self._buffers):
+            if not self._valid_id(buffer_id):
                 return False
-
             buffer = self._buffers[buffer_id]
             if buffer.state != BufferState.FREE:
                 return False
-
-            buffer.state = BufferState.QUEUED
-            buffer.queue_time = time.time()
             self._free_buffers.remove(buffer_id)
+            buffer.state = BufferState.QUEUED
+            buffer.queue_time = time.monotonic()
             self._queued_buffers.append(buffer_id)
             return True
 
-    def mark_filled(self, buffer_id: int, frame_info: FrameInfo) -> bool:
-        """
-        Mark a buffer as filled with frame data.
-
-        Args:
-            buffer_id: Buffer that was filled
-            frame_info: Information about the captured frame
-
-        Returns:
-            True if marked successfully
-        """
+    def get_queued_buffer(self) -> Optional[StreamBuffer]:
+        """Transfer the oldest queued buffer to the producer."""
         with self._lock:
-            if buffer_id >= len(self._buffers):
-                return False
+            if not self._queued_buffers:
+                return None
+            buffer = self._buffers[self._queued_buffers.popleft()]
+            buffer.state = BufferState.FILLING
+            return buffer
 
+    def mark_filled(self, buffer_id: int, frame_info: FrameInfo) -> bool:
+        with self._lock:
+            if not self._valid_id(buffer_id):
+                return False
             buffer = self._buffers[buffer_id]
+            if buffer.state not in (BufferState.QUEUED, BufferState.FILLING):
+                return False
+            if not 0 <= frame_info.payload_size <= buffer.capacity:
+                return False
+            if buffer.state == BufferState.QUEUED:
+                self._queued_buffers.remove(buffer_id)
             buffer.state = BufferState.FILLED
             buffer.frame_info = frame_info
-            buffer.completion_time = time.time()
-
-            if buffer_id in self._queued_buffers:
-                self._queued_buffers.remove(buffer_id)
+            buffer.completion_time = time.monotonic()
             self._filled_buffers.append(buffer_id)
             return True
 
     def get_filled_buffer(self) -> Optional[StreamBuffer]:
-        """
-        Get the oldest filled buffer.
-
-        Returns:
-            Filled buffer or None if none available
-        """
         with self._lock:
             if not self._filled_buffers:
                 return None
-
-            buffer_id = self._filled_buffers.pop(0)
-            buffer = self._buffers[buffer_id]
+            buffer = self._buffers[self._filled_buffers.popleft()]
             buffer.state = BufferState.PROCESSING
             return buffer
 
     def return_buffer(self, buffer_id: int) -> bool:
-        """
-        Return a buffer to the pool.
-
-        Args:
-            buffer_id: Buffer to return
-
-        Returns:
-            True if returned successfully
-        """
+        """Release consumer ownership (or cancel a producer/queued request)."""
         with self._lock:
-            if buffer_id >= len(self._buffers):
+            if not self._valid_id(buffer_id):
                 return False
-
             buffer = self._buffers[buffer_id]
+            if buffer.state not in (BufferState.PROCESSING, BufferState.FILLING, BufferState.QUEUED):
+                return False
+            if buffer.state == BufferState.QUEUED:
+                self._queued_buffers.remove(buffer_id)
             buffer.state = BufferState.FREE
             buffer.frame_info = None
             self._free_buffers.append(buffer_id)
             return True
 
     def get_statistics(self) -> dict[str, int]:
-        """Get buffer pool statistics."""
         with self._lock:
             return {
                 "total_buffers": len(self._buffers),
@@ -304,22 +233,11 @@ class BufferPool:
 
 
 class USB3StreamingManager:
-    """
-    USB3 Vision streaming management.
-
-    Provides high-level streaming control with buffer management,
-    callbacks, and statistics.
-    """
+    """Synchronous streaming simulator with bounded waits and owned results."""
 
     FrameCallback = Callable[[np.ndarray, FrameInfo], None]
 
     def __init__(self, config: Optional[StreamConfig] = None) -> None:
-        """
-        Initialize streaming manager.
-
-        Args:
-            config: Stream configuration
-        """
         self.config = config or StreamConfig()
         self.buffer_pool = BufferPool(self.config)
         self._state = StreamState.IDLE
@@ -329,267 +247,211 @@ class USB3StreamingManager:
         self._frame_counter = 0
         self._start_time: Optional[float] = None
         self._last_frame_time: Optional[float] = None
-
-        logger.info("USB3 Streaming Manager initialized")
+        self._prepared: Optional[tuple[int, int, str, int]] = None
 
     @property
     def state(self) -> StreamState:
-        """Get current stream state."""
         return self._state
 
     @property
     def is_streaming(self) -> bool:
-        """Check if currently streaming."""
         return self._state == StreamState.STREAMING
 
     def prepare(self, width: int, height: int, pixel_format: str) -> bool:
-        """
-        Prepare stream for capture.
-
-        Args:
-            width: Image width
-            height: Image height
-            pixel_format: Pixel format string
-
-        Returns:
-            True if preparation successful
-        """
-        if self._state != StreamState.IDLE:
-            logger.warning("Stream not in IDLE state")
-            return False
-
-        self._state = StreamState.PREPARING
-
-        # Calculate buffer size
-        bytes_per_pixel = self._get_bytes_per_pixel(pixel_format)
-        buffer_size = width * height * bytes_per_pixel
-
-        if self.config.buffer_size > 0:
-            buffer_size = max(buffer_size, self.config.buffer_size)
-
-        # Apply buffer allocation delay
-        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.buffer_allocation_delay)
-        time.sleep(delay)
-
-        # Allocate buffers
-        if not self.buffer_pool.allocate(buffer_size):
-            self._state = StreamState.ERROR
-            return False
-
-        logger.info(f"Stream prepared: {width}x{height} {pixel_format}")
-        return True
-
-    def start_streaming(self) -> bool:
-        """
-        Start streaming.
-
-        Returns:
-            True if started successfully
-        """
-        if self._state not in (StreamState.PREPARING, StreamState.PAUSED):
-            logger.warning(f"Cannot start from state {self._state.value}")
-            return False
-
-        self._state = StreamState.STREAMING
-        self._start_time = time.time()
-        self._frame_counter = 0
-
-        # Apply streaming setup delay
-        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.streaming_setup_delay)
-        time.sleep(delay)
-
-        # Queue initial buffers (leave most free for capture simulation)
-        num_to_queue = min(2, self.config.buffer_count)
-        for _ in range(num_to_queue):
-            buffer = self.buffer_pool.get_free_buffer()
-            if buffer is None:
-                break
-
-        logger.info("Streaming started")
-        return True
-
-    def stop_streaming(self) -> bool:
-        """
-        Stop streaming.
-
-        Returns:
-            True if stopped successfully
-        """
-        if self._state not in (StreamState.STREAMING, StreamState.PAUSED):
+        with self._lock:
+            if self._state != StreamState.IDLE:
+                return False
+            try:
+                bpp = self._get_bytes_per_pixel(pixel_format)
+                if width <= 0 or height <= 0 or (pixel_format.startswith("YUV422") and width % 2):
+                    raise ValueError("Invalid frame dimensions")
+                payload_size = width * height * bpp
+                delays = self.config.simulation_delays
+                time.sleep(delays.apply_delay(delays.buffer_allocation_delay))
+                if not self.buffer_pool.allocate(max(payload_size, self.config.buffer_size)):
+                    self._state = StreamState.ERROR
+                    return False
+            except (ValueError, TypeError) as e:
+                logger.error(f"Stream preparation failed: {e}")
+                return False
+            self._prepared = (width, height, pixel_format, payload_size)
+            self._state = StreamState.PREPARING
             return True
 
-        self._state = StreamState.STOPPING
+    def start_streaming(self) -> bool:
+        with self._lock:
+            if self._state == StreamState.PAUSED:
+                self._state = StreamState.STREAMING
+                return True
+            if self._state != StreamState.PREPARING or self._prepared is None:
+                return False
+            delays = self.config.simulation_delays
+            time.sleep(delays.apply_delay(delays.streaming_setup_delay))
+            while self.buffer_pool.get_free_buffer() is not None:
+                pass
+            self._frame_counter = 0
+            self._statistics = StreamStatistics()
+            self._start_time = time.monotonic()
+            self._last_frame_time = None
+            self._state = StreamState.STREAMING
+            return True
 
-        # Apply streaming teardown delay
-        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.streaming_teardown_delay)
-        time.sleep(delay)
-
-        # Update statistics
-        if self._start_time:
-            self._statistics.uptime_seconds = time.time() - self._start_time
-
-        self.buffer_pool.deallocate()
-        self._state = StreamState.IDLE
-
-        logger.info("Streaming stopped")
-        return True
+    def stop_streaming(self) -> bool:
+        with self._lock:
+            if self._state == StreamState.IDLE:
+                return True
+            self._state = StreamState.STOPPING
+            delays = self.config.simulation_delays
+            time.sleep(delays.apply_delay(delays.streaming_teardown_delay))
+            self._refresh_statistics()
+            self._start_time = None
+            self.buffer_pool.deallocate()
+            self._prepared = None
+            self._state = StreamState.IDLE
+            return True
 
     def pause_streaming(self) -> bool:
-        """Pause streaming."""
-        if self._state != StreamState.STREAMING:
-            return False
-
-        self._state = StreamState.PAUSED
-        logger.info("Streaming paused")
-        return True
+        with self._lock:
+            if self._state != StreamState.STREAMING:
+                return False
+            self._state = StreamState.PAUSED
+            return True
 
     def resume_streaming(self) -> bool:
-        """Resume paused streaming."""
-        if self._state != StreamState.PAUSED:
-            return False
-
-        self._state = StreamState.STREAMING
-        logger.info("Streaming resumed")
-        return True
+        with self._lock:
+            if self._state != StreamState.PAUSED:
+                return False
+            self._state = StreamState.STREAMING
+            return True
 
     def register_frame_callback(self, callback: FrameCallback) -> None:
-        """
-        Register a callback for frame events.
-
-        Args:
-            callback: Function to call when frame is ready
-        """
-        self._frame_callbacks.append(callback)
-        logger.debug("Registered frame callback")
+        with self._lock:
+            self._frame_callbacks.append(callback)
 
     def unregister_frame_callback(self, callback: FrameCallback) -> None:
-        """
-        Unregister a frame callback.
-
-        Args:
-            callback: Callback to remove
-        """
-        if callback in self._frame_callbacks:
-            self._frame_callbacks.remove(callback)
+        with self._lock:
+            if callback in self._frame_callbacks:
+                self._frame_callbacks.remove(callback)
 
     def get_frame(self, timeout_ms: Optional[int] = None) -> Optional[tuple[np.ndarray, FrameInfo]]:
+        """Return an owned flat-byte array and metadata, or None on timeout.
+
+        The timeout bounds lock acquisition and simulated capture latency. Zero
+        is a non-blocking request; CPU generation is checked against the deadline.
         """
-        Get the next available frame.
-
-        Args:
-            timeout_ms: Timeout in milliseconds
-
-        Returns:
-            Tuple of (frame_data, frame_info) or None
-        """
-        if self._state != StreamState.STREAMING:
+        timeout = self.config.timeout_ms if timeout_ms is None else timeout_ms
+        if timeout < 0:
+            raise ValueError("Timeout cannot be negative")
+        started = time.monotonic()
+        deadline = started + timeout / 1000
+        if not self._lock.acquire(timeout=timeout / 1000):
             return None
-
-        _timeout = timeout_ms or self.config.timeout_ms
-
-        # Simulate frame capture
-        buffer = self._simulate_frame_capture()
-        if buffer is None:
-            return None
-
-        # Get frame data
-        frame_data = buffer.data
-        frame_info = buffer.frame_info
-
-        # Return buffer to pool
-        self.buffer_pool.return_buffer(buffer.buffer_id)
-
-        if frame_data is None or frame_info is None:
-            self._statistics.frames_dropped += 1
-            logger.warning("Captured buffer was missing frame data or metadata")
-            return None
-
-        # Update statistics
-        self._update_statistics(frame_info)
-
-        # Notify callbacks
-        self._notify_callbacks(frame_data, frame_info)
-
-        return frame_data, frame_info
-
-    def get_statistics(self) -> StreamStatistics:
-        """Get stream statistics."""
-        return self._statistics
-
-    def reset_statistics(self) -> None:
-        """Reset stream statistics."""
-        self._statistics = StreamStatistics()
-        logger.debug("Statistics reset")
-
-    def _simulate_frame_capture(self) -> Optional[StreamBuffer]:
-        """Simulate frame capture for testing."""
-        buffer = self.buffer_pool.get_free_buffer()
-        if buffer is None:
-            self._statistics.buffer_underruns += 1
-            return None
-
-        # Apply frame capture delay
-        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.frame_capture_delay)
-        time.sleep(delay)
-
-        # Generate simulated frame
-        self._frame_counter += 1
-        frame_info = FrameInfo(
-            frame_id=self._frame_counter,
-            timestamp_ns=int(time.time() * 1e9),
-            exposure_time_us=10000.0,
-            gain=1.0,
-            width=1920,
-            height=1080,
-            pixel_format="Mono8",
-            payload_size=1920 * 1080,
-        )
-
-        self.buffer_pool.mark_filled(buffer.buffer_id, frame_info)
-        return self.buffer_pool.get_filled_buffer()
-
-    def _update_statistics(self, frame_info: Optional[FrameInfo]) -> None:
-        """Update stream statistics."""
-        self._statistics.frames_captured += 1
-
-        if frame_info is not None:
-            self._statistics.bytes_transferred += frame_info.payload_size
-
-            if frame_info.is_incomplete:
-                self._statistics.frames_incomplete += 1
-
-        # Calculate frame rate
-        current_time = time.time()
-        if self._last_frame_time is not None:
-            interval = current_time - self._last_frame_time
-            if interval > 0:
-                instant_fps = 1.0 / interval
-                # Exponential moving average
-                alpha = 0.1
-                self._statistics.average_frame_rate = alpha * instant_fps + (1 - alpha) * self._statistics.average_frame_rate
-
-        self._last_frame_time = current_time
-
-    def _notify_callbacks(self, frame_data: np.ndarray, frame_info: FrameInfo) -> None:
-        """Notify registered callbacks."""
-        for callback in self._frame_callbacks:
+        try:
+            if self._state != StreamState.STREAMING:
+                return None
+            buffer = self._simulate_frame_capture(deadline)
+            if buffer is None:
+                return None
             try:
-                callback(frame_data, frame_info)
+                info = buffer.frame_info
+                if buffer.data is None or info is None:
+                    self._statistics.frames_dropped += 1
+                    return None
+                data = buffer.data[: info.payload_size].copy()
+            finally:
+                self.buffer_pool.return_buffer(buffer.buffer_id)
+                # FIFO acquisition keeps the normal recycle path O(1).
+                self.buffer_pool.get_free_buffer()
+            self._update_statistics(info)
+            latency = (time.monotonic() - started) * 1000
+            count = self._statistics.frames_captured
+            self._statistics.average_latency_ms += (latency - self._statistics.average_latency_ms) / count
+            self._statistics.max_latency_ms = max(self._statistics.max_latency_ms, latency)
+            callbacks = tuple(self._frame_callbacks)
+        finally:
+            self._lock.release()
+        # Call user code outside locks. No subsequent capture can overwrite data.
+        for callback in callbacks:
+            try:
+                callback(data, info)
             except Exception as e:
                 logger.error(f"Frame callback error: {e}")
+        return data, info
+
+    def _simulate_frame_capture(self, deadline: Optional[float] = None) -> Optional[StreamBuffer]:
+        if self._prepared is None:
+            return None
+        delays = self.config.simulation_delays
+        delay = delays.apply_delay(delays.frame_capture_delay)
+        if deadline is not None:
+            remaining = max(0.0, deadline - time.monotonic())
+            if remaining <= 0 or delay > remaining:
+                if remaining > 0:
+                    time.sleep(remaining)
+                return None
+        time.sleep(delay)
+        width, height, fmt, size = self._prepared
+        payload = StreamingProtocolBase._generate_test_frame_vectorized(
+            width, height, self._get_bytes_per_pixel(fmt), self._frame_counter + 1, pixel_format=fmt
+        )
+        if deadline is not None and time.monotonic() > deadline:
+            return None
+        buffer = self.buffer_pool.get_queued_buffer()
+        if buffer is None:
+            self._statistics.buffer_underruns += 1
+            self._statistics.frames_dropped += 1
+            return None
+        try:
+            if buffer.data is None:
+                raise ValueError("Buffer is missing storage")
+            buffer.data[:size] = np.frombuffer(payload, dtype=np.uint8)
+            info = FrameInfo(
+                frame_id=self._frame_counter + 1,
+                timestamp_ns=time.time_ns() if self.config.enable_timestamps else 0,
+                exposure_time_us=10000.0,
+                gain=1.0,
+                width=width,
+                height=height,
+                pixel_format=fmt,
+                payload_size=size,
+            )
+            if not self.buffer_pool.mark_filled(buffer.buffer_id, info):
+                raise ValueError("Invalid buffer completion")
+            self._frame_counter += 1
+            return self.buffer_pool.get_filled_buffer()
+        except Exception as e:
+            logger.error(f"Simulated capture failed: {e}")
+            self.buffer_pool.return_buffer(buffer.buffer_id)
+            self.buffer_pool.get_free_buffer()
+            self._statistics.frames_dropped += 1
+            return None
+
+    def _refresh_statistics(self) -> None:
+        if self._start_time is not None:
+            self._statistics.uptime_seconds = max(0.0, time.monotonic() - self._start_time)
+        elapsed = self._statistics.uptime_seconds
+        self._statistics.average_frame_rate = self._statistics.frames_captured / elapsed if elapsed > 0 else 0.0
+
+    def _update_statistics(self, frame_info: Optional[FrameInfo]) -> None:
+        if frame_info is None:
+            return
+        self._statistics.frames_captured += 1
+        self._statistics.bytes_transferred += frame_info.payload_size
+        self._statistics.frames_incomplete += int(frame_info.is_incomplete)
+        self._last_frame_time = time.monotonic()
+        self._refresh_statistics()
+
+    def get_statistics(self) -> StreamStatistics:
+        with self._lock:
+            self._refresh_statistics()
+            return self._statistics
+
+    def reset_statistics(self) -> None:
+        with self._lock:
+            self._statistics = StreamStatistics()
+            self._last_frame_time = None
+            if self._start_time is not None:
+                self._start_time = time.monotonic()
 
     def _get_bytes_per_pixel(self, pixel_format: str) -> int:
-        """Get bytes per pixel for a format."""
-        format_sizes = {
-            "Mono8": 1,
-            "Mono10": 2,
-            "Mono12": 2,
-            "Mono16": 2,
-            "BayerRG8": 1,
-            "BayerRG10": 2,
-            "BayerRG12": 2,
-            "RGB8": 3,
-            "BGR8": 3,
-            "YUV422": 2,
-        }
-        return format_sizes.get(pixel_format, 1)
+        return StreamingProtocolBase._get_bytes_per_pixel_common(pixel_format)

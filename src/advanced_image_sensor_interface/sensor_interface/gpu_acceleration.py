@@ -1,11 +1,13 @@
 """GPU Acceleration Support.
 
 This module provides GPU acceleration capabilities for image processing including:
-- CUDA-based processing (when available)
-- OpenCL support
+- CUDA-based processing via CuPy or Numba CUDA (when an NVIDIA GPU is available)
+- CPU fallback (NumPy/SciPy) when no CUDA backend is present, e.g. on Apple Silicon
 - Memory management for GPU operations
 - Parallel processing pipelines
 - Performance optimization
+
+OpenCL is enumerated in GPUBackend but not implemented; there is no Apple MPS backend.
 """
 
 import logging

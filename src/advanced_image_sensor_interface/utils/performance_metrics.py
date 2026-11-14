@@ -55,26 +55,44 @@ def calculate_snr(signal: np.ndarray, noise: np.ndarray) -> float:
 def calculate_dynamic_range(image: np.ndarray) -> float:
     """Calculate the dynamic range of an image in decibels.
 
+    Uses the smallest positive sample as the black reference when an image
+    contains zero-valued pixels. Integer images with zeros use one LSB (1.0)
+    as the floor, so a clipped-black 12-bit frame reports about 72 dB rather
+    than collapsing to 0 dB.
+
     Args:
         image: The input image.
 
     Returns:
-        The calculated dynamic range in decibels. Returns 0.0 if the
-        image contains zero-valued pixels.
+        The calculated dynamic range in decibels, or 0.0 for an empty or
+        all-black image.
+
+    Raises:
+        ValueError: If the image contains non-finite values.
     """
-    # Check if the image contains any zero values
-    if np.min(image) == 0:
-        return 0.0  # Return 0 if the image contains any zeros (per test expectation)
-
-    min_val = np.min(image)
-    max_val = np.max(image)
-
-    if max_val == 0 or min_val == 0:
+    image = np.asarray(image)
+    if image.size == 0:
         return 0.0
+    if not np.all(np.isfinite(image)):
+        raise ValueError("Image must contain finite values")
+
+    max_val = float(np.max(image))
+    if max_val <= 0:
+        return 0.0
+
+    min_val = float(np.min(image))
+    if min_val <= 0:
+        if np.issubdtype(image.dtype, np.integer):
+            min_val = 1.0
+        else:
+            positive = image[image > 0]
+            if positive.size == 0:
+                return 0.0
+            min_val = float(np.min(positive))
 
     dynamic_range = 20 * np.log10(max_val / min_val)
     logger.info(f"Calculated Dynamic Range: {dynamic_range:.2f} dB")
-    return dynamic_range
+    return float(dynamic_range)
 
 
 def calculate_color_accuracy(reference_colors: np.ndarray, measured_colors: np.ndarray) -> tuple[float, np.ndarray]:

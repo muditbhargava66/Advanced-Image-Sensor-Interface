@@ -6,6 +6,8 @@ must inherit from, ensuring a consistent interface across different protocols.
 """
 
 import logging
+import re
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Optional
@@ -78,6 +80,8 @@ class ProtocolBase(ABC):
         """Initialize protocol with configuration."""
         self.config = config
         self.is_connected = False
+        self._connected_at: Optional[float] = None
+        self._connected_seconds = 0.0
         self.status = ProtocolStatus(
             is_connected=False,
             connection_quality=0.0,
@@ -156,6 +160,7 @@ class ProtocolBase(ABC):
 
     def get_status(self) -> ProtocolStatus | dict[str, Any]:
         """Get current protocol status."""
+        self._refresh_status()
         return self.status
 
     def get_capabilities(self) -> ProtocolCapabilities:
@@ -192,8 +197,32 @@ class ProtocolBase(ABC):
             logger.error(f"Protocol reset failed: {e}")
             return False
 
+    def _mark_connected(self) -> None:
+        """Begin measuring connected time; link capacity is not measured throughput."""
+        if self._connected_at is None:
+            self._connected_at = time.monotonic()
+        self.is_connected = self.status.is_connected = True
+        self._refresh_status()
+
+    def _mark_disconnected(self) -> None:
+        self._refresh_status()
+        self._connected_seconds = self.status.uptime_seconds
+        self._connected_at = None
+        self.is_connected = self.status.is_connected = False
+        self.status.data_rate_mbps = 0.0
+
+    def _refresh_status(self) -> None:
+        elapsed = 0.0 if self._connected_at is None else max(0.0, time.monotonic() - self._connected_at)
+        self.status.uptime_seconds = self._connected_seconds + elapsed
+        self.status.is_connected = self.is_connected
+        total_bytes = self.status.bytes_received + self.status.bytes_transmitted
+        self.status.data_rate_mbps = (
+            total_bytes * 8 / self.status.uptime_seconds / 1e6 if self.is_connected and self.status.uptime_seconds > 0 else 0.0
+        )
+
     def get_performance_metrics(self) -> dict[str, Any]:
-        """Get performance metrics for the protocol."""
+        """Measured traffic over accumulated connected time (not link capacity)."""
+        self._refresh_status()
         return {
             "data_rate_mbps": self.status.data_rate_mbps,
             "connection_quality": self.status.connection_quality,
@@ -222,6 +251,19 @@ class StreamingProtocolBase(ProtocolBase):
     def __init__(self, config: dict[str, Any]):
         super().__init__(config)
         self.is_streaming = False
+        self._captured_frames = 0
+
+    def _record_capture(self, size: int) -> None:
+        self._captured_frames += 1
+        self.status.bytes_received += size
+        self._refresh_status()
+
+    def _measured_frame_rate(self) -> float:
+        self._refresh_status()
+        return self._captured_frames / self.status.uptime_seconds if self.status.uptime_seconds > 0 else 0.0
+
+    def get_performance_metrics(self) -> dict[str, Any]:
+        return {**super().get_performance_metrics(), **self.get_streaming_status(), "frames_captured": self._captured_frames}
 
     @abstractmethod
     def start_streaming(self) -> bool:
@@ -281,55 +323,59 @@ class StreamingProtocolBase(ProtocolBase):
     # -----------------------------------------------------------------
 
     @staticmethod
-    def _get_bytes_per_pixel_common(pixel_format: str) -> int:
-        """Map a pixel format string to bytes per pixel.
+    def _pixel_storage(pixel_format: str) -> tuple[int, int, int]:
+        """Return (significant bits, samples per pixel, bytes per sample).
 
-        Covers the common formats shared across MIPI, GigE, CoaXPress,
-        and USB3.  Subclasses can extend this with protocol-specific
-        formats.
+        Storage is unpacked little-endian: <=8 bits use uint8, 10-16 use
+        uint16, and 20 use uint32. RGB888 aliases RGB8. YUV422 uses Y/U,
+        Y/V sample pairs; packed RAW suffixes and RGB565/666 are unsupported.
         """
-        format_map: dict[str, int] = {
-            "RAW8": 1,
-            "RAW10": 2,
-            "RAW12": 2,
-            "RAW14": 2,
-            "RAW16": 2,
-            "Mono8": 1,
-            "Mono10": 2,
-            "Mono12": 2,
-            "Mono16": 2,
-            "RGB8": 3,
-            "BGR8": 3,
-            "RGB10": 4,
-            "RGB16": 6,
-            "YUV422": 2,
-            "YUV422_8": 2,
-            "YUV444": 3,
-            "BayerRG8": 1,
-            "BayerRG10": 2,
-            "BayerRG12": 2,
-            "BayerRG16": 2,
-        }
-        return format_map.get(pixel_format, 1)
+        aliases = {"RGB888": "RGB8", "YUV422": "YUV422_8", "YUV444": "YUV444_8"}
+        fmt = aliases.get(pixel_format, pixel_format)
+        match = re.fullmatch(r"(RAW|Mono|Bayer(?:RG|GR|GB|BG)|RGB|BGR)(6|7|8|10|12|14|16|20)", fmt)
+        if match:
+            family, depth = match.groups()
+            bits = int(depth)
+            if bits < 8 and family != "RAW":
+                raise ValueError(f"Unsupported pixel format: {pixel_format}")
+            channels = 3 if family in ("RGB", "BGR") else 1
+        else:
+            match = re.fullmatch(r"YUV(422|444)_(8|10)", fmt)
+            if not match:
+                raise ValueError(f"Unsupported or packed pixel format: {pixel_format}")
+            sampling, depth = match.groups()
+            bits, channels = int(depth), 2 if sampling == "422" else 3
+        return bits, channels, 1 if bits <= 8 else 2 if bits <= 16 else 4
 
     @staticmethod
-    def _generate_test_frame_vectorized(width: int, height: int, bytes_per_pixel: int, frame_count: int = 0) -> bytes:
-        """Generate a diagonal-gradient test frame using vectorized numpy.
+    def _get_bytes_per_pixel_common(pixel_format: str) -> int:
+        """Get exact unpacked storage size, rejecting unknown/packed formats."""
+        _, channels, sample_bytes = StreamingProtocolBase._pixel_storage(pixel_format)
+        return channels * sample_bytes
 
-        PERF-2: Shared, vectorized implementation that all protocol
-        drivers can call.
+    @staticmethod
+    def _generate_test_frame_vectorized(
+        width: int, height: int, bytes_per_pixel: int, frame_count: int = 0, pixel_format: Optional[str] = None
+    ) -> bytes:
+        """Generate owned frame bytes with declared range and little-endian storage.
+
+        The legacy size-only API remains available. Format-aware callers must
+        provide a matching size; no wire-level bit packing is performed.
         """
         import numpy as np
 
-        y_coords = np.arange(height, dtype=np.int32)[:, np.newaxis]
-        x_coords = np.arange(width, dtype=np.int32)[np.newaxis, :]
-
-        if bytes_per_pixel == 1:
-            frame = ((x_coords + y_coords + frame_count) % 256).astype(np.uint8)
-        elif bytes_per_pixel == 2:
-            frame = (((x_coords + y_coords + frame_count) * 16) % 65536).astype(np.uint16)
+        if width <= 0 or height <= 0 or bytes_per_pixel <= 0:
+            raise ValueError("Frame dimensions and storage size must be positive")
+        if pixel_format is None:
+            bits, channels, sample_bytes = (16, 1, 2) if bytes_per_pixel == 2 else (8, bytes_per_pixel, 1)
         else:
-            channels = [((x_coords + y_coords + c * 50 + frame_count) % 256).astype(np.uint8) for c in range(bytes_per_pixel)]
-            frame = np.stack(channels, axis=-1)
-
+            bits, channels, sample_bytes = StreamingProtocolBase._pixel_storage(pixel_format)
+            if channels * sample_bytes != bytes_per_pixel:
+                raise ValueError("Pixel format does not match bytes_per_pixel")
+            if pixel_format.startswith("YUV422") and width % 2:
+                raise ValueError("YUV422 requires an even width")
+        gradient = np.arange(height, dtype=np.uint64)[:, None] + np.arange(width, dtype=np.uint64)[None, :]
+        modulus = 1 << bits
+        samples = [((gradient + (frame_count + c * 50) % modulus) % modulus) for c in range(channels)]
+        frame = np.stack(samples, axis=-1).astype(np.dtype(f"<u{sample_bytes}"))
         return frame.tobytes()

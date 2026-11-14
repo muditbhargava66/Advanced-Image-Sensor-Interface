@@ -16,7 +16,7 @@ Key Features:
 
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, ClassVar, Optional
 
 
@@ -67,7 +67,7 @@ class MIPIConfig:
     security_level: str = "standard"
 
     # Simulation delay configuration (v3.2.0+)
-    simulation_delays: Optional[SimulationDelayConfig] = None
+    simulation_delays: SimulationDelayConfig = field(default_factory=SimulationDelayConfig)
 
     def __post_init__(self) -> None:
         """Validate configuration parameters."""
@@ -82,6 +82,8 @@ class MIPIConfig:
 
         if self.simulation_delays is None:
             self.simulation_delays = SimulationDelayConfig()
+        elif isinstance(self.simulation_delays, dict):
+            self.simulation_delays = SimulationDelayConfig(**self.simulation_delays)
 
     @property
     def total_bandwidth_mbps(self) -> float:
@@ -177,7 +179,7 @@ class MIPIProtocolDriver(StreamingProtocolBase):
             multi_camera_support=True,  # Via virtual channels
             hardware_trigger_support=True,
             software_trigger_support=True,
-            supported_pixel_formats=list(PIXEL_FORMAT_DATA_TYPES.keys()),
+            supported_pixel_formats=[fmt for fmt in PIXEL_FORMAT_DATA_TYPES if fmt not in ("RGB565", "RGB666")],
             supported_resolutions=[(640, 480), (1280, 720), (1920, 1080), (2592, 1944), (3840, 2160), (4096, 3072)],
         )
 
@@ -207,7 +209,7 @@ class MIPIProtocolDriver(StreamingProtocolBase):
             self.is_connected = True
             self.status.is_connected = True
             self.status.connection_quality = 1.0
-            self.status.data_rate_mbps = self.mipi_config.total_bandwidth_mbps
+            self._mark_connected()
 
             logger.info("MIPI connection established")
             return True
@@ -226,8 +228,8 @@ class MIPIProtocolDriver(StreamingProtocolBase):
             True if disconnection successful
         """
         try:
-            if self.is_streaming:
-                self.stop_streaming()
+            if self.is_streaming and not self.stop_streaming():
+                return False
 
             # Close handles
             self.device_handle = None
@@ -237,7 +239,7 @@ class MIPIProtocolDriver(StreamingProtocolBase):
             self.is_connected = False
             self.status.is_connected = False
             self.status.connection_quality = 0.0
-            self.status.data_rate_mbps = 0.0
+            self._mark_disconnected()
 
             logger.info("MIPI connection closed")
             return True
@@ -394,6 +396,7 @@ class MIPIProtocolDriver(StreamingProtocolBase):
             self.frame_count += 1
             self.stats["frames_captured"] += 1
             self.stats["bytes_transferred"] += len(frame_data)
+            self._record_capture(len(frame_data))
             self.stats["last_frame_time"] = time.time()
 
             logger.debug(f"Captured MIPI frame {self.frame_count}, size: {len(frame_data)} bytes")
@@ -424,13 +427,13 @@ class MIPIProtocolDriver(StreamingProtocolBase):
 
     def get_statistics(self) -> dict[str, Any]:
         """Get MIPI driver statistics."""
-        current_time = time.time()
-        uptime = current_time - self.start_time if self.start_time else 0
+        self._refresh_status()
+        uptime = self.status.uptime_seconds
 
         return {
             **self.stats,
             "uptime_seconds": uptime,
-            "current_fps": self.frame_count / uptime if uptime > 0 else 0,
+            "current_fps": self._measured_frame_rate(),
             "connection_quality": self.status.connection_quality,
             "error_rate": self.stats["protocol_errors"] / max(1, uptime),
         }
@@ -473,25 +476,20 @@ class MIPIProtocolDriver(StreamingProtocolBase):
 
     def _generate_test_frame(self, width: int, height: int, bytes_per_pixel: int) -> bytes:
         """Generate test frame data using shared vectorized implementation."""
-        return self._generate_test_frame_vectorized(width, height, bytes_per_pixel, self.frame_count)
+        return self._generate_test_frame_vectorized(
+            width, height, bytes_per_pixel, self.frame_count, pixel_format=self.mipi_config.pixel_format
+        )
 
     def _get_current_frame_rate(self) -> float:
         """Get current frame rate."""
-        if self.start_time and self.frame_count > 0:
-            elapsed = time.time() - self.start_time
-            return self.frame_count / elapsed if elapsed > 0 else 0.0
-        return 0.0
+        return self._measured_frame_rate()
 
     def _get_dropped_frame_count(self) -> int:
         """Get number of dropped frames."""
         return self.stats["frames_dropped"]
 
     def _get_buffer_utilization(self) -> float:
-        """Get buffer utilization percentage."""
-        target_fps = self.mipi_config.frame_rate
-        actual_fps = self._get_current_frame_rate()
-        if target_fps > 0:
-            return min(100.0, (actual_fps / target_fps) * 100.0)
+        """No asynchronous buffers are held by this synchronous simulator."""
         return 0.0
 
     # Legacy compatibility - keep connected attribute

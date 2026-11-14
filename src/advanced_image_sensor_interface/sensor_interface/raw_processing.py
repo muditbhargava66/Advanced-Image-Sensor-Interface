@@ -139,9 +139,6 @@ class RAWProcessor:
         Returns:
             RAWProcessingResult: Result object containing processed data,
                 success status, error info, warnings, and metrics.
-
-        Raises:
-            ValueError: If raw_data is not a 2D array (before processing begins).
         """
         start_time = time.perf_counter()
         warnings = []
@@ -152,14 +149,14 @@ class RAWProcessor:
         vignetting_corrected = False
 
         try:
-            # Validate input
-            if len(raw_data.shape) != 2:
-                return RAWProcessingResult(
-                    success=False,
-                    error="RAW data must be 2D array",
-                    warnings=warnings,
-                    metrics=ProcessingMetrics(processing_time_ms=(time.perf_counter() - start_time) * 1000),
-                )
+            if not isinstance(raw_data, np.ndarray) or raw_data.ndim != 2 or raw_data.size == 0:
+                raise ValueError("RAW data must be a non-empty 2D numpy array")
+            if raw_data.dtype not in (np.uint8, np.uint16, np.uint32, np.float32, np.float64):
+                raise ValueError(f"Unsupported RAW dtype: {raw_data.dtype}")
+            if not np.all(np.isfinite(raw_data)) or np.any(raw_data < 0):
+                raise ValueError("RAW data must contain finite non-negative samples")
+            if np.issubdtype(raw_data.dtype, np.integer) and np.max(raw_data) > (1 << self.parameters.bit_depth) - 1:
+                raise ValueError("RAW samples exceed the configured bit depth")
 
             # Step 1: Normalize RAW data
             normalized_raw = self._normalize_raw_data(raw_data)
@@ -227,24 +224,15 @@ class RAWProcessor:
         except Exception as e:
             logger.error(f"RAW processing failed: {e}")
             processing_time_ms = (time.perf_counter() - start_time) * 1000
-            # Return a fallback image when spatial dimensions are available.
-            fallback_image = None
-            if raw_data.ndim >= 2:
-                height, width = raw_data.shape[:2]
-                fallback_image = np.zeros((height, width, 3), dtype=np.uint8)
             return RAWProcessingResult(
-                success=False,
-                data=fallback_image,
-                error=str(e),
-                warnings=warnings,
-                metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
+                success=False, error=str(e), warnings=warnings, metrics=ProcessingMetrics(processing_time_ms=processing_time_ms)
             )
 
     def _normalize_raw_data(self, raw_data: np.ndarray) -> np.ndarray:
         """Normalize RAW data to [0, 1] range."""
         if raw_data.dtype == np.uint8:
             return raw_data.astype(np.float32) / 255.0
-        elif raw_data.dtype == np.uint16:
+        elif raw_data.dtype in (np.uint16, np.uint32):
             max_val = 2**self.parameters.bit_depth - 1
             return raw_data.astype(np.float32) / max_val
         else:
@@ -425,7 +413,6 @@ class RAWProcessor:
         Returns:
             Fully interpolated channel
         """
-        height, width = channel.shape
         result = channel.copy()
 
         # Pad the channel for boundary handling
