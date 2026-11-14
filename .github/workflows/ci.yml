@@ -164,6 +164,7 @@ jobs:
         # Import each library in its own process: TensorFlow and PyTorch bundle
         # conflicting OpenMP runtimes that segfault when loaded into one process.
         if: runner.os != 'macOS'
+        shell: bash
         env:
           KERAS_BACKEND: tensorflow
         run: |
