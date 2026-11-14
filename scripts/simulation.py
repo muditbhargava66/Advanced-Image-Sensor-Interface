@@ -74,10 +74,7 @@ def simulate_pipeline(width: int, height: int, num_frames: int, noise_level: flo
     # Fast mode zeroes the per-operation delays so large simulations run quickly.
     delay_config = (
         SimulationDelayConfig(
-            link_initialization_delay=0.0,
-            streaming_setup_delay=0.0,
-            streaming_teardown_delay=0.0,
-            frame_capture_delay=0.0,
+            link_initialization_delay=0.0, streaming_setup_delay=0.0, streaming_teardown_delay=0.0, frame_capture_delay=0.0
         )
         if fast_mode
         else SimulationDelayConfig()
@@ -85,11 +82,7 @@ def simulate_pipeline(width: int, height: int, num_frames: int, noise_level: flo
 
     # Initialize components
     mipi_config = MIPIConfig(
-        lanes=4,
-        data_rate_mbps=2500.0,
-        pixel_format="RAW12",
-        resolution=(width, height),
-        simulation_delays=delay_config,
+        lanes=4, data_rate_mbps=2500.0, pixel_format="RAW12", resolution=(width, height), simulation_delays=delay_config
     )
     mipi_driver = MIPIProtocolDriver(mipi_config)
 
@@ -126,9 +119,10 @@ def simulate_pipeline(width: int, height: int, num_frames: int, noise_level: flo
             raise RuntimeError(f"Frame {i} processing failed: {result.error}")
         processed_frame = result.data
 
-        # Calculate metrics using proper noise estimate
+        # Calculate metrics using the residual as the noise estimate. Keep it
+        # as float: casting signed residuals to uint16 wraps negative values.
         noise_estimate = clean_frame.astype(np.float32) - processed_frame.astype(np.float32)
-        snr = calculate_snr(processed_frame, noise_estimate.astype(np.uint16))
+        snr = calculate_snr(processed_frame.astype(np.float32), noise_estimate)
         dr = calculate_dynamic_range(processed_frame)
         color_accuracy, _ = calculate_color_accuracy(clean_frame, processed_frame)
         power_status = power_manager.get_power_status()

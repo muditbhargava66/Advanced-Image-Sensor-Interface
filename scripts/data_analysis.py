@@ -95,14 +95,27 @@ def get_unit(metric: str) -> str:
 
 def plot_data(data: dict[str, Any], output_prefix: str):
     """Generate plots for the analyzed data."""
+    metrics: dict[str, dict[str, float]] = {}
     for key, value in data.items():
-        if isinstance(value, dict) and "mean" in value:
-            plt.figure(figsize=(10, 6))
-            plt.bar(["Mean", "Min", "Max"], [value["mean"], value["min"], value["max"]])
-            plt.title(f"{key.replace('_', ' ').title()} Analysis")
-            plt.ylabel(f"{key.replace('_', ' ').title()} ({value['unit']})")
-            plt.savefig(f"{output_prefix}_{key}_analysis.png")
-            plt.close()
+        if not isinstance(value, dict) or "value" not in value:
+            continue
+        for suffix in ("mean", "std", "min", "max"):
+            ending = f"_{suffix}"
+            if key.endswith(ending):
+                metrics.setdefault(key[: -len(ending)], {})[suffix] = value["value"]
+                break
+        else:
+            metrics[key] = {"value": value["value"]}
+
+    for name, values in metrics.items():
+        labels = [label for label in ("value", "mean", "min", "max") if label in values]
+        plt.figure(figsize=(8, 5))
+        plt.bar([label.title() for label in labels], [values[label] for label in labels])
+        plt.title(f"{name.replace('_', ' ').title()} Analysis")
+        plt.ylabel(f"{name.replace('_', ' ').title()} ({get_unit(name)})")
+        plt.tight_layout()
+        plt.savefig(f"{output_prefix}_{name}_analysis.png")
+        plt.close()
 
 
 def compare_data(data_list: list[dict[str, Any]]) -> dict[str, Any]:

@@ -221,10 +221,11 @@ def main() -> None:
 
     if args.unit_tests:
         print("Running unit tests...")
+        loader = unittest.TestLoader()
         unit_suite = unittest.TestSuite()
-        unit_suite.addTest(unittest.makeSuite(TestMIPIDriver))
-        unit_suite.addTest(unittest.makeSuite(TestSignalProcessor))
-        unit_suite.addTest(unittest.makeSuite(TestPowerManager))
+        unit_suite.addTests(loader.loadTestsFromTestCase(TestMIPIDriver))
+        unit_suite.addTests(loader.loadTestsFromTestCase(TestSignalProcessor))
+        unit_suite.addTests(loader.loadTestsFromTestCase(TestPowerManager))
 
         runner = unittest.TextTestRunner(verbosity=2)
         unit_result = runner.run(unit_suite)
@@ -236,8 +237,9 @@ def main() -> None:
 
     if args.integration_tests:
         print("Running integration tests...")
+        loader = unittest.TestLoader()
         integration_suite = unittest.TestSuite()
-        integration_suite.addTest(unittest.makeSuite(IntegrationTests))
+        integration_suite.addTests(loader.loadTestsFromTestCase(IntegrationTests))
 
         runner = unittest.TextTestRunner(verbosity=2)
         integration_result = runner.run(integration_suite)
