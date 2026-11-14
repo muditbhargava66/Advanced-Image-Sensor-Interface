@@ -1,11 +1,19 @@
 # Dependabot configuration for Advanced Image Sensor Interface
 version: 2
 updates:
-  # Maintain dependencies for Python (pip / pyproject.toml)
-  - package-ecosystem: "pip"
+  # uv discovers pyproject.toml, uv.lock and root/child requirements files,
+  # including docs/requirements.txt. Do not add an overlapping pip updater.
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      python-security:
+        applies-to: security-updates
+        patterns: ["*"]
+      python-dependencies:
+        applies-to: version-updates
+        patterns: ["*"]
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -17,7 +25,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
     open-pull-requests-limit: 5
     labels:
       - "ci"

@@ -81,13 +81,18 @@ __pypackages__/
 # ---- Environments ----
 .env
 .venv
+.venv*/
 env/
 venv/
+venv*/
 ENV/
 env.bak/
 venv.bak/
 .env.local
 .env.production
+
+# ---- Isolated worktrees and AI scratch ----
+.worktrees/
 
 # ---- Celery ----
 celerybeat-schedule
@@ -102,6 +107,7 @@ celerybeat.pid
 dmypy.json
 .pyre/
 .pytype/
+.pyright/
 .ruff_cache/
 
 # ---- Cython debug symbols ----
@@ -152,7 +158,9 @@ Thumbs.db
 *.cr2
 *.nef
 *.arw
+*.ply
 output/
+depth_output/
 data/raw/
 data/processed/
 models/
@@ -168,6 +176,7 @@ test_sim.json
 final_test.json
 performance_*.json
 profiling_*.json
+plot_*.png
 
 # ---- Keep requirements files ----
 !requirements.txt
@@ -180,6 +189,8 @@ profiling_*.json
 *~
 *.tmp
 *.temp
+*.orig
+*.rej
 
 # ---- Large / compressed files ----
 *.zip
