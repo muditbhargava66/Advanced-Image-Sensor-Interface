@@ -12,12 +12,12 @@ Key Features:
 - Power delivery over coax
 - Configurable simulation delays for realistic hardware behavior
 
-Version: 3.2.0
+Version: 4.0.0
 """
 
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
@@ -102,7 +102,7 @@ class CXP12Config:
     discovery_timeout_s: float = 5.0
 
     # Simulation delay configuration (v3.2.0+)
-    simulation_delays: Optional[SimulationDelayConfig] = None
+    simulation_delays: SimulationDelayConfig = field(default_factory=SimulationDelayConfig)
 
     def __post_init__(self) -> None:
         """Validate configuration."""
@@ -115,8 +115,8 @@ class CXP12Config:
         if self.master_connection >= self.lanes:
             raise ValueError("Master connection must be less than lane count")
 
-        if self.simulation_delays is None:
-            self.simulation_delays = SimulationDelayConfig()
+        if isinstance(self.simulation_delays, dict):
+            self.simulation_delays = SimulationDelayConfig(**self.simulation_delays)
 
     @property
     def aggregate_bandwidth_gbps(self) -> float:

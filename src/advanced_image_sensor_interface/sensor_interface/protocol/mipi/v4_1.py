@@ -11,7 +11,7 @@ Key Features:
 - Improved signal integrity for long traces
 - Backward compatible with D-PHY v1.x and v2.0
 
-Version: 3.0.0
+Version: 4.0.0
 """
 
 import logging

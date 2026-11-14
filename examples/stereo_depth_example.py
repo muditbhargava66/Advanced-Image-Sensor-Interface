@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stereo Depth Example for Advanced Image Sensor Interface (v3.2.0)
+Stereo Depth Example for Advanced Image Sensor Interface
 
 Demonstrates the 3D/Depth module end to end on a synthetic rectified stereo
 pair with known ground-truth disparity:
@@ -195,7 +195,7 @@ def parse_size(size_str: str) -> tuple[int, int]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Stereo Depth Example (v3.2.0)", formatter_class=argparse.RawDescriptionHelpFormatter
+        description="Stereo Depth Example (v4.0.0)", formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--size", type=parse_size, default=(320, 240), help="Stereo pair size as WxH")
     parser.add_argument("--output-dir", type=Path, default=Path("depth_output"), help="Directory for PLY exports")
@@ -205,7 +205,7 @@ def main() -> None:
     args = parser.parse_args()
 
     width, height = args.size
-    logger.info("Stereo Depth Example (v3.2.0)")
+    logger.info("Stereo Depth Example (v4.0.0)")
     logger.info("=" * 50)
     logger.info(f"Stereo pair: {width}x{height}, focal length {FOCAL_LENGTH_PX}px, baseline {BASELINE_M} m")
     logger.info(

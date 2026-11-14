@@ -362,24 +362,6 @@ class NeuralCalibrationTuner:
         logger.info("Neural calibration tuner training completed")
         return {"loss": self.model.loss_curve_, "epochs": self.config.epochs}
 
-    def _create_simple_model(self, input_dim: int, output_dim: int) -> MLPRegressor:
-        """Create the MLPRegressor model."""
-        return MLPRegressor(
-            hidden_layer_sizes=tuple(self.config.hidden_layers),
-            activation="relu",
-            solver="adam",
-            alpha=0.0001,
-            batch_size=self.config.batch_size,
-            learning_rate="adaptive",
-            learning_rate_init=self.config.learning_rate,
-            max_iter=self.config.epochs,
-            early_stopping=True,
-            validation_fraction=self.config.validation_split,
-            n_iter_no_change=self.config.early_stopping_patience,
-            random_state=42,
-            verbose=False,
-        )
-
     def predict_calibration_quality(self, images: list[np.ndarray], image_points: list[np.ndarray]) -> dict[str, float]:
         """Predict calibration quality using the trained model."""
         if not self.is_trained:

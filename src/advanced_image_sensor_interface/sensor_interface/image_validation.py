@@ -32,6 +32,7 @@ class SupportedDType(Enum):
     UINT12_IN_UINT16 = "uint12_in_uint16"  # 12-bit data stored in uint16
     UINT14_IN_UINT16 = "uint14_in_uint16"  # 14-bit data stored in uint16
     UINT16 = np.uint16
+    UINT32 = np.uint32
     FLOAT32 = np.float32
 
 
@@ -42,7 +43,7 @@ class ImageFormat:
     height: int
     width: int
     channels: int  # 1 for mono, 3 for RGB, 4 for RGBA
-    bit_depth: int  # Actual bit depth (8, 10, 12, 14, 16)
+    bit_depth: int
     dtype: SupportedDType
 
     def __post_init__(self):
@@ -51,8 +52,10 @@ class ImageFormat:
             raise ValueError("Image dimensions must be positive")
         if self.channels not in {1, 3, 4}:
             raise ValueError("Channels must be 1 (mono), 3 (RGB), or 4 (RGBA)")
-        if self.bit_depth not in {8, 10, 12, 14, 16}:
-            raise ValueError("Bit depth must be 8, 10, 12, 14, or 16")
+        if self.bit_depth not in {8, 10, 12, 14, 16, 20}:
+            raise ValueError("Bit depth must be 8, 10, 12, 14, 16, or 20")
+        if self.bit_depth == 20 and self.dtype not in {SupportedDType.UINT32, SupportedDType.FLOAT32}:
+            raise ValueError("20-bit images must use UINT32 or FLOAT32 dtype")
 
         # Validate dtype compatibility with bit depth
         if self.bit_depth == 8 and self.dtype != SupportedDType.UINT8:
@@ -70,6 +73,16 @@ class ImageFormat:
         return (2**self.bit_depth) - 1
 
     @property
+    def numpy_dtype(self) -> np.dtype:
+        if self.dtype == SupportedDType.FLOAT32:
+            return np.dtype(np.float32)
+        if self.bit_depth == 8:
+            return np.dtype(np.uint8)
+        if self.bit_depth == 20:
+            return np.dtype(np.uint32)
+        return np.dtype(np.uint16)
+
+    @property
     def shape(self) -> tuple[int, ...]:
         """Get expected image shape."""
         if self.channels == 1:
@@ -82,27 +95,13 @@ class ImageValidator:
     """Validates image format, shape, and bit depth."""
 
     @staticmethod
-    def validate_image(image: np.ndarray, expected_format: ImageFormat = None) -> ImageFormat:
-        """
-        Validate image format and return detected format.
-
-        Args:
-            image: Input image array
-            expected_format: Expected format (optional)
-
-        Returns:
-            Detected or validated ImageFormat
-
-        Raises:
-            ValueError: If image format is invalid
-        """
+    def _validate_array(image: np.ndarray) -> tuple[int, int, int]:
         if not isinstance(image, np.ndarray):
             raise ValueError("Image must be a numpy array")
 
         if image.size == 0:
             raise ValueError("Image cannot be empty")
 
-        # Validate shape
         if image.ndim == 2:
             height, width = image.shape
             channels = 1
@@ -113,12 +112,18 @@ class ImageValidator:
         else:
             raise ValueError(f"Image must be 2D or 3D, got {image.ndim}D")
 
-        # Detect bit depth and dtype
+        if image.dtype not in (np.uint8, np.uint16, np.uint32, np.float32):
+            raise ValueError(f"Unsupported dtype: {image.dtype}")
+        if not np.all(np.isfinite(image)):
+            raise ValueError("Image samples must be finite")
+        return height, width, channels
+
+    @staticmethod
+    def _detect_format(image: np.ndarray, height: int, width: int, channels: int) -> ImageFormat:
         if image.dtype == np.uint8:
             bit_depth = 8
             dtype = SupportedDType.UINT8
         elif image.dtype == np.uint16:
-            # Need to infer bit depth from data range
             max_val = np.max(image)
             if max_val <= 255:
                 bit_depth = 8
@@ -135,29 +140,44 @@ class ImageValidator:
             else:
                 bit_depth = 16
                 dtype = SupportedDType.UINT16
-        elif image.dtype == np.float32:
-            bit_depth = 16  # Assume float32 represents 16-bit data
-            dtype = SupportedDType.FLOAT32
+        elif image.dtype == np.uint32:
+            bit_depth = 20
+            dtype = SupportedDType.UINT32
+            if np.max(image) > 1048575:
+                raise ValueError("Image samples exceed 20-bit range")
         else:
-            raise ValueError(f"Unsupported dtype: {image.dtype}")
+            bit_depth = 16
+            dtype = SupportedDType.FLOAT32
 
-        detected_format = ImageFormat(height=height, width=width, channels=channels, bit_depth=bit_depth, dtype=dtype)
+        return ImageFormat(height=height, width=width, channels=channels, bit_depth=bit_depth, dtype=dtype)
 
-        # Validate against expected format if provided
+    @staticmethod
+    def validate_image(image: np.ndarray, expected_format: ImageFormat | None = None) -> ImageFormat:
+        """
+        Validate image format and return detected format.
+
+        Args:
+            image: Input image array
+            expected_format: Expected format (optional)
+
+        Returns:
+            Detected or validated ImageFormat
+
+        Raises:
+            ValueError: If image format is invalid
+        """
+        height, width, channels = ImageValidator._validate_array(image)
+
         if expected_format is not None:
-            if (
-                detected_format.height != expected_format.height
-                or detected_format.width != expected_format.width
-                or detected_format.channels != expected_format.channels
-            ):
-                raise ValueError(f"Image shape mismatch: expected {expected_format.shape}, " f"got {detected_format.shape}")
+            if image.shape != expected_format.shape:
+                raise ValueError(f"Image shape mismatch: expected {expected_format.shape}, got {image.shape}")
+            if image.dtype != expected_format.numpy_dtype:
+                raise ValueError(f"Image dtype mismatch: expected {expected_format.numpy_dtype}, got {image.dtype}")
+            if np.min(image) < 0 or np.max(image) > expected_format.max_value:
+                raise ValueError("Image samples exceed the declared bit depth")
+            return expected_format
 
-            if detected_format.bit_depth != expected_format.bit_depth:
-                logger.warning(
-                    f"Bit depth mismatch: expected {expected_format.bit_depth}, " f"detected {detected_format.bit_depth}"
-                )
-
-        return detected_format
+        return ImageValidator._detect_format(image, height, width, channels)
 
     @staticmethod
     def validate_color_correction_matrix(matrix: np.ndarray, channels: int) -> None:
@@ -250,14 +270,7 @@ class BitDepthConverter:
         # Convert through float32 for precision
         float_image = BitDepthConverter.convert_to_float32(image, source_depth)
 
-        # Determine target dtype
-        if target_depth == 8:
-            target_dtype = np.uint8
-        elif target_depth == 16:
-            target_dtype = np.uint16
-        else:
-            target_dtype = np.uint16  # Store 10/12/14-bit in uint16
-
+        target_dtype = np.dtype(np.uint8 if target_depth == 8 else np.uint32 if target_depth == 20 else np.uint16)
         return BitDepthConverter.convert_from_float32(float_image, target_depth, target_dtype)
 
 
@@ -275,7 +288,7 @@ class SafeImageProcessor:
         self.validator = ImageValidator()
         self.converter = BitDepthConverter()
 
-    def preprocess_image(self, image: np.ndarray) -> tuple[np.ndarray, ImageFormat]:
+    def preprocess_image(self, image: np.ndarray, source_format: ImageFormat | None = None) -> tuple[np.ndarray, ImageFormat]:
         """
         Preprocess image for safe processing.
 
@@ -286,7 +299,7 @@ class SafeImageProcessor:
             Tuple of (processed_image, original_format)
         """
         # Validate input image
-        original_format = self.validator.validate_image(image)
+        original_format = self.validator.validate_image(image, source_format)
 
         # Convert to float32 for processing
         float_image = self.converter.convert_to_float32(image, original_format.bit_depth)
@@ -315,19 +328,9 @@ class SafeImageProcessor:
         Returns:
             Image in original format
         """
-        # Convert back to original bit depth and dtype
-        if original_format.dtype == SupportedDType.UINT8:
-            target_dtype = np.uint8
-        elif original_format.dtype == SupportedDType.UINT16:
-            target_dtype = np.uint16
-        elif original_format.dtype == SupportedDType.FLOAT32:
-            target_dtype = np.float32
-        else:
-            target_dtype = np.uint16  # For 10/12/14-bit data
+        return self.converter.convert_from_float32(image, original_format.bit_depth, original_format.numpy_dtype)
 
-        return self.converter.convert_from_float32(image, original_format.bit_depth, target_dtype)
-
-    def safe_process(self, image: np.ndarray, processing_func) -> np.ndarray:
+    def safe_process(self, image: np.ndarray, processing_func, source_format: ImageFormat | None = None) -> np.ndarray:
         """
         Safely process image with validation and format handling.
 
@@ -339,7 +342,7 @@ class SafeImageProcessor:
             Processed image in original format
         """
         # Preprocess
-        float_image, original_format = self.preprocess_image(image)
+        float_image, original_format = self.preprocess_image(image, source_format)
 
         # Apply processing function
         processed_image = processing_func(float_image)

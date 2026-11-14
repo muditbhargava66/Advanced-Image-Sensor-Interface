@@ -1,23 +1,21 @@
 """
 RDMA over Converged Ethernet (RoCE) for GigE Vision
 
-Provides high-performance data transfer using RDMA technology
-for ultra-low latency and zero-copy operation.
+Models RoCE resource lifecycles and transfers in memory using NumPy.
+No real RDMA device, kernel bypass, zero-copy, or latency guarantee is provided.
 
 Key Features:
-- Zero-copy data transfer (kernel bypass)
-- Sub-microsecond latency
-- Lossless Ethernet with PFC (Priority Flow Control)
+- Simulated queue pairs and completion notifications
+- Memory registration bookkeeping
 - Multi-stream support
-- Compatible with GigE Vision over RoCE
-- Configurable simulation delays for realistic hardware behavior
+- Configurable simulation delays
 
-Version: 3.2.0
+Version: 4.0.0
 """
 
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
@@ -81,7 +79,7 @@ class RoCEConfig:
     timeout_ms: int = 5000
 
     # Simulation delay configuration (v3.2.0+)
-    simulation_delays: Optional[SimulationDelayConfig] = None
+    simulation_delays: SimulationDelayConfig = field(default_factory=SimulationDelayConfig)
 
     def __post_init__(self) -> None:
         """Validate configuration."""
@@ -333,8 +331,7 @@ class RoCETransport:
     """
     RoCE transport layer for GigE Vision.
 
-    Provides RDMA-based data transfer with zero-copy capabilities
-    and ultra-low latency.
+    NumPy-backed simulation only; does not perform hardware RDMA or zero-copy.
     """
 
     def __init__(self, config: Optional[RoCEConfig] = None) -> None:
@@ -385,6 +382,8 @@ class RoCETransport:
             self._destroy_queue_pair(qp_num)
 
         self._queue_pairs.clear()
+        for region_id in list(self.memory_manager._regions):
+            self.memory_manager.deregister_memory(region_id)
         self._is_initialized = False
         logger.info("RoCE transport shutdown")
 
@@ -522,17 +521,25 @@ class RoCETransport:
         if qp is None:
             return None
 
-        qp.post_recv(size)
-
-        # Apply frame capture delay
-        delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.frame_capture_delay)
-        time.sleep(delay)
-
-        # Simulate receive
-        data = np.random.bytes(size)
-        self._statistics.receives_completed += 1
-        self._statistics.bytes_received += size
-        return data
+        if size < 0:
+            raise ValueError("Receive size cannot be negative")
+        wr_id = qp.post_recv(size)
+        started = time.monotonic()
+        try:
+            delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.frame_capture_delay)
+            time.sleep(delay)
+            data = np.random.bytes(size)
+            self._statistics.receives_completed += 1
+            self._statistics.bytes_received += size
+            elapsed_us = (time.monotonic() - started) * 1e6
+            self._statistics.average_latency_us += (
+                elapsed_us - self._statistics.average_latency_us
+            ) / self._statistics.receives_completed
+            return data
+        finally:
+            # Synchronous receive consumes its own request; do not retain frame
+            # buffers indefinitely waiting for a hardware completion that cannot arrive.
+            qp._recv_queue = [wr for wr in qp._recv_queue if wr.wr_id != wr_id]
 
     def poll_completions(self, qp_num: int) -> list[CompletionEntry]:
         """
@@ -573,7 +580,7 @@ class GigERoCEDriver:
     """
     GigE Vision driver with RoCE acceleration.
 
-    Provides high-performance image transfer using RDMA.
+    Provides NumPy-backed frame simulation and RoCE lifecycle bookkeeping.
     """
 
     def __init__(self, config: Optional[RoCEConfig] = None) -> None:
@@ -604,7 +611,7 @@ class GigERoCEDriver:
         """
         try:
             if not self.transport.initialize():
-                return False
+                raise RuntimeError("Transport initialization failed")
 
             # Create queue pair for streaming
             self._stream_qp = self.transport.create_queue_pair()
@@ -612,7 +619,7 @@ class GigERoCEDriver:
             # Connect (simulated)
             remote_gid = bytes(16)  # Simulated GID
             if not self.transport.connect_qp(self._stream_qp, 1, remote_gid):
-                return False
+                raise RuntimeError("Queue pair connection failed")
 
             # Apply device discovery delay
             delay = self.config.simulation_delays.apply_delay(self.config.simulation_delays.device_discovery_delay)
@@ -624,6 +631,10 @@ class GigERoCEDriver:
 
         except Exception as e:
             logger.error(f"Connection failed: {e}")
+            self.transport.shutdown()
+            self._stream_qp = None
+            self._is_connected = False
+            self._is_streaming = False
             return False
 
     def disconnect(self) -> bool:
@@ -636,6 +647,7 @@ class GigERoCEDriver:
         time.sleep(delay)
 
         self.transport.shutdown()
+        self._stream_qp = None
         self._is_connected = False
         logger.info("Disconnected")
         return True
@@ -680,11 +692,18 @@ class GigERoCEDriver:
         if not self._is_streaming or self._stream_qp is None:
             return None
 
-        frame_size = width * height * (bpp // 8)
-        data = self.transport.receive(self._stream_qp, frame_size)
-
-        if data is None:
+        if width <= 0 or height <= 0 or bpp not in (8, 10, 12, 16, 20):
+            raise ValueError("Expected positive dimensions and unpacked 8/10/12/16/20-bit pixels")
+        dtype = np.dtype("u1" if bpp == 8 else "<u2" if bpp <= 16 else "<u4")
+        frame_size = width * height * dtype.itemsize
+        try:
+            data = self.transport.receive(self._stream_qp, frame_size)
+            if data is None or len(data) != frame_size:
+                return None
+            # The transport simulates random bytes, not an actual RDMA camera.
+            frame = np.frombuffer(data, dtype=dtype).copy().reshape((height, width))
+            frame &= (1 << bpp) - 1
+            return frame
+        except Exception as e:
+            logger.error(f"RoCE frame receive failed: {e}")
             return None
-
-        dtype = np.uint8 if bpp == 8 else np.uint16
-        return np.frombuffer(data, dtype=dtype).reshape((height, width))

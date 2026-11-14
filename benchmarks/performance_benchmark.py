@@ -56,7 +56,7 @@ class PerformanceBenchmark:
 
     def benchmark_enhanced_sensor(self, detailed: bool = False) -> dict:
         """Benchmark enhanced sensor interface performance."""
-        print("🔍 Benchmarking Enhanced Sensor Interface...")
+        print("Benchmarking Enhanced Sensor Interface...")
 
         results = {}
 
@@ -107,7 +107,7 @@ class PerformanceBenchmark:
 
     def benchmark_hdr_processing(self, detailed: bool = False) -> dict:
         """Benchmark HDR processing performance."""
-        print("🌈 Benchmarking HDR Processing...")
+        print("Benchmarking HDR Processing...")
 
         hdr_processor = create_hdr_processor_for_automotive()
         results = {}
@@ -157,7 +157,7 @@ class PerformanceBenchmark:
 
     def benchmark_raw_processing(self, detailed: bool = False) -> dict:
         """Benchmark RAW processing performance."""
-        print("📷 Benchmarking RAW Processing...")
+        print("Benchmarking RAW Processing...")
 
         raw_processor = create_raw_processor_for_automotive()
         results = {}
@@ -197,7 +197,7 @@ class PerformanceBenchmark:
 
     def benchmark_gpu_acceleration(self, detailed: bool = False) -> dict:
         """Benchmark GPU acceleration performance."""
-        print("⚡ Benchmarking GPU Acceleration...")
+        print("Benchmarking GPU Acceleration...")
 
         gpu_config = create_gpu_config_for_automotive()
         gpu_accelerator = GPUAccelerator(gpu_config)
@@ -238,7 +238,7 @@ class PerformanceBenchmark:
 
     def benchmark_multi_sensor_sync(self, detailed: bool = False) -> dict:
         """Benchmark multi-sensor synchronization."""
-        print("🔄 Benchmarking Multi-Sensor Synchronization...")
+        print("Benchmarking Multi-Sensor Synchronization...")
 
         config = create_stereo_sync_config()
         synchronizer = MultiSensorSynchronizer(config)
@@ -286,7 +286,7 @@ class PerformanceBenchmark:
 
     def benchmark_power_management(self, detailed: bool = False) -> dict:
         """Benchmark power management performance."""
-        print("🔋 Benchmarking Power Management...")
+        print("Benchmarking Power Management...")
 
         power_config = create_power_config_for_automotive()
         power_manager = AdvancedPowerManager(power_config)
@@ -329,7 +329,7 @@ class PerformanceBenchmark:
 
     def run_all_benchmarks(self, detailed: bool = False) -> dict:
         """Run all benchmarks and return results."""
-        print("🚀 Starting Comprehensive Performance Benchmark Suite")
+        print("Starting Comprehensive Performance Benchmark Suite")
         print("=" * 60)
 
         self.results["benchmarks"]["enhanced_sensor"] = self.benchmark_enhanced_sensor(detailed)
@@ -344,14 +344,14 @@ class PerformanceBenchmark:
     def print_summary(self):
         """Print a summary of benchmark results."""
         print("\n" + "=" * 60)
-        print("📊 BENCHMARK SUMMARY")
+        print("BENCHMARK SUMMARY")
         print("=" * 60)
 
-        print("\n🖥️  System Information:")
+        print("\n System Information:")
         for key, value in self.results["system_info"].items():
             print(f"   {key}: {value}")
 
-        print("\n⚡ Performance Highlights:")
+        print("\nPerformance Highlights:")
 
         # HDR Processing
         if "hdr_processing" in self.results["benchmarks"]:
@@ -374,7 +374,7 @@ class PerformanceBenchmark:
                 backend = gpu_results["device_info"]["backend"]
                 print(f"   GPU Backend: {backend}")
 
-        print("\n⚠️  Important Notes:")
+        print("\n Important Notes:")
         print("   • These are simulation benchmarks on Python")
         print("   • Real hardware performance will vary significantly")
         print("   • For production use, integrate with optimized hardware drivers")
@@ -405,12 +405,12 @@ def main():
             with open(output_path, "w") as f:
                 json.dump(results, f, indent=2, default=str)
 
-            print(f"\n💾 Results exported to: {output_path}")
+            print(f"\nResults exported to: {output_path}")
 
-        print("\n✅ Benchmark completed successfully!")
+        print("\nBenchmark completed successfully!")
 
     except Exception as e:
-        print(f"\n❌ Benchmark failed: {e}")
+        print(f"\nBenchmark failed: {e}")
         return 1
 
     return 0

@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document presents a comprehensive performance analysis of the Advanced Image Sensor Interface project (v3.3.0). We've conducted extensive benchmarks and tests to quantify the improvements in data transfer rates, signal processing speed, noise reduction, power efficiency, AI/ML enhancements, multi-sensor synchronization, and security frameworks.
+This document presents a comprehensive performance analysis of the Advanced Image Sensor Interface project. We've conducted extensive benchmarks and tests to quantify the improvements in data transfer rates, signal processing speed, noise reduction, power efficiency, AI/ML enhancements, multi-sensor synchronization, and security frameworks.
 
 ## 2. Version 3.1.0 Key Improvements
 
@@ -131,7 +131,7 @@ Improved thermal management allows for sustained high-performance operation even
 
 Voltage stability improvements lead to more reliable operation and reduced noise.
 
-## 5. Test Suite Performance (v3.2.0: 388 tests)
+## 5. Test Suite Performance (v4.0.0: 640 tests)
 
 ### 5.1 Test Coverage
 
@@ -147,7 +147,7 @@ Voltage stability improvements lead to more reliable operation and reduced noise
 | Security         | 96%           | 11         |
 | Integration      | 92%           | 18         |
 
-Our comprehensive test suite ensures high code quality and reliability (388 total tests).
+The current v4.0.0 suite contains 640 passing tests (646 collected, 6 skipped with numba/trimesh absent and OpenCV present). The per-category and timing tables below are the v3.2.0 capture and are retained for comparison.
 
 ### 5.2 Testing Performance
 

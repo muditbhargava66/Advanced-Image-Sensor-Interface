@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Native Calibration Solver Example for Advanced Image Sensor Interface (v3.2.0)
+Native Calibration Solver Example for Advanced Image Sensor Interface
 
 Demonstrates the OpenCV-free photogrammetry solver built on numpy/scipy:
 

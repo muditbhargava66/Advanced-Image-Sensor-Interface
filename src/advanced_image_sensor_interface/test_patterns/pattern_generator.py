@@ -204,9 +204,12 @@ if __name__ == "__main__":
     for pattern_name in get_available_patterns():
         pattern = generator.generate_pattern(pattern_name)
         logger.info(f"Generated {pattern_name} pattern with shape {pattern.shape} and dtype {pattern.dtype}")
-        assert pattern.shape in ((1080, 1920), (1080, 1920, 3)), f"Unexpected shape for {pattern_name}"
-        assert pattern.dtype == np.uint8, f"Unexpected dtype for {pattern_name}"
-        assert np.min(pattern) >= 0 and np.max(pattern) <= 255, f"Values out of range for {pattern_name}"
+        if pattern.shape not in ((1080, 1920), (1080, 1920, 3)):
+            raise RuntimeError(f"Unexpected shape for {pattern_name}")
+        if pattern.dtype != np.uint8:
+            raise RuntimeError(f"Unexpected dtype for {pattern_name}")
+        if np.min(pattern) < 0 or np.max(pattern) > 255:
+            raise RuntimeError(f"Values out of range for {pattern_name}")
 
     logger.info("All patterns generated and validated successfully")
 

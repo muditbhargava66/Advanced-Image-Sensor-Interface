@@ -11,7 +11,7 @@ Key Features:
 - GPU-accelerated processing (NumPy vectorized)
 
 Author: Advanced Image Sensor Interface Team
-Version: 3.2.0
+Version: 4.0.0
 """
 
 import logging
@@ -388,8 +388,6 @@ class LensCorrectionPipeline:
             profile: Lens calibration profile (None creates default)
         """
         self.profile = profile or LensProfile()
-        self._radial_corrector = RadialDistortionCorrector(self.profile)
-        self._tangential_corrector = TangentialDistortionCorrector(self.profile)
         self._combined_map_x: Optional[np.ndarray] = None
         self._combined_map_y: Optional[np.ndarray] = None
         self._maps_valid = False
@@ -406,8 +404,6 @@ class LensCorrectionPipeline:
             profile: New lens calibration profile
         """
         self.profile = profile
-        self._radial_corrector = RadialDistortionCorrector(profile)
-        self._tangential_corrector = TangentialDistortionCorrector(profile)
         self._maps_valid = False
 
     def build_combined_maps(self) -> None:

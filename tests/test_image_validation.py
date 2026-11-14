@@ -194,7 +194,7 @@ class TestImageFormat:
             ImageFormat(480, 640, 2, 12, SupportedDType.UINT12_IN_UINT16)
 
         # Invalid bit depth
-        with pytest.raises(ValueError, match="Bit depth must be 8, 10, 12, 14, or 16"):
+        with pytest.raises(ValueError, match="Bit depth must be 8, 10, 12, 14, 16, or 20"):
             ImageFormat(480, 640, 3, 9, SupportedDType.UINT12_IN_UINT16)
 
         # Incompatible dtype and bit depth

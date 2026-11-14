@@ -1,5 +1,5 @@
 """
-Depth Module Benchmarks for Advanced Image Sensor Interface (v3.2.0)
+Depth Module Benchmarks for Advanced Image Sensor Interface (v4.0.0)
 
 This module benchmarks the stereo depth pipeline introduced in v3.2.0:
 

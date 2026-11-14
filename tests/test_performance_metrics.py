@@ -58,10 +58,16 @@ class TestPerformanceMetrics:
         assert 59 <= dr <= 61  # Expected dynamic range for given image
 
     def test_calculate_dynamic_range_zero_min(self):
-        """Test dynamic range calculation with zero minimum value."""
+        """Zero-valued pixels use a one-LSB floor for integer images."""
         image = np.array([0, 10, 100, 1000], dtype=np.uint16)
         dr = calculate_dynamic_range(image)
-        assert dr == 0
+        assert np.isclose(dr, 60.0, atol=0.1)
+
+    def test_calculate_dynamic_range_float_zero_min(self):
+        """Float images use the smallest positive sample as the floor."""
+        image = np.array([0.0, 0.001, 0.01, 1.0], dtype=np.float32)
+        dr = calculate_dynamic_range(image)
+        assert np.isclose(dr, 60.0, atol=0.1)
 
     def test_calculate_color_accuracy(self):
         """Test color accuracy calculation."""

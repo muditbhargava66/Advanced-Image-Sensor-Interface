@@ -12,8 +12,6 @@ Each protocol supports:
 - Streaming with start/stop/capture_frame()
 - Statistics and device info
 - Error handling
-
-Version: 3.0.0
 """
 
 import asyncio

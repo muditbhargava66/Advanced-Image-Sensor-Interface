@@ -12,7 +12,7 @@ Key Features:
 - Device discovery and enumeration
 - Full streaming support
 
-Version: 3.0.0
+Version: 4.0.0
 """
 
 import logging
@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from enum import Enum, IntEnum
 from typing import Any, ClassVar, Optional
 
+from advanced_image_sensor_interface.types import SimulationDelayConfig
 
 from ....performance.profiler import profile_function
 from ..base import ConfigurationError, ConnectionError, DataTransferError, ProtocolCapabilities, StreamingProtocolBase
@@ -493,8 +494,14 @@ class USBTransportLayer:
     ERROR_OVERFLOW = -4
     ERROR_BABBLE = -5
 
-    def __init__(self, max_packet_size: int = 1024, transfer_timeout_ms: int = 5000) -> None:
-        """Initialize USB transport layer."""
+    def __init__(
+        self,
+        max_packet_size: int = 1024,
+        transfer_timeout_ms: int = 5000,
+        simulation_delays: Optional[SimulationDelayConfig] = None,
+    ) -> None:
+        """Initialize simulated USB transport layer."""
+        self.simulation_delays = simulation_delays or SimulationDelayConfig()
         self.max_packet_size = max_packet_size
         self.transfer_timeout_ms = transfer_timeout_ms
         self._is_open = False
@@ -525,7 +532,7 @@ class USBTransportLayer:
             return True
 
         # Simulate USB device opening with enumeration delay
-        time.sleep(0.05)
+        time.sleep(self.simulation_delays.apply_delay(self.simulation_delays.device_enumeration_delay))
         self._device_address = device_address
         self._is_open = True
         logger.debug(f"USB transport opened for device {device_address}")
@@ -561,7 +568,7 @@ class USBTransportLayer:
         self.stats["control_transfers"] += 1
 
         # Simulate control transfer timing
-        time.sleep(0.001)
+        time.sleep(self.simulation_delays.apply_delay(self.simulation_delays.command_transfer_delay))
 
         # Direction is in bit 7 of request_type
         is_in = (request_type & 0x80) != 0
@@ -584,9 +591,7 @@ class USBTransportLayer:
 
         self.stats["bulk_out_transfers"] += 1
 
-        # Simulate bulk transfer with bandwidth-based timing
-        transfer_time = len(data) / (5_000_000_000 / 8)  # 5 Gbps
-        time.sleep(max(0.0001, transfer_time))
+        time.sleep(self.simulation_delays.apply_delay(self.simulation_delays.command_transfer_delay))
 
         self.stats["bytes_sent"] += len(data)
         return USBTransferResult(success=True, bytes_transferred=len(data))
@@ -598,9 +603,7 @@ class USBTransportLayer:
 
         self.stats["bulk_in_transfers"] += 1
 
-        # Simulate bulk transfer timing
-        transfer_time = length / (5_000_000_000 / 8)
-        time.sleep(max(0.0001, transfer_time))
+        time.sleep(self.simulation_delays.apply_delay(self.simulation_delays.register_read_delay))
 
         data = bytes([i % 256 for i in range(length)])
         self.stats["bytes_received"] += len(data)
@@ -662,10 +665,6 @@ class USB3DeviceRegisterMap:
     def _set_uint32(self, address: int, value: int) -> None:
         """Set 32-bit unsigned integer register."""
         self._registers[address] = struct.pack("<I", value)
-
-    def _set_uint64(self, address: int, value: int) -> None:
-        """Set 64-bit unsigned integer register."""
-        self._registers[address] = struct.pack("<Q", value)
 
     def read(self, address: int, length: int) -> bytes:
         """Read from register map."""
@@ -730,9 +729,14 @@ class USB3VisionConfig:
     enable_chunk_data: bool = False
     enable_event_notification: bool = True
     heartbeat_timeout_ms: int = 3000
+    simulation_delays: SimulationDelayConfig = field(default_factory=SimulationDelayConfig)
 
     def __post_init__(self) -> None:
         """Validate configuration parameters."""
+        if self.simulation_delays is None:
+            self.simulation_delays = SimulationDelayConfig()
+        elif isinstance(self.simulation_delays, dict):
+            self.simulation_delays = SimulationDelayConfig(**self.simulation_delays)
         valid_speeds = ["HighSpeed", "SuperSpeed", "SuperSpeedPlus"]
         if self.usb_speed not in valid_speeds:
             raise ValueError(f"Invalid USB speed: {self.usb_speed}. Must be one of {valid_speeds}")
@@ -770,20 +774,25 @@ class USB3VisionDriver(StreamingProtocolBase):
     # USB3 speed to bandwidth mapping (Mbps)
     USB_SPEEDS: ClassVar[dict[str, int]] = {"HighSpeed": 480, "SuperSpeed": 5000, "SuperSpeedPlus": 10000}
 
-    def __init__(self, config: USB3VisionConfig) -> None:
+    def __init__(self, config: USB3VisionConfig | dict[str, Any]) -> None:
         """
         Initialize USB3 Vision driver.
 
         Args:
             config: USB3 Vision configuration
         """
+        if isinstance(config, dict):
+            config = USB3VisionConfig(**{k: v for k, v in config.items() if k in USB3VisionConfig.__dataclass_fields__})
         self.usb3_config = config
-        super().__init__(config.__dict__)
+        super().__init__(vars(config).copy())
 
         # Transport and device components
-        self._transport = USBTransportLayer(max_packet_size=config.packet_size, transfer_timeout_ms=config.timeout_ms)
+        self._transport = USBTransportLayer(
+            max_packet_size=config.packet_size, transfer_timeout_ms=config.timeout_ms, simulation_delays=config.simulation_delays
+        )
         self._register_map = USB3DeviceRegisterMap()
         self._node_map = GenICamNodeMap()
+        self._node_map._nodes["PixelFormat"].enum_entries = self.capabilities.supported_pixel_formats.copy()
 
         # Device state
         self.device_handle: Optional[str] = None
@@ -900,7 +909,7 @@ class USB3VisionDriver(StreamingProtocolBase):
             self.is_connected = True
             self.status.is_connected = True
             self.status.connection_quality = 1.0
-            self.status.data_rate_mbps = self.USB_SPEEDS[self.usb3_config.usb_speed]
+            self._mark_connected()
 
             logger.info(f"Connected to USB3 Vision device: {device_info.get('model', 'Unknown')}")
             return True
@@ -914,11 +923,12 @@ class USB3VisionDriver(StreamingProtocolBase):
     def disconnect(self) -> bool:
         """Disconnect from USB3 Vision device."""
         try:
-            if self.is_streaming:
-                self.stop_streaming()
+            if self.is_streaming and not self.stop_streaming():
+                return False
 
             # Close transport
-            self._transport.close()
+            if not self._transport.close():
+                return False
 
             # Clear handles
             self.device_handle = None
@@ -928,7 +938,7 @@ class USB3VisionDriver(StreamingProtocolBase):
             self.is_connected = False
             self.status.is_connected = False
             self.status.connection_quality = 0.0
-            self.status.data_rate_mbps = 0.0
+            self._mark_disconnected()
 
             logger.info("USB3 Vision device disconnected")
             return True
@@ -1031,6 +1041,8 @@ class USB3VisionDriver(StreamingProtocolBase):
             # Start acquisition
             self._node_map.set_value("AcquisitionMode", "Continuous")
             self._start_acquisition()
+            delays = self.usb3_config.simulation_delays
+            time.sleep(delays.apply_delay(delays.streaming_setup_delay))
 
             self.is_streaming = True
             self._start_time = time.time()
@@ -1049,6 +1061,8 @@ class USB3VisionDriver(StreamingProtocolBase):
         try:
             if self.is_streaming:
                 self._stop_acquisition()
+                delays = self.usb3_config.simulation_delays
+                time.sleep(delays.apply_delay(delays.streaming_teardown_delay))
                 self.stream_handle = None
                 self.is_streaming = False
 
@@ -1080,7 +1094,10 @@ class USB3VisionDriver(StreamingProtocolBase):
             frame_rate = self._node_map.get_value("AcquisitionFrameRate")
             capture_delay = 1.0 / frame_rate
             transfer_time = frame_size / (self.USB_SPEEDS[self.usb3_config.usb_speed] * 1024 * 1024 / 8)
-            time.sleep(min(capture_delay, transfer_time + 0.001))
+            # Pacing is separate from configurable operation latency.
+            time.sleep(max(capture_delay, transfer_time))
+            delays = self.usb3_config.simulation_delays
+            time.sleep(delays.apply_delay(delays.frame_capture_delay))
 
             # Generate frame
             frame_data = self._generate_frame(width, height, bpp)
@@ -1089,6 +1106,9 @@ class USB3VisionDriver(StreamingProtocolBase):
             self._frame_count += 1
             self.stats["frames_captured"] += 1
             self.stats["bytes_transferred"] += len(frame_data)
+            self._record_capture(len(frame_data))
+            self._transport.stats["stream_transfers"] += 1
+            self._transport.stats["bytes_received"] += len(frame_data)
 
             logger.debug(f"Captured USB3 frame {self._frame_count}: {len(frame_data)} bytes")
             return frame_data
@@ -1096,7 +1116,9 @@ class USB3VisionDriver(StreamingProtocolBase):
         except Exception as e:
             logger.error(f"Frame capture failed: {e}")
             self.stats["usb_errors"] += 1
+            self.stats["frames_dropped"] += 1
             self.status.error_count += 1
+            self.status.last_error = str(e)
             return None
 
     # GenICam feature access
@@ -1118,7 +1140,8 @@ class USB3VisionDriver(StreamingProtocolBase):
     def _discover_device(self) -> Optional[dict[str, Any]]:
         """Discover USB3 Vision devices."""
         # Simulate USB enumeration delay
-        time.sleep(0.1)
+        delays = self.usb3_config.simulation_delays
+        time.sleep(delays.apply_delay(delays.device_discovery_delay))
 
         return {
             "vendor_id": self.usb3_config.vendor_id or 0x1234,
@@ -1179,7 +1202,9 @@ class USB3VisionDriver(StreamingProtocolBase):
 
     def _generate_frame(self, width: int, height: int, bpp: int) -> bytes:
         """Generate frame data using shared vectorized implementation."""
-        return self._generate_test_frame_vectorized(width, height, bpp, self._frame_count)
+        return self._generate_test_frame_vectorized(
+            width, height, bpp, self._frame_count, pixel_format=self._node_map.get_value("PixelFormat")
+        )
 
     def get_device_info(self) -> dict[str, Any]:
         """Get device information."""
@@ -1197,34 +1222,29 @@ class USB3VisionDriver(StreamingProtocolBase):
 
     def get_statistics(self) -> dict[str, Any]:
         """Get driver statistics."""
-        uptime = time.time() - self._start_time if self._start_time else 0
+        self._refresh_status()
+        uptime = self.status.uptime_seconds
         return {
             **self.stats,
             **self._transport.stats,
+            "bytes_received": self.status.bytes_received,
             "connection_quality": self.status.connection_quality,
             "usb_speed": self.usb3_config.usb_speed,
             "uptime_seconds": uptime,
-            "current_fps": self._frame_count / uptime if uptime > 0 else 0,
+            "current_fps": self._measured_frame_rate(),
             "error_rate": self.stats["usb_errors"] / max(1, self.stats["frames_captured"]),
         }
 
     def _get_current_frame_rate(self) -> float:
         """Get current frame rate."""
-        if self._start_time and self._frame_count > 0:
-            elapsed = time.time() - self._start_time
-            return self._frame_count / elapsed if elapsed > 0 else 0.0
-        return 0.0
+        return self._measured_frame_rate()
 
     def _get_dropped_frame_count(self) -> int:
         """Get number of dropped frames."""
         return self.stats["frames_dropped"]
 
     def _get_buffer_utilization(self) -> float:
-        """Estimate buffer utilization from achieved frame rate."""
-        target_fps = self.usb3_config.frame_rate
-        actual_fps = self._get_current_frame_rate()
-        if target_fps > 0:
-            return min(100.0, (actual_fps / target_fps) * 100.0)
+        """No asynchronous buffers are held by this synchronous simulator."""
         return 0.0
 
     def get_status(self) -> dict[str, Any]:

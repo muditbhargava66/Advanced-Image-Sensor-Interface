@@ -4,9 +4,6 @@ AI and Machine Learning Enhancements Example
 
 This example demonstrates the AI/ML features implemented in the Advanced Image Sensor Interface,
 including intelligent noise reduction, adaptive processing, and machine learning-based optimizations.
-
-Author: Advanced Image Sensor Interface Team
-Version: 2.0.0
 """
 
 import argparse
@@ -801,10 +798,10 @@ def main():
             demo_adaptive_pipeline(resolution)
 
         logger.info("=" * 50)
-        logger.info("✓ AI/ML Enhancement demos completed successfully!")
+        logger.info("AI/ML Enhancement demos completed successfully!")
 
     except Exception as e:
-        logger.error(f"✗ Demo failed: {e}")
+        logger.error(f"Demo failed: {e}")
         sys.exit(1)
 
 

@@ -15,10 +15,11 @@ Key Features:
 
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, ClassVar, Optional
 
+from advanced_image_sensor_interface.types import SimulationDelayConfig
 
 from ..base import ConnectionError, DataTransferError, ProtocolCapabilities, StreamingProtocolBase
 
@@ -83,9 +84,14 @@ class GigEVisionConfig:
     # RoCE acceleration
     enable_roce: bool = False
     roce_priority: int = 4
+    simulation_delays: SimulationDelayConfig = field(default_factory=SimulationDelayConfig)
 
     def __post_init__(self) -> None:
         """Validate configuration parameters."""
+        if self.simulation_delays is None:
+            self.simulation_delays = SimulationDelayConfig()
+        elif isinstance(self.simulation_delays, dict):
+            self.simulation_delays = SimulationDelayConfig(**self.simulation_delays)
         if self.packet_size < 576 or self.packet_size > 9000:
             raise ValueError("Packet size must be between 576 and 9000 bytes")
 
@@ -174,6 +180,7 @@ class GigEProtocolDriver(StreamingProtocolBase):
 
         # RoCE transport (optional)
         self._roce_transport: Optional[Any] = None
+        self._roce_qp: Optional[int] = None
 
         logger.info(f"GigE Vision driver initialized: {self.gige_config.ip_address} @ " f"{self.gige_config.speed.name}")
 
@@ -230,6 +237,8 @@ class GigEProtocolDriver(StreamingProtocolBase):
         Returns:
             True if connection successful
         """
+        if self.is_connected:
+            return True
         try:
             logger.info(f"Connecting to GigE Vision camera at {self.gige_config.ip_address}...")
 
@@ -256,7 +265,7 @@ class GigEProtocolDriver(StreamingProtocolBase):
             self.is_connected = True
             self.status.is_connected = True
             self.status.connection_quality = 1.0
-            self.status.data_rate_mbps = self.gige_config.bandwidth_mbps
+            self._mark_connected()
 
             logger.info(f"Connected to GigE Vision camera: {self.device_info.get('model', 'Unknown')}")
             return True
@@ -275,8 +284,13 @@ class GigEProtocolDriver(StreamingProtocolBase):
             True if disconnection successful
         """
         try:
-            if self.is_streaming:
-                self.stop_streaming()
+            if self.is_streaming and not self.stop_streaming():
+                return False
+
+            if self._roce_transport is not None:
+                self._roce_transport.shutdown()
+                self._roce_transport = None
+                self._roce_qp = None
 
             # Close stream channel
             if self.stream_handle:
@@ -292,7 +306,7 @@ class GigEProtocolDriver(StreamingProtocolBase):
             self.is_connected = False
             self.status.is_connected = False
             self.status.connection_quality = 0.0
-            self.status.data_rate_mbps = 0.0
+            self._mark_disconnected()
 
             logger.info("GigE Vision connection closed")
             return True
@@ -315,8 +329,8 @@ class GigEProtocolDriver(StreamingProtocolBase):
             raise ConnectionError("Not connected to GigE Vision camera")
 
         try:
-            # Simulate GVCP command
-            time.sleep(0.001)
+            delays = self.gige_config.simulation_delays
+            time.sleep(delays.apply_delay(delays.command_transfer_delay))
 
             self.status.bytes_transmitted += len(data)
             logger.debug(f"Sent {len(data)} bytes via GVCP")
@@ -342,8 +356,8 @@ class GigEProtocolDriver(StreamingProtocolBase):
             raise ConnectionError("Not connected to GigE Vision camera")
 
         try:
-            # Simulate GVCP response
-            time.sleep(0.001)
+            delays = self.gige_config.simulation_delays
+            time.sleep(delays.apply_delay(delays.register_read_delay))
 
             data = bytes([i % 256 for i in range(size)])
             self.status.bytes_received += len(data)
@@ -377,6 +391,8 @@ class GigEProtocolDriver(StreamingProtocolBase):
 
             # Start acquisition
             self._start_acquisition()
+            delays = self.gige_config.simulation_delays
+            time.sleep(delays.apply_delay(delays.streaming_setup_delay))
 
             self.is_streaming = True
             self.start_time = time.time()
@@ -402,6 +418,8 @@ class GigEProtocolDriver(StreamingProtocolBase):
             if self.is_streaming:
                 # Stop acquisition
                 self._stop_acquisition()
+                delays = self.gige_config.simulation_delays
+                time.sleep(delays.apply_delay(delays.streaming_teardown_delay))
 
                 # Close stream channel
                 if self.stream_handle:
@@ -442,16 +460,29 @@ class GigEProtocolDriver(StreamingProtocolBase):
             transfer_time = frame_size / (self.gige_config.bandwidth_mbps * 1024 * 1024 / 8)
             capture_delay = 1.0 / self.gige_config.frame_rate
 
-            time.sleep(min(capture_delay, transfer_time + 0.001))
+            # Frame pacing is independent of simulated operation latency.
+            time.sleep(max(capture_delay, transfer_time))
+            if self._roce_transport is not None and self._roce_qp is not None:
+                import numpy as np
 
-            # Generate test frame
-            frame_data = self._generate_test_frame(width, height, bytes_per_pixel)
+                raw_data = self._roce_transport.receive(self._roce_qp, frame_size)
+                if raw_data is None or len(raw_data) != frame_size:
+                    raise DataTransferError("Incomplete RoCE frame")
+                bits, _, sample_bytes = self._pixel_storage(self.gige_config.pixel_format)
+                samples = np.frombuffer(raw_data, dtype=np.dtype(f"<u{sample_bytes}")).copy()
+                samples &= (1 << bits) - 1
+                frame_data = samples.tobytes()
+            else:
+                delays = self.gige_config.simulation_delays
+                time.sleep(delays.apply_delay(delays.frame_capture_delay))
+                frame_data = self._generate_test_frame(width, height, bytes_per_pixel)
 
             # Update statistics
             self.frame_count += 1
             self.stats["frames_captured"] += 1
             self.stats["bytes_transferred"] += len(frame_data)
-            self.stats["packets_received"] += frame_size // self.gige_config.packet_size + 1
+            self._record_capture(len(frame_data))
+            self.stats["packets_received"] += (frame_size + self.gige_config.packet_size - 1) // self.gige_config.packet_size
             self.stats["last_frame_time"] = time.time()
 
             logger.debug(f"Captured GigE frame {self.frame_count}, size: {len(frame_data)} bytes")
@@ -513,19 +544,21 @@ class GigEProtocolDriver(StreamingProtocolBase):
             "pixel_format": self.gige_config.pixel_format,
             "resolution": self.gige_config.resolution,
             "frame_rate": self.gige_config.frame_rate,
-            "roce_enabled": self.gige_config.enable_roce,
+            "roce_enabled": self._roce_transport is not None,
+            "roce_requested": self.gige_config.enable_roce,
+            "simulation": True,
             **self.device_info,
         }
 
     def get_statistics(self) -> dict[str, Any]:
         """Get GigE Vision driver statistics."""
-        current_time = time.time()
-        uptime = current_time - self.start_time if self.start_time else 0
+        self._refresh_status()
+        uptime = self.status.uptime_seconds
 
         return {
             **self.stats,
             "uptime_seconds": uptime,
-            "current_fps": self.frame_count / uptime if uptime > 0 else 0,
+            "current_fps": self._measured_frame_rate(),
             "connection_quality": self.status.connection_quality,
             "packet_loss_rate": self.stats["packets_resent"] / max(1, self.stats["packets_received"]),
             "network_error_rate": self.stats["network_errors"] / max(1, uptime),
@@ -534,7 +567,8 @@ class GigEProtocolDriver(StreamingProtocolBase):
     def _discover_camera(self) -> bool:
         """Discover GigE Vision camera."""
         # Simulate GVCP discovery
-        time.sleep(0.05)
+        delays = self.gige_config.simulation_delays
+        time.sleep(delays.apply_delay(delays.device_discovery_delay))
         logger.debug(f"Discovered camera at {self.gige_config.ip_address}")
         return True
 
@@ -569,19 +603,28 @@ class GigEProtocolDriver(StreamingProtocolBase):
         logger.debug(f"Configured GigE camera: {params}")
 
     def _initialize_roce(self) -> None:
-        """Initialize RoCE acceleration if available."""
+        """Initialize the optional simulated transport; never claim hardware RDMA."""
         try:
             from .roce import RoCEConfig, RoCETransport
 
-            roce_config = RoCEConfig()
+            roce_config = RoCEConfig(
+                traffic_class=self.gige_config.roce_priority,
+                simulation_delays=self.gige_config.simulation_delays,
+                timeout_ms=self.gige_config.command_timeout_ms,
+            )
             self._roce_transport = RoCETransport(roce_config)
-            if self._roce_transport.initialize():
-                logger.info("RoCE acceleration enabled")
-            else:
-                self._roce_transport = None
-                logger.warning("RoCE initialization failed, falling back to standard transport")
-        except ImportError:
-            logger.warning("RoCE module not available")
+            if not self._roce_transport.initialize():
+                raise RuntimeError("RoCE initialization failed")
+            self._roce_qp = self._roce_transport.create_queue_pair()
+            if not self._roce_transport.connect_qp(self._roce_qp, 1, bytes(16)):
+                raise RuntimeError("Simulated RoCE queue connection failed")
+            logger.info("Optional RoCE simulation enabled (NumPy-backed, no hardware RDMA)")
+        except Exception as e:
+            logger.warning(f"RoCE unavailable, using NumPy frame fallback: {e}")
+            if self._roce_transport is not None:
+                self._roce_transport.shutdown()
+            self._roce_transport = None
+            self._roce_qp = None
 
     def _open_stream_channel(self) -> str:
         """Open GVSP stream channel."""
@@ -616,25 +659,20 @@ class GigEProtocolDriver(StreamingProtocolBase):
 
     def _generate_test_frame(self, width: int, height: int, bytes_per_pixel: int) -> bytes:
         """Generate test frame data using shared vectorized implementation."""
-        return self._generate_test_frame_vectorized(width, height, bytes_per_pixel, self.frame_count)
+        return self._generate_test_frame_vectorized(
+            width, height, bytes_per_pixel, self.frame_count, pixel_format=self.gige_config.pixel_format
+        )
 
     def _get_current_frame_rate(self) -> float:
         """Get current frame rate."""
-        if self.start_time and self.frame_count > 0:
-            elapsed = time.time() - self.start_time
-            return self.frame_count / elapsed if elapsed > 0 else 0.0
-        return 0.0
+        return self._measured_frame_rate()
 
     def _get_dropped_frame_count(self) -> int:
         """Get number of dropped frames."""
         return self.stats["frames_dropped"]
 
     def _get_buffer_utilization(self) -> float:
-        """Get buffer utilization percentage."""
-        target_fps = self.gige_config.frame_rate
-        actual_fps = self._get_current_frame_rate()
-        if target_fps > 0:
-            return min(100.0, (actual_fps / target_fps) * 100.0)
+        """No asynchronous buffers are held by this synchronous simulator."""
         return 0.0
 
     # Legacy compatibility - keep connected attribute

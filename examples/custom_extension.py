@@ -5,9 +5,6 @@ Custom Extension Example
 This example demonstrates how to extend the Advanced Image Sensor Interface
 with custom implementations, including custom MIPI drivers, noise reducers,
 and processing algorithms.
-
-Author: Advanced Image Sensor Interface Team
-Version: 2.0.0
 """
 
 import logging
@@ -73,13 +70,13 @@ class HighSpeedMIPIDriver(MIPIProtocolDriver):
             self.burst_mode = enable
             if enable:
                 # Simulate burst mode configuration
-                logger.info("✓ Burst mode enabled - increased throughput by 25%")
+                logger.info("Burst mode enabled - increased throughput by 25%")
                 # In real implementation, this would configure hardware registers
             else:
-                logger.info("✓ Burst mode disabled")
+                logger.info("Burst mode disabled")
             return True
         except Exception as e:
-            logger.error(f"✗ Failed to configure burst mode: {e}")
+            logger.error(f"Failed to configure burst mode: {e}")
             return False
 
     def enable_compression(self, enable: bool = True, ratio: float = 0.7) -> bool:
@@ -98,12 +95,12 @@ class HighSpeedMIPIDriver(MIPIProtocolDriver):
             self.compression_ratio = ratio if enable else 1.0
 
             if enable:
-                logger.info(f"✓ Compression enabled (ratio: {ratio:.1f})")
+                logger.info(f"Compression enabled (ratio: {ratio:.1f})")
             else:
-                logger.info("✓ Compression disabled")
+                logger.info("Compression disabled")
             return True
         except Exception as e:
-            logger.error(f"✗ Failed to configure compression: {e}")
+            logger.error(f"Failed to configure compression: {e}")
             return False
 
     def send_data(self, data: bytes) -> bool:
@@ -124,11 +121,12 @@ class HighSpeedMIPIDriver(MIPIProtocolDriver):
                 logger.debug(f"Compressed data: {len(data)} -> {compressed_size} bytes")
 
             # Apply burst mode optimizations
+            link_bytes_per_second = self.mipi_config.data_rate_mbps * self.mipi_config.lanes * 1e6 / 8
             if self.burst_mode:
                 # Simulate burst transfer
-                transfer_time = len(data) / (self.config.data_rate * 1e9 / 8) * 0.75  # 25% faster
+                transfer_time = len(data) / link_bytes_per_second * 0.75  # 25% faster
             else:
-                transfer_time = len(data) / (self.config.data_rate * 1e9 / 8)
+                transfer_time = len(data) / link_bytes_per_second
 
             # Simulate transfer delay
             time.sleep(min(transfer_time, 0.001))  # Cap simulation delay
@@ -137,7 +135,7 @@ class HighSpeedMIPIDriver(MIPIProtocolDriver):
             return super().send_data(data)
 
         except Exception as e:
-            logger.error(f"✗ Enhanced send_data failed: {e}")
+            logger.error(f"Enhanced send_data failed: {e}")
             return False
 
     def get_enhanced_status(self) -> dict[str, Any]:
@@ -194,9 +192,9 @@ class AINoiseReducer(NoiseReducer):
             # or self.model = onnxruntime.InferenceSession('model.onnx')
 
             self.model_loaded = True
-            logger.info("✓ AI model loaded successfully")
+            logger.info("AI model loaded successfully")
         except Exception as e:
-            logger.error(f"✗ Failed to load AI model: {e}")
+            logger.error(f"Failed to load AI model: {e}")
             self.model_loaded = False
 
     def process(self, image: np.ndarray) -> np.ndarray:
@@ -402,7 +400,7 @@ class AINoiseReducer(NoiseReducer):
         logger.info("Updating AI model with new training data...")
         # Simulate model training/update
         time.sleep(0.05)
-        logger.info("✓ AI model updated")
+        logger.info("AI model updated")
 
 
 # Example 3: Custom Color Correction Algorithm
@@ -542,9 +540,14 @@ def demo_custom_mipi_driver():
     """Demonstrate custom MIPI driver extension."""
     logger.info("=== Custom MIPI Driver Demo ===")
 
-    # Create high-speed MIPI driver
-    config = MIPIConfig(lanes=4, data_rate=5.0, channel=0)
+    # Create high-speed MIPI driver (4500 Mbps per lane is the configurable maximum)
+    config = MIPIConfig(lanes=4, data_rate_mbps=4500.0)
     driver = HighSpeedMIPIDriver(config, optimization_level=2)
+
+    # A MIPI control link must be established before CCI transfers
+    if not driver.connect():
+        logger.error("MIPI connection failed")
+        return
 
     # Enable optimizations
     driver.enable_burst_mode(True)
@@ -559,7 +562,7 @@ def demo_custom_mipi_driver():
     transfer_time = time.time() - start_time
 
     if success:
-        logger.info(f"✓ Transfer completed in {transfer_time:.4f}s")
+        logger.info(f"Transfer completed in {transfer_time:.6f}s")
 
         # Show enhanced status
         status = driver.get_enhanced_status()
@@ -567,7 +570,9 @@ def demo_custom_mipi_driver():
         for key, value in status.items():
             logger.info(f"  {key}: {value}")
     else:
-        logger.error("✗ Transfer failed")
+        logger.error("Transfer failed")
+
+    driver.disconnect()
 
 
 def demo_custom_noise_reducer():
@@ -595,7 +600,7 @@ def demo_custom_noise_reducer():
     reducer.process(noisy_image)
     processing_time = time.time() - start_time
 
-    logger.info(f"✓ AI denoising completed in {processing_time:.3f}s")
+    logger.info(f"AI denoising completed in {processing_time:.3f}s")
 
     # Show processing stats
     stats = reducer.get_processing_stats()
@@ -640,7 +645,7 @@ def demo_custom_color_corrector():
 
     # Process with adaptation
     corrected = corrector.process_image(test_image, measured_colors)
-    logger.info(f"✓ Color correction completed: {corrected.shape}")
+    logger.info(f"Color correction completed: {corrected.shape}")
 
     # Show adaptation stats
     stats = corrector.get_adaptation_stats()
@@ -668,7 +673,7 @@ def main():
         demo_custom_color_corrector()
 
         logger.info("=" * 60)
-        logger.info("✓ All custom extension demos completed successfully!")
+        logger.info("All custom extension demos completed successfully!")
 
         # Show how to get available noise reducers
         logger.info("\nAvailable noise reduction algorithms:")
@@ -677,7 +682,7 @@ def main():
             logger.info(f"  {noise_type.value}: {info['algorithm_name']}")
 
     except Exception as e:
-        logger.error(f"✗ Demo failed: {e}")
+        logger.error(f"Demo failed: {e}")
         sys.exit(1)
 
 

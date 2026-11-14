@@ -5,9 +5,6 @@ Protocol Implementations Example
 This example demonstrates the various camera interface protocols implemented
 in the Advanced Image Sensor Interface, including MIPI CSI-2, CoaXPress,
 GigE Vision, and USB3 Vision.
-
-Author: Advanced Image Sensor Interface Team
-Version: 2.0.0
 """
 
 import argparse
@@ -79,12 +76,13 @@ class MIPICSIInterface:
     def connect(self) -> bool:
         """Establish MIPI CSI-2 connection."""
         try:
-            mipi_config = MIPIConfig(lanes=self.lanes, data_rate_mbps=self.config.data_rate_mbps, channel=0)
+            # ProtocolConfig.data_rate_mbps is the aggregate link rate; MIPIConfig takes a per-lane rate
+            mipi_config = MIPIConfig(lanes=self.lanes, data_rate_mbps=self.config.data_rate_mbps / self.lanes)
             self.mipi_driver = MIPIProtocolDriver(mipi_config)
-            logger.info("✓ MIPI CSI-2 connection established")
+            logger.info("MIPI CSI-2 connection established")
             return True
         except Exception as e:
-            logger.error(f"✗ MIPI CSI-2 connection failed: {e}")
+            logger.error(f"MIPI CSI-2 connection failed: {e}")
             return False
 
     def start_streaming(self) -> bool:
@@ -97,10 +95,10 @@ class MIPICSIInterface:
             # Configure streaming parameters
             self._configure_streaming()
             self.is_streaming = True
-            logger.info("✓ MIPI CSI-2 streaming started")
+            logger.info("MIPI CSI-2 streaming started")
             return True
         except Exception as e:
-            logger.error(f"✗ MIPI CSI-2 streaming failed: {e}")
+            logger.error(f"MIPI CSI-2 streaming failed: {e}")
             return False
 
     def capture_frame(self) -> Optional[np.ndarray]:
@@ -125,13 +123,13 @@ class MIPICSIInterface:
 
             return frame_data
         except Exception as e:
-            logger.error(f"✗ MIPI frame capture failed: {e}")
+            logger.error(f"MIPI frame capture failed: {e}")
             return None
 
     def stop_streaming(self) -> bool:
         """Stop MIPI CSI-2 streaming."""
         self.is_streaming = False
-        logger.info("✓ MIPI CSI-2 streaming stopped")
+        logger.info("MIPI CSI-2 streaming stopped")
         return True
 
     def _configure_streaming(self):
@@ -194,10 +192,10 @@ class CoaXPressInterface:
             logger.info(f"Negotiated speed: {negotiated_speed} Mbps")
 
             self.is_connected = True
-            logger.info("✓ CoaXPress connection established")
+            logger.info("CoaXPress connection established")
             return True
         except Exception as e:
-            logger.error(f"✗ CoaXPress connection failed: {e}")
+            logger.error(f"CoaXPress connection failed: {e}")
             return False
 
     def start_streaming(self) -> bool:
@@ -210,10 +208,10 @@ class CoaXPressInterface:
             # Configure streaming parameters
             self._configure_streaming()
             self.is_streaming = True
-            logger.info("✓ CoaXPress streaming started")
+            logger.info("CoaXPress streaming started")
             return True
         except Exception as e:
-            logger.error(f"✗ CoaXPress streaming failed: {e}")
+            logger.error(f"CoaXPress streaming failed: {e}")
             return False
 
     def capture_frame(self) -> Optional[np.ndarray]:
@@ -233,13 +231,13 @@ class CoaXPressInterface:
 
             return frame_data
         except Exception as e:
-            logger.error(f"✗ CoaXPress frame capture failed: {e}")
+            logger.error(f"CoaXPress frame capture failed: {e}")
             return None
 
     def stop_streaming(self) -> bool:
         """Stop CoaXPress streaming."""
         self.is_streaming = False
-        logger.info("✓ CoaXPress streaming stopped")
+        logger.info("CoaXPress streaming stopped")
         return True
 
     def _configure_streaming(self):
@@ -296,10 +294,10 @@ class GigEVisionInterface:
                 return False
 
             self.is_connected = True
-            logger.info("✓ GigE Vision connection established")
+            logger.info("GigE Vision connection established")
             return True
         except Exception as e:
-            logger.error(f"✗ GigE Vision connection failed: {e}")
+            logger.error(f"GigE Vision connection failed: {e}")
             return False
 
     def start_streaming(self) -> bool:
@@ -312,10 +310,10 @@ class GigEVisionInterface:
             # Configure GVSP (GigE Vision Streaming Protocol)
             self._configure_gvsp()
             self.is_streaming = True
-            logger.info("✓ GigE Vision streaming started")
+            logger.info("GigE Vision streaming started")
             return True
         except Exception as e:
-            logger.error(f"✗ GigE Vision streaming failed: {e}")
+            logger.error(f"GigE Vision streaming failed: {e}")
             return False
 
     def capture_frame(self) -> Optional[np.ndarray]:
@@ -334,13 +332,13 @@ class GigEVisionInterface:
 
             return frame_data
         except Exception as e:
-            logger.error(f"✗ GigE Vision frame capture failed: {e}")
+            logger.error(f"GigE Vision frame capture failed: {e}")
             return None
 
     def stop_streaming(self) -> bool:
         """Stop GigE Vision streaming."""
         self.is_streaming = False
-        logger.info("✓ GigE Vision streaming stopped")
+        logger.info("GigE Vision streaming stopped")
         return True
 
     def _configure_gvsp(self):
@@ -401,10 +399,10 @@ class USB3VisionInterface:
                 return False
 
             self.is_connected = True
-            logger.info("✓ USB3 Vision connection established")
+            logger.info("USB3 Vision connection established")
             return True
         except Exception as e:
-            logger.error(f"✗ USB3 Vision connection failed: {e}")
+            logger.error(f"USB3 Vision connection failed: {e}")
             return False
 
     def start_streaming(self) -> bool:
@@ -417,10 +415,10 @@ class USB3VisionInterface:
             # Configure USB3 Vision streaming
             self._configure_streaming()
             self.is_streaming = True
-            logger.info("✓ USB3 Vision streaming started")
+            logger.info("USB3 Vision streaming started")
             return True
         except Exception as e:
-            logger.error(f"✗ USB3 Vision streaming failed: {e}")
+            logger.error(f"USB3 Vision streaming failed: {e}")
             return False
 
     def capture_frame(self) -> Optional[np.ndarray]:
@@ -438,13 +436,13 @@ class USB3VisionInterface:
 
             return frame_data
         except Exception as e:
-            logger.error(f"✗ USB3 Vision frame capture failed: {e}")
+            logger.error(f"USB3 Vision frame capture failed: {e}")
             return None
 
     def stop_streaming(self) -> bool:
         """Stop USB3 Vision streaming."""
         self.is_streaming = False
-        logger.info("✓ USB3 Vision streaming stopped")
+        logger.info("USB3 Vision streaming stopped")
         return True
 
     def _configure_streaming(self):
@@ -711,10 +709,10 @@ Examples:
             demo_mipi_detailed()
 
         logger.info("=" * 40)
-        logger.info("✓ Protocol demonstrations completed!")
+        logger.info("Protocol demonstrations completed!")
 
     except Exception as e:
-        logger.error(f"✗ Demo failed: {e}")
+        logger.error(f"Demo failed: {e}")
         sys.exit(1)
 
 

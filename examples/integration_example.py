@@ -1,5 +1,5 @@
 """
-Advanced Integration Example for the Advanced Image Sensor Interface v2.0.0
+Advanced Integration Example for the Advanced Image Sensor Interface
 
 This example demonstrates the enhanced features including:
 - Type-safe operations with comprehensive type annotations
@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 class AdvancedSensorSystem:
     """
-    Advanced sensor system demonstrating v2.0.0 enhancements.
+    Advanced sensor system demonstrating v4 enhancements.
 
     Features:
     - Type-safe operations
@@ -110,7 +110,7 @@ class AdvancedSensorSystem:
     def initialize_system(self) -> bool:
         """Initialize the sensor system with enhanced error handling."""
         try:
-            logger.info("Initializing Advanced Sensor System v2.0.0...")
+            logger.info("Initializing Advanced Sensor System v4.0.0...")
 
             # Initialize buffer manager
             self.buffer_manager = AsyncBufferManager(pool_size=200)

@@ -9,17 +9,6 @@ This script demonstrates the enhanced features including:
 - Multi-sensor synchronization
 - GPU acceleration
 - Advanced power management
-
-Requirements:
-    - numpy>=1.23.5
-    - scipy>=1.10.0
-    - scikit-image>=0.20.0
-    - matplotlib>=3.7.0 (for visualization)
-    - Optional: cupy (for GPU acceleration)
-    - Optional: numba (for JIT acceleration)
-
-Author: Advanced Image Sensor Interface Team
-Version: 2.0.0
 """
 
 import logging
@@ -122,17 +111,23 @@ def demo_hdr_processing():
 
     # Process single image
     single_result = hdr_processor.process_single_image(test_images[1])  # Normal exposure
-    logger.info(f"Single image HDR processing: {single_result.shape}, dtype: {single_result.dtype}")
+    if not single_result.success or single_result.data is None:
+        logger.error(f"Single image HDR processing failed: {single_result.error}")
+        return hdr_processor, test_images, None
+    logger.info(f"Single image HDR processing: {single_result.data.shape}, dtype: {single_result.data.dtype}")
 
     # Process exposure stack
     stack_result = hdr_processor.process_exposure_stack(test_images, exposure_values)
-    logger.info(f"Exposure stack HDR processing: {stack_result.shape}, dtype: {stack_result.dtype}")
+    if not stack_result.success or stack_result.data is None:
+        logger.error(f"Exposure stack HDR processing failed: {stack_result.error}")
+        return hdr_processor, test_images, None
+    logger.info(f"Exposure stack HDR processing: {stack_result.data.shape}, dtype: {stack_result.data.dtype}")
 
     # Get processing statistics
     stats = hdr_processor.get_processing_stats()
     logger.info(f"HDR processing stats: {stats}")
 
-    return hdr_processor, test_images, stack_result
+    return hdr_processor, test_images, stack_result.data
 
 
 def demo_raw_processing():
@@ -158,13 +153,16 @@ def demo_raw_processing():
 
     # Process RAW to RGB
     rgb_result = raw_processor.process_raw_image(raw_data)
-    logger.info(f"RAW to RGB processing: {rgb_result.shape}, dtype: {rgb_result.dtype}")
+    if not rgb_result.success or rgb_result.data is None:
+        logger.error(f"RAW to RGB processing failed: {rgb_result.error}")
+        return raw_processor, raw_data, None
+    logger.info(f"RAW to RGB processing: {rgb_result.data.shape}, dtype: {rgb_result.data.dtype}")
 
     # Get processing statistics
     stats = raw_processor.processing_stats
     logger.info(f"RAW processing stats: {stats}")
 
-    return raw_processor, raw_data, rgb_result
+    return raw_processor, raw_data, rgb_result.data
 
 
 def demo_multi_sensor_sync():
@@ -357,7 +355,7 @@ def main():
     logger.info("=" * 60)
 
     try:
-        # Demo all v2.0.0 features
+        # Demo the enhanced sensor, processing, synchronization, GPU, and power features
         demo_enhanced_sensor_interface()
         hdr_processor, test_images, hdr_result = demo_hdr_processing()
         raw_processor, raw_data, raw_result = demo_raw_processing()
@@ -374,12 +372,12 @@ def main():
         logger.info("=" * 60)
         logger.info("Demo completed successfully!")
         logger.info("All enhanced features demonstrated:")
-        logger.info("✓ Enhanced sensor interface (up to 8K support)")
-        logger.info("✓ HDR image processing")
-        logger.info("✓ RAW image processing")
-        logger.info("✓ Multi-sensor synchronization")
-        logger.info("✓ GPU acceleration")
-        logger.info("✓ Advanced power management")
+        logger.info("- Enhanced sensor interface (up to 8K support)")
+        logger.info("- HDR image processing")
+        logger.info("- RAW image processing")
+        logger.info("- Multi-sensor synchronization")
+        logger.info("- GPU acceleration")
+        logger.info("- Advanced power management")
 
     except Exception as e:
         logger.error(f"Demo failed: {e}")

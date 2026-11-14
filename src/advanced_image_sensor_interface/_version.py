@@ -1,7 +1,20 @@
 """Version information for Advanced Image Sensor Interface."""
 
-__version__ = "3.3.0"
-__version_info__ = (3, 3, 0)
+__version__ = "4.0.0"
+__version_info__ = (4, 0, 0)
+
+# Breaking changes for v4.0.0
+BREAKING_CHANGES_4_0_0 = [
+    "MIPI security uses real AES-GCM via the optional [security] extra; encryption fails closed without cryptography",
+    "AES-CBC is rejected; AES-GCM requires 16/32-byte keys, 12-byte nonces, and 16-byte tags",
+    "MIPI security challenges are identity-bound, single-use, and expiring: generate_challenge(identity, size=32)",
+    "Replay protection uses per-session TX counters and authenticated RX windows",
+    "SignalProcessor rejects float64 and non-finite frames instead of silently converting them",
+    "RAWProcessor requires an ndarray and returns a typed failure instead of manufacturing a fallback image",
+    "Frame storage is explicit little-endian unpacked 8/10/12/14/16/20-bit; unknown or bit-packed pixel formats raise ValueError",
+    "IntegrityChecker fails closed on CRC mismatch; REED_SOLOMON is checksum detection, not error correction",
+    "Simulated protocol metrics report measured traffic, not configured link capacity; disconnect failures stay visible",
+]
 
 # Breaking changes for v3.2.0
 BREAKING_CHANGES_3_2_0 = [
@@ -23,6 +36,21 @@ __url__ = "https://github.com/muditbhargava66/Advanced-Image-Sensor-Interface"
 
 # Version history
 VERSION_HISTORY = {
+    "4.0.0": {
+        "release_date": "2026-11-14",
+        "major_features": [
+            "Real AES-GCM MIPI security via the optional [security] extra (cryptography), fail-closed without the backend",
+            "Identity-bound single-use expiring challenges, per-session TX counters, and authenticated RX replay windows",
+            "FrameCodec/FramePipeline: explicit little-endian unpacked 8/10/12/14/16/20-bit frames, owned arrays, validated capture and typed processing",
+            "Application-layer CRC/FEC envelope is opt-in and never presented as transport verification; integrity checks fail closed",
+            "Protocol lifecycle contracts: measured traffic and frame rates, visible stop/disconnect failures, locked FIFO USB3 buffers",
+            "Processing format repair: 20-bit uint32 support, RAW20 storage, typed RAW failures, float64/non-finite rejection, depth export failure propagation",
+            "Dead-code and wiring cleanup, including FrameCodec/FramePipeline exports from the package surface",
+            "Dependency and CI security remediation with SHA-pinned GitHub Actions and profile-based audits",
+            "640 tests passing (646 collected), 6 skipped without optional extras",
+        ],
+        "breaking_changes": BREAKING_CHANGES_4_0_0,
+    },
     "3.3.0": {
         "release_date": "2026-09-18",
         "major_features": [

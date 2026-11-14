@@ -183,6 +183,13 @@ class HDRProcessor:
         ghost_reduction_applied = False
         alignment_quality = 0.0
 
+        if not images:
+            return HDRProcessingResult(
+                success=False,
+                error="Exposure stack cannot be empty",
+                metrics=ProcessingMetrics(processing_time_ms=(time.perf_counter() - start_time) * 1000),
+            )
+
         # Auto-generate exposure values if not provided
         if exposure_values is None:
             n = len(images)
@@ -413,7 +420,7 @@ class HDRProcessor:
         """Equalize a single channel via CDF normalization."""
         # Quantize to 256 bins for the CDF
         quantized = (np.clip(channel, 0.0, 1.0) * 255).astype(np.uint8)
-        hist, bins = np.histogram(quantized.flatten(), bins=256, range=(0, 256))
+        hist, _ = np.histogram(quantized.flatten(), bins=256, range=(0, 256))
         cdf = hist.cumsum().astype(np.float64)
         cdf_min = cdf[cdf > 0].min()
         total = cdf[-1]

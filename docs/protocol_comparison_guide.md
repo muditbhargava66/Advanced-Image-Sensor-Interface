@@ -1,6 +1,6 @@
 # Camera Protocol Comparison Guide - Simple Guide
 
-## 🤔 Which Camera Protocol Should I Use? (Explain Like I'm 5)
+## Which Camera Protocol Should I Use? (Explain Like I'm 5)
 
 Imagine you're building different types of camera systems, and you need to choose the best way to connect your cameras. It's like choosing the right type of road for different vehicles:
 
@@ -9,20 +9,20 @@ Imagine you're building different types of camera systems, and you need to choos
 - **GigE Vision** = City streets (network-based, multiple cameras, moderate distance)
 - **USB3 Vision** = Driveway (short distance, plug-and-play, desktop use)
 
-## 📊 Quick Comparison Table
+## Quick Comparison Table
 
 | Feature | MIPI CSI-2 | CoaXPress | GigE Vision | USB3 Vision |
 |---------|------------|-----------|-------------|-------------|
-| **🚀 Speed** | Very Fast | Fastest | Moderate | Fast |
-| **📏 Distance** | Very Short (<1m) | Very Long (100m+) | Long (100m+) | Short (5m) |
-| **💰 Cost** | Cheap | Expensive | Moderate | Cheap |
-| **🔌 Setup** | Complex | Complex | Moderate | Easy |
-| **⚡ Power** | External | Through Cable | Through Cable | Through Cable |
-| **📱 Best For** | Phones/Tablets | Factories | Security Systems | Desktop Apps |
+| **Speed** | Very Fast | Fastest | Moderate | Fast |
+| **Distance** | Very Short (<1m) | Very Long (100m+) | Long (100m+) | Short (5m) |
+| **Cost** | Cheap | Expensive | Moderate | Cheap |
+| **Setup** | Complex | Complex | Moderate | Easy |
+| **Power** | External | Through Cable | Through Cable | Through Cable |
+| **Best For** | Phones/Tablets | Factories | Security Systems | Desktop Apps |
 
-## 🎯 When to Use Each Protocol
+## When to Use Each Protocol
 
-### 🔵 Use MIPI CSI-2 When:
+### Use MIPI CSI-2 When:
 
 **Perfect for:**
 - Smartphones and tablets
@@ -55,17 +55,17 @@ if application == "drone":
 ```
 
 **Why it's great:**
-- ✅ Uses very little battery power
-- ✅ Super fast (no delay)
-- ✅ Very small and lightweight
-- ✅ Cheap to implement
+- Uses very little battery power
+- Super fast (no delay)
+- Very small and lightweight
+- Cheap to implement
 
 **Why it might not work:**
-- ❌ Very short cables only
-- ❌ Complex to set up
-- ❌ Limited to embedded systems
+- Very short cables only
+- Complex to set up
+- Limited to embedded systems
 
-### 🟠 Use CoaXPress When:
+### Use CoaXPress When:
 
 **Perfect for:**
 - Factory inspection systems
@@ -98,19 +98,19 @@ if application == "scientific_imaging":
 ```
 
 **Why it's great:**
-- ✅ Fastest data transfer
-- ✅ Works over very long distances
-- ✅ Industrial-grade reliability
-- ✅ Powers camera through same cable
-- ✅ Perfect for harsh environments
+- Fastest data transfer
+- Works over very long distances
+- Industrial-grade reliability
+- Powers camera through same cable
+- Perfect for harsh environments
 
 **Why it might not work:**
-- ❌ Very expensive
-- ❌ Complex setup
-- ❌ Overkill for simple applications
-- ❌ Requires specialized equipment
+- Very expensive
+- Complex setup
+- Overkill for simple applications
+- Requires specialized equipment
 
-### 🟢 Use GigE Vision When:
+### Use GigE Vision When:
 
 **Perfect for:**
 - Security camera systems
@@ -143,20 +143,20 @@ if application == "factory_monitoring":
 ```
 
 **Why it's great:**
-- ✅ Uses standard network cables
-- ✅ Multiple cameras on one network
-- ✅ Long distance capability
-- ✅ Can power cameras through network
-- ✅ Remote access over internet
-- ✅ Uses existing network infrastructure
+- Uses standard network cables
+- Multiple cameras on one network
+- Long distance capability
+- Can power cameras through network
+- Remote access over internet
+- Uses existing network infrastructure
 
 **Why it might not work:**
-- ❌ Limited by network bandwidth
-- ❌ Can have network delays
-- ❌ Requires network knowledge
-- ❌ Performance depends on network quality
+- Limited by network bandwidth
+- Can have network delays
+- Requires network knowledge
+- Performance depends on network quality
 
-### 🔴 Use USB3 Vision When:
+### Use USB3 Vision When:
 
 **Perfect for:**
 - Desktop applications
@@ -189,20 +189,20 @@ if application == "portable_inspection":
 ```
 
 **Why it's great:**
-- ✅ Plug-and-play (just plug in and it works)
-- ✅ No network setup needed
-- ✅ Good performance
-- ✅ Can power small cameras
-- ✅ Works with any computer
-- ✅ Cost-effective
+- Plug-and-play (just plug in and it works)
+- No network setup needed
+- Good performance
+- Can power small cameras
+- Works with any computer
+- Cost-effective
 
 **Why it might not work:**
-- ❌ Short cable length only
-- ❌ Limited to few cameras per computer
-- ❌ USB bandwidth shared with other devices
-- ❌ Not suitable for permanent installations
+- Short cable length only
+- Limited to few cameras per computer
+- USB bandwidth shared with other devices
+- Not suitable for permanent installations
 
-## 🛠️ Decision Tree (Choose Your Protocol)
+## Decision Tree (Choose Your Protocol)
 
 ```python
 def choose_camera_protocol(requirements):
@@ -273,7 +273,7 @@ print(f"Recommended protocol: {recommendation['protocol']}")
 print(f"Reason: {recommendation['reason']}")
 ```
 
-## 🏗️ Real-World Application Examples
+## Real-World Application Examples
 
 ### Example 1: Smart Phone Camera System
 ```python
@@ -379,7 +379,7 @@ microscope = LaboratoryMicroscope()
 print(f"Lab microscope uses: {microscope.protocol}")
 ```
 
-## 💡 Protocol Selection Wizard
+## Protocol Selection Wizard
 
 ```python
 class ProtocolSelectionWizard:
@@ -556,41 +556,41 @@ example_answers = ["C", "C", "C", "B", "B"]  # Security system example
 
 recommendation = wizard.analyze_answers(example_answers)
 
-print(f"🎯 Recommended Protocol: {recommendation['recommended_protocol']}")
-print(f"📊 Confidence: {recommendation['confidence']:.0f}%")
-print(f"💡 Why this protocol:")
+print(f"Recommended Protocol: {recommendation['recommended_protocol']}")
+print(f"Confidence: {recommendation['confidence']:.0f}%")
+print(f"Why this protocol:")
 for reason in recommendation['explanation']:
     print(f"  • {reason}")
 
-print(f"\n📈 All scores:")
+print(f"\nAll scores:")
 for protocol, score in recommendation['scores'].items():
     print(f"  {protocol}: {score}/15")
 ```
 
-## 🎯 Summary: Quick Protocol Picker
+## Summary: Quick Protocol Picker
 
-**🔵 Choose MIPI CSI-2 if:**
+**Choose MIPI CSI-2 if:**
 - Building mobile devices, drones, or IoT
 - Need ultra-low power
 - Very short distances only
 - Cost is critical
 
-**🟠 Choose CoaXPress if:**
+**Choose CoaXPress if:**
 - Industrial or scientific application
 - Need maximum performance
 - Long distances required
 - Budget allows premium solution
 
-**🟢 Choose GigE Vision if:**
+**Choose GigE Vision if:**
 - Multiple cameras needed
 - Using network infrastructure
 - Moderate distances
 - Need remote access
 
-**🔴 Choose USB3 Vision if:**
+**Choose USB3 Vision if:**
 - Desktop/lab application
 - Want plug-and-play simplicity
 - Single camera or few cameras
 - Good performance at low cost
 
-Remember: There's no "best" protocol - only the best protocol **for your specific application**! 🎯
+Remember: There's no "best" protocol - only the best protocol **for your specific application**!

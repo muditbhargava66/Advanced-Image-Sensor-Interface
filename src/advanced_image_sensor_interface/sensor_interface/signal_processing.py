@@ -109,7 +109,7 @@ class SignalProcessor:
         config: Configuration for signal processing.
     """
 
-    def __init__(self, config: SignalConfig, timing_strategy: TimingStrategy = None):
+    def __init__(self, config: SignalConfig, timing_strategy: TimingStrategy | None = None):
         """Initialize the SignalProcessor.
 
         Args:
@@ -120,14 +120,9 @@ class SignalProcessor:
         self._timing_strategy = timing_strategy or DefaultTimingStrategy()
         self._validator = ImageValidator()
 
-        # Create target format for processing
-        self._target_format = ImageFormat(
-            height=1080,  # Default, will be updated per image
-            width=1920,  # Default, will be updated per image
-            channels=3,  # Assume RGB processing
-            bit_depth=config.bit_depth,
-            dtype=self._get_dtype_for_bit_depth(config.bit_depth),
-        )
+        self._get_dtype_for_bit_depth(config.bit_depth)
+        if not np.isfinite(config.noise_reduction_strength) or config.noise_reduction_strength < 0:
+            raise ValueError("Noise reduction strength must be finite and non-negative")
 
         self._initialize_processing_pipeline()
         logger.info(f"Signal Processor initialized with {self.config.bit_depth}-bit depth")
@@ -151,6 +146,8 @@ class SignalProcessor:
             return SupportedDType.UINT14_IN_UINT16
         elif bit_depth == 16:
             return SupportedDType.UINT16
+        elif bit_depth == 20:
+            return SupportedDType.UINT32
         else:
             raise ValueError(f"Unsupported bit depth: {bit_depth}")
 
@@ -170,7 +167,7 @@ class SignalProcessor:
             ValueError: If frame has an unsupported number of channels.
         """
         start_time = time.perf_counter()
-        warnings = []
+        warnings: list[str] = []
         metrics = ProcessingMetrics(algorithm_name="SignalProcessor")
         noise_reduction_applied = False
         dynamic_range_expanded = False
@@ -189,19 +186,14 @@ class SignalProcessor:
             # Validate input frame
             original_format = self._validator.validate_image(frame)
 
-            # Override the detected bit depth with our configured bit depth
-            # This ensures consistent processing regardless of input data range
-            original_format.bit_depth = self.config.bit_depth
-            original_format.dtype = self._get_dtype_for_bit_depth(self.config.bit_depth)
-
-            # CQ-4: Create a per-call ImageFormat instead of mutating the
-            # shared self._target_format (avoids thread-safety issues)
             target_format = ImageFormat(
                 height=original_format.height,
                 width=original_format.width,
                 channels=original_format.channels,
                 bit_depth=self.config.bit_depth,
-                dtype=self._get_dtype_for_bit_depth(self.config.bit_depth),
+                dtype=(
+                    SupportedDType.FLOAT32 if frame.dtype == np.float32 else self._get_dtype_for_bit_depth(self.config.bit_depth)
+                ),
             )
 
             # Create safe processor for this frame
@@ -234,7 +226,7 @@ class SignalProcessor:
                 return processed
 
             # Process safely
-            processed_frame = processor.safe_process(frame, processing_pipeline)
+            processed_frame = processor.safe_process(frame, processing_pipeline, source_format=target_format)
 
             if processed_frame is None:
                 return SignalProcessingResult(
@@ -287,31 +279,6 @@ class SignalProcessor:
                     warnings=warnings,
                     metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
                 )
-            # Handle unsupported dtypes gracefully
-            elif isinstance(e, ValueError) and "dtype" in str(e).lower():
-                try:
-                    if frame.dtype == np.float64:
-                        converted = (frame * 65535).astype(np.uint16)
-                        return SignalProcessingResult(
-                            success=True,
-                            data=converted,
-                            warnings=[f"Converted from float64 to uint16: {e!s}"],
-                            metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
-                        )
-                    converted = frame.astype(np.uint16)
-                    return SignalProcessingResult(
-                        success=True,
-                        data=converted,
-                        warnings=[f"Converted to uint16: {e!s}"],
-                        metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
-                    )
-                except Exception as conv_e:
-                    return SignalProcessingResult(
-                        success=False,
-                        error=f"Failed to convert dtype: {conv_e}",
-                        warnings=warnings,
-                        metrics=ProcessingMetrics(processing_time_ms=processing_time_ms),
-                    )
             elif isinstance(e, ValueError):
                 return SignalProcessingResult(
                     success=False,
@@ -331,11 +298,8 @@ class SignalProcessor:
         # Use configurable approach for noise reduction
         processing_config = get_processing_config()
         sigma = self.config.noise_reduction_strength * processing_config.NOISE_REDUCTION_SIGMA_MULTIPLIER
-        kernel_size = max(processing_config.MIN_KERNEL_SIZE, int(sigma * processing_config.KERNEL_SIZE_MULTIPLIER) + 1)
-
-        # Make kernel size odd
-        if kernel_size % 2 == 0:
-            kernel_size += 1
+        if not np.isfinite(sigma) or sigma < 0:
+            raise ValueError("Noise reduction sigma must be finite and non-negative")
 
         # Apply Gaussian blur without mixing color channels. SciPy applies a
         # scalar sigma to every axis, so we pin non-spatial axes to zero.

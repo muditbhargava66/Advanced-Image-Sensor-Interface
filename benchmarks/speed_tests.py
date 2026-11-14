@@ -174,12 +174,13 @@ class PerformanceProfiler:
                 config = SignalConfig(bit_depth=bit_depth, noise_reduction_strength=0.1, color_correction_matrix=np.eye(3))
                 processor = SignalProcessor(config)
 
-                # Generate test frame
+                # Generate test frame; dtype must match the configured bit depth
                 max_val = (2**bit_depth) - 1
+                frame_dtype = np.uint8 if bit_depth == 8 else (np.uint32 if bit_depth == 20 else np.uint16)
                 if channels == 1:
-                    frame = np.random.randint(0, max_val + 1, (height, width), dtype=np.uint16)
+                    frame = np.random.randint(0, max_val + 1, (height, width), dtype=frame_dtype)
                 else:
-                    frame = np.random.randint(0, max_val + 1, (height, width, channels), dtype=np.uint16)
+                    frame = np.random.randint(0, max_val + 1, (height, width, channels), dtype=frame_dtype)
 
                 # Process frames
                 for _ in range(iterations):

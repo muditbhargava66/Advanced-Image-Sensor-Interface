@@ -142,6 +142,13 @@ class ProtocolSelector:
     def configure_protocol(self, protocol_type: ProtocolType, config: Any) -> bool:
         """Backward-compatible helper that instantiates and registers a driver."""
         try:
+            if isinstance(config, dict):
+                config_dict = config.copy()
+            elif is_dataclass(config) and not isinstance(config, type):
+                config_dict = asdict(config)
+            else:
+                raise TypeError("Configuration must be a dictionary or dataclass instance")
+            config = config_dict
             protocol_instance: ProtocolBase
             if protocol_type == ProtocolType.MIPI:
                 from .protocol.mipi import MIPIProtocolDriver
@@ -161,13 +168,6 @@ class ProtocolSelector:
                 protocol_instance = USB3VisionDriver(config)
             else:
                 raise ValueError(f"Unsupported protocol type: {protocol_type}")
-
-            if isinstance(config, dict):
-                config_dict = config
-            elif is_dataclass(config) and not isinstance(config, type):
-                config_dict = asdict(config)
-            else:
-                config_dict = vars(config).copy()
 
             return self.register_protocol(protocol_type, protocol_instance, config_dict)
 
@@ -339,25 +339,39 @@ class ProtocolSelector:
             logger.error(f"Protocol {protocol_type.value} not registered")
             return False
 
+        protocol_instance = self.protocol_instances[protocol_type]
         try:
-            # Disconnect current protocol if active
-            if self.current_protocol and self.current_protocol != protocol_type:
+            if self.current_protocol == protocol_type and protocol_instance.is_connected:
+                return True
+            if self.current_protocol:
                 current_instance = self.protocol_instances[self.current_protocol]
-                current_instance.disconnect()
+                try:
+                    disconnected = current_instance.disconnect()
+                finally:
+                    if not current_instance.is_connected:
+                        self.current_protocol = None
+                if not disconnected or current_instance.is_connected:
+                    return False
+                self.current_protocol = None
 
-            # Connect new protocol
-            protocol_instance = self.protocol_instances[protocol_type]
             if protocol_instance.connect():
                 self.current_protocol = protocol_type
                 logger.info(f"Activated protocol: {protocol_type.value}")
                 return True
-            else:
-                logger.error(f"Failed to connect protocol: {protocol_type.value}")
-                return False
-
+            logger.error(f"Failed to connect protocol: {protocol_type.value}")
         except Exception as e:
             logger.error(f"Error activating protocol {protocol_type.value}: {e}")
-            return False
+
+        # A failed connect may have acquired resources. Clean up without hiding
+        # an existing connection if disconnect itself fails.
+        if self.current_protocol is None:
+            try:
+                protocol_instance.disconnect()
+            except Exception as e:
+                logger.error(f"Failed activation cleanup: {e}")
+            if protocol_instance.is_connected:
+                self.current_protocol = protocol_type
+        return False
 
     def get_current_protocol(self) -> Optional[ProtocolBase]:
         """

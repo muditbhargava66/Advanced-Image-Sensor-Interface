@@ -1,4 +1,4 @@
-"""Enhanced Sensor Interface for v2.0.0.
+"""Enhanced Sensor Interface
 
 This module provides enhanced sensor interface capabilities including:
 - Support for resolutions up to 8K (7680x4320)
@@ -346,10 +346,9 @@ class EnhancedSensorInterface:
         # Convert to appropriate bit depth
         if self.config.raw_format == RAWFormat.RAW8:
             return raw_data.astype(np.uint8)
-        elif self.config.raw_format == RAWFormat.RAW16:
-            return raw_data.astype(np.uint16)
-        else:
-            return raw_data.astype(np.uint16)  # Default to 16-bit
+        if self.config.raw_format == RAWFormat.RAW20:
+            return raw_data.astype(np.uint32)
+        return raw_data.astype(np.uint16)
 
     def _generate_rgb_frame(self, width: int, height: int, sensor_id: int) -> np.ndarray:
         """Generate simulated RGB frame data."""

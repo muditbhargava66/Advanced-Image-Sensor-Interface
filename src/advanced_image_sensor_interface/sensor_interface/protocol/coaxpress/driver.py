@@ -12,7 +12,7 @@ Key Features:
 - Hardware trigger support
 - Power over Coax (PoCXP)
 
-Version: 3.0.0
+Version: 4.0.0
 """
 
 import logging
@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from enum import Enum, IntEnum
 from typing import Any, ClassVar, Optional
 
+from advanced_image_sensor_interface.types import SimulationDelayConfig
 
 from ..base import ConfigurationError, ConnectionError, DataTransferError, ProtocolCapabilities, StreamingProtocolBase
 
@@ -148,7 +149,7 @@ class CXPLinkLayer:
         "CXP-12": 12500.0,
     }
 
-    def __init__(self, num_connections: int = 1) -> None:
+    def __init__(self, num_connections: int = 1, simulation_delays: Optional[SimulationDelayConfig] = None) -> None:
         """
         Initialize CXP link layer.
 
@@ -159,6 +160,7 @@ class CXPLinkLayer:
             raise ValueError("Number of connections must be between 1 and 4")
 
         self.num_connections = num_connections
+        self.simulation_delays = simulation_delays or SimulationDelayConfig()
         self._links: list[CXPLinkStatus] = [CXPLinkStatus(link_id=i) for i in range(num_connections)]
         self._negotiated_speed: str = "CXP-6"
         self._link_start_time: Optional[float] = None
@@ -184,17 +186,17 @@ class CXPLinkLayer:
         for link in self._links:
             # State machine transitions
             link.state = CXPLinkState.DISCOVERY
-            time.sleep(0.01)  # Discovery phase
+            time.sleep(self.simulation_delays.apply_delay(self.simulation_delays.device_discovery_delay))
 
             link.state = CXPLinkState.TRAINING
-            time.sleep(0.02)  # Training/equalization phase
+            time.sleep(self.simulation_delays.apply_delay(self.simulation_delays.link_training_delay))
 
             # Simulate successful training
             link.state = CXPLinkState.SYNCHRONIZED
             link.speed_grade = target_speed
             link.bandwidth_mbps = self.SPEED_BANDWIDTH[target_speed]
 
-            time.sleep(0.01)  # Synchronization verification
+            time.sleep(self.simulation_delays.apply_delay(self.simulation_delays.link_initialization_delay))
 
             link.state = CXPLinkState.CONNECTED
 
@@ -244,8 +246,9 @@ class CXPControlChannel:
     Handles register access and camera control via GenCP-like protocol.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, simulation_delays: Optional[SimulationDelayConfig] = None) -> None:
         """Initialize control channel."""
+        self.simulation_delays = simulation_delays or SimulationDelayConfig()
         self._registers: dict[int, bytes] = {}
         self._pending_acks: list[int] = []
         self._transaction_id: int = 0
@@ -296,8 +299,7 @@ class CXPControlChannel:
         self.stats["read_commands"] += 1
         self.stats["bytes_read"] += length
 
-        # Simulate register read latency
-        time.sleep(0.0005)
+        time.sleep(self.simulation_delays.apply_delay(self.simulation_delays.register_read_delay))
 
         if address in self._registers:
             data = self._registers[address]
@@ -320,8 +322,7 @@ class CXPControlChannel:
         self.stats["write_commands"] += 1
         self.stats["bytes_written"] += len(data)
 
-        # Simulate register write latency
-        time.sleep(0.0005)
+        time.sleep(self.simulation_delays.apply_delay(self.simulation_delays.register_write_delay))
 
         self._registers[address] = data
         return True
@@ -770,9 +771,14 @@ class CoaXPressConfig:
     master_host_connection: int = 0
     packet_delay: int = 0
     stream_packet_size: int = 0
+    simulation_delays: SimulationDelayConfig = field(default_factory=SimulationDelayConfig)
 
     def __post_init__(self) -> None:
         """Validate configuration."""
+        if self.simulation_delays is None:
+            self.simulation_delays = SimulationDelayConfig()
+        elif isinstance(self.simulation_delays, dict):
+            self.simulation_delays = SimulationDelayConfig(**self.simulation_delays)
         valid_speeds = ["CXP-1", "CXP-2", "CXP-3", "CXP-5", "CXP-6", "CXP-10", "CXP-12"]
         if self.speed_grade not in valid_speeds:
             raise ValueError(f"Invalid speed grade: {self.speed_grade}")
@@ -811,18 +817,21 @@ class CoaXPressDriver(StreamingProtocolBase):
         "CXP-12": 12500,
     }
 
-    def __init__(self, config: CoaXPressConfig) -> None:
-        """Initialize CoaXPress driver."""
+    def __init__(self, config: CoaXPressConfig | dict[str, Any]) -> None:
+        """Initialize CoaXPress driver from a dataclass or mapping."""
+        if isinstance(config, dict):
+            config = CoaXPressConfig(**{k: v for k, v in config.items() if k in CoaXPressConfig.__dataclass_fields__})
         self.cxp_config = config
-        super().__init__(config.__dict__)
+        super().__init__(vars(config).copy())
 
         # Protocol components
-        self._link_layer = CXPLinkLayer(config.connections)
-        self._control_channel = CXPControlChannel()
+        self._link_layer = CXPLinkLayer(config.connections, config.simulation_delays)
+        self._control_channel = CXPControlChannel(config.simulation_delays)
         self._stream_channel = CXPStreamChannel(config.packet_size)
         self._trigger_controller = CXPTriggerController()
         self._pocxp = PoCXPController(config.connections)
         self._node_map = CXPNodeMap()
+        self._node_map._nodes["PixelFormat"].enum_entries = self.capabilities.supported_pixel_formats.copy()
 
         # State
         self.device_handle: Optional[str] = None
@@ -915,7 +924,8 @@ class CoaXPressDriver(StreamingProtocolBase):
             # Enable power if configured
             if self.cxp_config.power_over_coax:
                 self._pocxp.enable()
-                time.sleep(0.1)  # Power stabilization
+                delays = self.cxp_config.simulation_delays
+                time.sleep(delays.apply_delay(delays.power_on_delay))
 
             # Negotiate link speed
             if not self._link_layer.negotiate_link(self.cxp_config.speed_grade):
@@ -934,7 +944,7 @@ class CoaXPressDriver(StreamingProtocolBase):
             self.is_connected = True
             self.status.is_connected = True
             self.status.connection_quality = 1.0
-            self.status.data_rate_mbps = self._link_layer.get_total_bandwidth()
+            self._mark_connected()
 
             logger.info("CoaXPress device connected successfully")
             return True
@@ -948,8 +958,8 @@ class CoaXPressDriver(StreamingProtocolBase):
     def disconnect(self) -> bool:
         """Disconnect from CoaXPress device."""
         try:
-            if self.is_streaming:
-                self.stop_streaming()
+            if self.is_streaming and not self.stop_streaming():
+                return False
 
             # Disconnect link layer
             self._link_layer.disconnect()
@@ -965,7 +975,7 @@ class CoaXPressDriver(StreamingProtocolBase):
             self.is_connected = False
             self.status.is_connected = False
             self.status.connection_quality = 0.0
-            self.status.data_rate_mbps = 0.0
+            self._mark_disconnected()
 
             logger.info("CoaXPress device disconnected")
             return True
@@ -980,8 +990,8 @@ class CoaXPressDriver(StreamingProtocolBase):
             raise ConnectionError("Not connected to CoaXPress device")
 
         try:
-            # Write via control channel
-            time.sleep(0.001)
+            delays = self.cxp_config.simulation_delays
+            time.sleep(delays.apply_delay(delays.command_transfer_delay))
             self.status.bytes_transmitted += len(data)
             logger.debug(f"Sent {len(data)} bytes to CoaXPress device")
             return True
@@ -1030,6 +1040,8 @@ class CoaXPressDriver(StreamingProtocolBase):
 
             # Start stream channel
             self._stream_channel.start_stream()
+            delays = self.cxp_config.simulation_delays
+            time.sleep(delays.apply_delay(delays.streaming_setup_delay))
 
             # Create stream handle
             self.stream_handle = f"cxp_stream_{id(self)}"
@@ -1050,7 +1062,10 @@ class CoaXPressDriver(StreamingProtocolBase):
         """Stop image streaming."""
         try:
             if self.is_streaming:
-                self._stream_channel.stop_stream()
+                if not self._stream_channel.stop_stream():
+                    return False
+                delays = self.cxp_config.simulation_delays
+                time.sleep(delays.apply_delay(delays.streaming_teardown_delay))
                 self.is_streaming = False
                 self.stream_handle = None
 
@@ -1079,7 +1094,9 @@ class CoaXPressDriver(StreamingProtocolBase):
             # Simulate capture timing
             frame_rate = self._node_map.get_value("AcquisitionFrameRate")
             capture_delay = 1.0 / frame_rate
-            time.sleep(min(capture_delay, 0.1))
+            time.sleep(capture_delay)
+            delays = self.cxp_config.simulation_delays
+            time.sleep(delays.apply_delay(delays.frame_capture_delay))
 
             # Generate frame
             frame_data = self._generate_frame(width, height, bpp)
@@ -1088,6 +1105,12 @@ class CoaXPressDriver(StreamingProtocolBase):
             self._frame_count += 1
             self.stats["frames_captured"] += 1
             self.stats["bytes_transferred"] += len(frame_data)
+            self._record_capture(len(frame_data))
+            self._stream_channel.stats["frames_received"] += 1
+            self._stream_channel.stats["bytes_received"] += len(frame_data)
+            self._stream_channel.stats["packets_received"] += (
+                len(frame_data) + self.cxp_config.packet_size - 1
+            ) // self.cxp_config.packet_size
             self.stats["last_frame_time"] = time.time()
 
             logger.debug(f"Captured frame {self._frame_count}, size: {len(frame_data)} bytes")
@@ -1096,7 +1119,9 @@ class CoaXPressDriver(StreamingProtocolBase):
         except Exception as e:
             logger.error(f"Frame capture failed: {e}")
             self.stats["errors"] += 1
+            self.stats["frames_dropped"] += 1
             self.status.error_count += 1
+            self.status.last_error = str(e)
             return None
 
     def software_trigger(self) -> bool:
@@ -1162,25 +1187,20 @@ class CoaXPressDriver(StreamingProtocolBase):
 
     def _generate_frame(self, width: int, height: int, bpp: int) -> bytes:
         """Generate frame data using shared vectorized implementation."""
-        return self._generate_test_frame_vectorized(width, height, bpp, self._frame_count)
+        return self._generate_test_frame_vectorized(
+            width, height, bpp, self._frame_count, pixel_format=self._node_map.get_value("PixelFormat")
+        )
 
     def _get_current_frame_rate(self) -> float:
         """Get current frame rate."""
-        if self._start_time and self._frame_count > 0:
-            elapsed = time.time() - self._start_time
-            return self._frame_count / elapsed if elapsed > 0 else 0.0
-        return 0.0
+        return self._measured_frame_rate()
 
     def _get_dropped_frame_count(self) -> int:
         """Get number of dropped frames."""
         return int(self.stats["frames_dropped"])
 
     def _get_buffer_utilization(self) -> float:
-        """Estimate buffer utilization from achieved frame rate."""
-        target_fps = self.cxp_config.frame_rate
-        actual_fps = self._get_current_frame_rate()
-        if target_fps > 0:
-            return min(100.0, (actual_fps / target_fps) * 100.0)
+        """No asynchronous buffers are held by this synchronous simulator."""
         return 0.0
 
     def get_status(self) -> dict[str, Any]:
@@ -1218,14 +1238,16 @@ class CoaXPressDriver(StreamingProtocolBase):
 
     def get_statistics(self) -> dict[str, Any]:
         """Get driver statistics."""
-        uptime = time.time() - self._start_time if self._start_time else 0
+        self._refresh_status()
+        uptime = self.status.uptime_seconds
 
         return {
-            **self.stats,
             **self._control_channel.stats,
             **self._stream_channel.stats,
+            **self.stats,
+            "bytes_received": self.status.bytes_received,
             "uptime_seconds": uptime,
-            "current_fps": self._frame_count / uptime if uptime > 0 else 0,
+            "current_fps": self._measured_frame_rate(),
             "connection_quality": self.status.connection_quality,
             "link_bandwidth_mbps": self._link_layer.get_total_bandwidth(),
             "error_rate": self.stats["errors"] / max(1, uptime),

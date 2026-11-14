@@ -8,7 +8,7 @@ This document provides comprehensive guidance on testing the Advanced Image Sens
 
 The project uses the following testing tools:
 
-- **pytest**: Main testing framework for the full suite (395 collected tests in the current workspace: 388 passing, 7 skipped when optional extras like numba, trimesh, or OpenCV are not installed)
+- **pytest**: Main testing framework for the full suite (646 collected tests in the current workspace: 640 passing, 6 skipped when optional extras like numba or trimesh are not installed)
 - **unittest.mock**: For mocking dependencies during testing
 - **pytest-cov**: For measuring test coverage
 - **pytest-asyncio**: For async test support
@@ -269,17 +269,18 @@ Keep test documentation up to date:
 - Test fixtures should be documented
 - Complex test setups should include comments
 
-## 12. Current Test Status (v3.3.0)
+## 12. Current Test Status (v4.0.0)
 
 The Advanced Image Sensor Interface project maintains a comprehensive test suite:
 
-- **Collected tests** verified locally for the current v3.3.0 workspace (see `pytest` summary for the live count)
-- **Targeted quality gates**: pytest, ruff, black, compileall, mypy, and pyright
+- **Verified suite**: 640 passed, 6 skipped, 646 collected in the current workspace (`pytest -q`); skipped tests require optional extras
+- **Targeted quality gates**: pytest, ruff, black, compileall, mypy (advisory baseline), and pyright
 - **Coverage reports available on demand** via `pytest --cov=src`
 - **Multi-Python version testing** (3.11-3.13)
 
 ### Test Distribution
 - **Protocol tests**: MIPI, GigE Vision, USB3 Vision, and CoaXPress drivers plus extension coverage
+- **Contract tests**: unpacked frame codec, capture pipeline, integrity envelopes, protocol frame/lifecycle behavior, and MIPI security (250 new cases in v4.0.0)
 - **Imaging tests**: HDR processing, RAW processing, lens correction, and signal-processing regressions
 - **Integration tests**: End-to-end capture and processing flows
 - **Core utility tests**: Buffer management, configuration, validation, metrics, power, and security

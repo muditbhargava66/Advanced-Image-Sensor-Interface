@@ -1,18 +1,28 @@
 """
-Advanced Image Sensor Interface v3.3.0
+Advanced Image Sensor Interface v4.0.0
 
 A high-performance simulation and interface model for next-generation camera modules.
 This package provides comprehensive sensor interface capabilities including MIPI CSI-2
 simulation, advanced signal processing, HDR imaging, RAW processing, multi-sensor
 synchronization, GPU acceleration, and advanced power management.
 
-Version 3.3.0 (Dependency Maintenance):
-- No API or behavior changes; fully compatible with v3.2.0 code
-- Widened optional dependency ceilings: opencv-python <6.0.0, pandas <4.0.0,
-  astropy <9.0.0, trimesh <6.0.0, pyzmq <28.0.0
-- Docs requirements updated: psutil <8.0.0, linkify-it-py >=2.2.0,
-  sphinxcontrib-htmlhelp >=2.1.0
-- CI: astral-sh/setup-uv bumped to v10.0.1
+Version 4.0.0 (Security, Explicit Frames, Lifecycle Contracts):
+- Real AES-GCM encryption through the optional [security] extra; encryption
+  requests fail closed when cryptography is absent; CBC is rejected;
+  identity-bound single-use challenges and authenticated replay windows
+- FrameCodec/FramePipeline: explicit little-endian unpacked 8/10/12/14/16/20-bit
+  frames, owned arrays, validated capture-to-processing flow, and an opt-in
+  application-layer CRC/FEC envelope that is not transport verification
+- Processing format repair: 20-bit uint32 support, typed RAW failures without
+  fallback images, explicit float64/non-finite rejection, and depth export
+  failure propagation
+- Protocol lifecycle contracts: measured traffic and frame rates, visible
+  stop/disconnect failures, and locked FIFO buffer ownership
+- Dependency and CI security remediation with SHA-pinned actions
+
+Previous Features (v3.3.0):
+- Dependency maintenance release: widened optional dependency ceilings and
+  refreshed CI tooling with no API changes
 
 Previous Features (v3.2.0):
 - Typed ProcessingResult dataclasses (SignalProcessingResult, HDRProcessingResult,
@@ -67,7 +77,17 @@ v3.0.0 Protocol Example:
 """
 
 # Import legacy v1.x components for backward compatibility
-from .sensor_interface import AutomatedTestSuite, MIPIConfig, MIPIDriver, PowerConfig, PowerManager, SignalConfig, SignalProcessor
+from .sensor_interface import (
+    AutomatedTestSuite,
+    FrameCodec,
+    FramePipeline,
+    MIPIConfig,
+    MIPIDriver,
+    PowerConfig,
+    PowerManager,
+    SignalConfig,
+    SignalProcessor,
+)
 
 # Import v2.0.0 components (with graceful fallback)
 try:
@@ -123,6 +143,9 @@ try:
         "SignalConfig",
         "SignalProcessor",
         "AutomatedTestSuite",
+        # v4.0.0 explicit frame pipeline
+        "FrameCodec",
+        "FramePipeline",
         # Enhanced sensor interface
         "EnhancedSensorInterface",
         "SensorConfiguration",
@@ -176,7 +199,17 @@ except ImportError as e:
     logging.getLogger(__name__).error(f"v2.0.0+ features not available: {e}")
 
     # Fallback to legacy exports only
-    __all__ = ["MIPIConfig", "MIPIDriver", "PowerConfig", "PowerManager", "SignalConfig", "SignalProcessor", "AutomatedTestSuite"]
+    __all__ = [
+        "MIPIConfig",
+        "MIPIDriver",
+        "PowerConfig",
+        "PowerManager",
+        "SignalConfig",
+        "SignalProcessor",
+        "AutomatedTestSuite",
+        "FrameCodec",
+        "FramePipeline",
+    ]
 
 # v3.2.0 typed results and depth module (core dependencies only)
 from .types import (
@@ -210,8 +243,3 @@ __all__ += [
 
 # Version information
 from ._version import __author__, __license__, __version__, get_release_info, get_version, get_version_info
-
-# Backward compatibility
-__version__ = __version__
-__author__ = __author__
-__license__ = __license__

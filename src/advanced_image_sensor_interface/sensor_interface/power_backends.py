@@ -200,7 +200,7 @@ class SimulationPowerBackend(PowerBackendBase):
             time.sleep(0.001)  # 1ms settling time
 
             # Add noise to simulate real hardware
-            actual_voltage = voltage * (1 + random.uniform(-self.noise_level, self.noise_level))
+            actual_voltage = voltage * (1 + random.uniform(-self.noise_level, self.noise_level))  # nosec B311
 
             self.power_rails[rail].voltage_v = actual_voltage
 
@@ -222,7 +222,8 @@ class SimulationPowerBackend(PowerBackendBase):
 
         # Add measurement noise
         voltage = self.power_rails[rail].voltage_v
-        measured_voltage = voltage * (1 + random.uniform(-self.noise_level / 2, self.noise_level / 2))
+        measurement_noise = random.uniform(-self.noise_level / 2, self.noise_level / 2)  # nosec B311
+        measured_voltage = voltage * (1 + measurement_noise)
 
         return measured_voltage
 
@@ -250,12 +251,13 @@ class SimulationPowerBackend(PowerBackendBase):
         temp_factor = 1 + self.thermal_coefficient * (self.power_rails[rail].temperature_c - self.base_temperature)
 
         # Add load variation
-        load_factor = 1 + 0.2 * random.random()  # ±20% variation
+        load_factor = 1 + 0.2 * random.random()  # nosec B311
 
         simulated_current = base_current * temp_factor * load_factor
 
         # Add measurement noise
-        measured_current = simulated_current * (1 + random.uniform(-self.noise_level, self.noise_level))
+        measurement_noise = random.uniform(-self.noise_level, self.noise_level)  # nosec B311
+        measured_current = simulated_current * (1 + measurement_noise)
 
         # Update stored current
         self.power_rails[rail].current_a = measured_current
@@ -299,11 +301,11 @@ class SimulationPowerBackend(PowerBackendBase):
         temp_rise = total_power * 10.0  # 10°C per watt
 
         # Add ambient temperature and noise
-        temperature = self.base_temperature + temp_rise + random.uniform(-1.0, 1.0)
+        temperature = self.base_temperature + temp_rise + random.uniform(-1.0, 1.0)  # nosec B311
 
         # Update rail temperatures
         for rail in self.power_rails.values():
-            rail.temperature_c = temperature + random.uniform(-2.0, 2.0)
+            rail.temperature_c = temperature + random.uniform(-2.0, 2.0)  # nosec B311
 
         return temperature
 
@@ -556,7 +558,7 @@ class HardwarePowerBackend(PowerBackendBase):
             # In real implementation, this would read from current sense amplifiers
             # For simulation, return a reasonable value
             base_current = 0.1  # 100mA base current
-            current = base_current + 0.05 * random.random()  # Add some variation
+            current = base_current + 0.05 * random.random()  # nosec B311
 
             self.power_rails[rail].current_a = current
             self.power_rails[rail].power_w = self.power_rails[rail].voltage_v * current
@@ -610,7 +612,7 @@ class HardwarePowerBackend(PowerBackendBase):
             # In real implementation, this would read from temperature sensors
             # For simulation, return a reasonable temperature
             base_temp = 25.0
-            temp_variation = 5.0 * random.random()
+            temp_variation = 5.0 * random.random()  # nosec B311
             temperature = base_temp + temp_variation
 
             return temperature

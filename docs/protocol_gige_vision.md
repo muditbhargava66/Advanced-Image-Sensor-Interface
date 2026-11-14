@@ -1,6 +1,6 @@
 # GigE Vision Protocol - Simple Guide
 
-## 🤔 What is GigE Vision? (Explain Like I'm 5)
+## What is GigE Vision? (Explain Like I'm 5)
 
 Imagine you want to put cameras all around your house or office, and you want to watch them all from your computer. GigE Vision is like using your regular internet cables (the same ones for your WiFi router) to connect cameras!
 
@@ -10,7 +10,7 @@ Imagine you want to put cameras all around your house or office, and you want to
 - GigE Vision is like using your building's internet cables to connect all the guards to the office
 - You can have many cameras on the same network, just like having many computers on WiFi
 
-### 🌐 Why is it Special?
+### Why is it Special?
 
 1. **Uses Regular Network Cables**: Same cables as your internet (Ethernet)
 2. **Long Distance**: Can work over 100 meters (longer than a football field!)
@@ -19,7 +19,7 @@ Imagine you want to put cameras all around your house or office, and you want to
 5. **Easy Setup**: Works with existing network equipment
 6. **Remote Access**: Can view cameras from anywhere on the network
 
-## 🔧 How We Use It in Our Code
+## How We Use It in Our Code
 
 ### Basic Setup (Simple Example)
 
@@ -92,19 +92,19 @@ for i, ip in enumerate(camera_ips):
 # Start all cameras
 for i, camera in enumerate(cameras):
     camera.start_streaming()
-    print(f"✅ Camera {i+1} started at {camera_ips[i]}")
+    print(f"Camera {i+1} started at {camera_ips[i]}")
 
 # Get pictures from all cameras
 all_pictures = []
 for i, camera in enumerate(cameras):
     picture = camera.capture_frame()
     all_pictures.append(picture)
-    print(f"📸 Got picture from camera {i+1}")
+    print(f"Got picture from camera {i+1}")
 
 print(f"Total pictures captured: {len(all_pictures)}")
 ```
 
-## 🌐 Network Configuration (Setting Up Your Network)
+## Network Configuration (Setting Up Your Network)
 
 ### Basic Network Setup
 ```python
@@ -152,7 +152,7 @@ power_status = camera.get_power_status()
 print(f"Camera power: {power_status.voltage}V, {power_status.current}A")
 ```
 
-## 🏢 Real-World Examples
+## Real-World Examples
 
 ### Example 1: Office Security System
 ```python
@@ -189,7 +189,7 @@ class OfficeSecuritySystem:
         # Start all cameras
         for location, camera in self.cameras.items():
             camera.start_streaming()
-            print(f"🔒 Security camera started at {location}")
+            print(f"Security camera started at {location}")
         
         # Monitor continuously
         while office_is_open():
@@ -200,7 +200,7 @@ class OfficeSecuritySystem:
                 # Check for motion or suspicious activity
                 if self.detect_motion(frame):
                     self.alert_security(location, frame)
-                    print(f"🚨 Motion detected at {location}!")
+                    print(f"Motion detected at {location}!")
                 
                 # Save frame for later review
                 self.save_security_footage(location, frame)
@@ -252,7 +252,7 @@ class FactoryQualityControl:
         # Start all inspection cameras
         for station, camera in self.cameras.items():
             camera.start_streaming()
-            print(f"🏭 Inspection camera started at {station}")
+            print(f"Inspection camera started at {station}")
         
         # Inspect products continuously
         while factory_is_running():
@@ -264,10 +264,10 @@ class FactoryQualityControl:
                 quality_result = self.inspect_product(station, product_image)
                 
                 if quality_result.passed:
-                    print(f"✅ Product passed inspection at {station}")
+                    print(f"Product passed inspection at {station}")
                 else:
                     self.reject_product(station, quality_result.defects)
-                    print(f"❌ Product rejected at {station}: {quality_result.defects}")
+                    print(f"Product rejected at {station}: {quality_result.defects}")
     
     def inspect_product(self, station, image):
         """Inspect product for defects"""
@@ -314,9 +314,9 @@ class RemoteMonitoringSystem:
         for location, camera in self.cameras.items():
             try:
                 camera.start_streaming()
-                print(f"🌐 Remote camera connected at {location}")
+                print(f"Remote camera connected at {location}")
             except Exception as e:
-                print(f"❌ Failed to connect to {location}: {e}")
+                print(f"Failed to connect to {location}: {e}")
         
         # Monitor remote locations
         while monitoring_active():
@@ -330,13 +330,13 @@ class RemoteMonitoringSystem:
                     
                     if status.has_issues:
                         self.alert_maintenance(location, status.issues)
-                        print(f"⚠️ Issues detected at {location}: {status.issues}")
+                        print(f"Issues detected at {location}: {status.issues}")
                     
                     # Log status for reports
                     self.log_status(location, status)
                     
                 except Exception as e:
-                    print(f"❌ Connection lost to {location}: {e}")
+                    print(f"Connection lost to {location}: {e}")
                     self.attempt_reconnection(location)
     
     def analyze_location_status(self, location, image):
@@ -349,7 +349,7 @@ class RemoteMonitoringSystem:
         pass
 ```
 
-## 🔧 Network Optimization
+## Network Optimization
 
 ### Optimizing for Multiple Cameras
 ```python
@@ -363,7 +363,7 @@ def optimize_network_for_multiple_cameras(num_cameras):
     print(f"Total bandwidth needed: {total_bandwidth / 1_000_000:.1f} Mbps")
     
     if total_bandwidth > 800_000_000:  # More than 800 Mbps
-        print("⚠️ High bandwidth usage - optimizing...")
+        print("High bandwidth usage - optimizing...")
         
         # Reduce resolution or frame rate
         optimized_config = GigEConfig(
@@ -374,7 +374,7 @@ def optimize_network_for_multiple_cameras(num_cameras):
             packet_delay=0             # No delay
         )
         
-        print("✅ Optimized for multiple cameras")
+        print("Optimized for multiple cameras")
         return optimized_config
     
     else:
@@ -394,7 +394,7 @@ config = optimize_network_for_multiple_cameras(num_cameras=8)
 def diagnose_network_issues(camera_ip):
     """Diagnose network connectivity issues"""
     
-    print(f"🔍 Diagnosing network issues for camera at {camera_ip}")
+    print(f"Diagnosing network issues for camera at {camera_ip}")
     
     # Test 1: Ping the camera
     import subprocess
@@ -402,9 +402,9 @@ def diagnose_network_issues(camera_ip):
                                 capture_output=True, text=True)
     
     if ping_result.returncode == 0:
-        print("✅ Camera responds to ping")
+        print("Camera responds to ping")
     else:
-        print("❌ Camera does not respond to ping")
+        print("Camera does not respond to ping")
         print("Check: Cable connection, power, IP address")
         return
     
@@ -417,12 +417,12 @@ def diagnose_network_issues(camera_ip):
         sock.close()
         
         if result == 0:
-            print("✅ GigE Vision port is open")
+            print("GigE Vision port is open")
         else:
-            print("❌ GigE Vision port is closed")
+            print("GigE Vision port is closed")
             print("Check: Camera firmware, firewall settings")
     except Exception as e:
-        print(f"❌ Network error: {e}")
+        print(f"Network error: {e}")
     
     # Test 3: Check bandwidth
     try:
@@ -438,20 +438,20 @@ def diagnose_network_issues(camera_ip):
         frame_size = test_frame.width * test_frame.height
         bandwidth = (frame_size * 8) / transfer_time  # bits per second
         
-        print(f"✅ Bandwidth test: {bandwidth / 1_000_000:.1f} Mbps")
+        print(f"Bandwidth test: {bandwidth / 1_000_000:.1f} Mbps")
         
         if bandwidth < 100_000_000:  # Less than 100 Mbps
-            print("⚠️ Low bandwidth detected")
+            print("Low bandwidth detected")
             print("Check: Network switch, cable quality, network congestion")
     
     except Exception as e:
-        print(f"❌ Camera connection failed: {e}")
+        print(f"Camera connection failed: {e}")
 
 # Use network diagnostics
 diagnose_network_issues("192.168.1.100")
 ```
 
-## 📊 Performance Monitoring
+## Performance Monitoring
 
 ```python
 from advanced_image_sensor_interface.performance.monitor import PerformanceMonitor
@@ -468,7 +468,7 @@ class GigEPerformanceMonitor:
         
         # Monitor each camera
         for camera_name, camera in self.cameras.items():
-            print(f"📊 Monitoring {camera_name}...")
+            print(f"Monitoring {camera_name}...")
             
             # Test 100 frames
             frame_times = []
@@ -488,27 +488,27 @@ class GigEPerformanceMonitor:
                 except Exception as e:
                     # Frame capture failed (likely packet loss)
                     packet_losses.append(1)
-                    print(f"⚠️ Frame {i} failed: {e}")
+                    print(f"Frame {i} failed: {e}")
             
             # Calculate statistics
             avg_frame_time = sum(frame_times) / len(frame_times) if frame_times else 0
             packet_loss_rate = sum(packet_losses) / len(packet_losses)
             actual_fps = 1000 / avg_frame_time if avg_frame_time > 0 else 0
             
-            print(f"📈 {camera_name} Performance:")
+            print(f"{camera_name} Performance:")
             print(f"  Average frame time: {avg_frame_time:.1f}ms")
             print(f"  Actual FPS: {actual_fps:.1f}")
             print(f"  Packet loss rate: {packet_loss_rate:.1%}")
             
             # Performance warnings
             if avg_frame_time > 100:  # More than 100ms per frame
-                print(f"⚠️ {camera_name}: Slow frame capture")
+                print(f"{camera_name}: Slow frame capture")
             
             if packet_loss_rate > 0.01:  # More than 1% packet loss
-                print(f"⚠️ {camera_name}: High packet loss")
+                print(f"{camera_name}: High packet loss")
             
             if actual_fps < camera.config.frame_rate * 0.9:  # Less than 90% of target
-                print(f"⚠️ {camera_name}: Low frame rate")
+                print(f"{camera_name}: Low frame rate")
 
 # Use performance monitoring
 cameras = {
@@ -521,7 +521,7 @@ monitor = GigEPerformanceMonitor(cameras)
 monitor.monitor_network_performance()
 ```
 
-## 🎯 Best Practices
+## Best Practices
 
 ### 1. Network Design
 ```python
@@ -543,13 +543,13 @@ def design_gige_network(num_cameras, camera_requirements):
     
     # Recommend network infrastructure
     if total_mbps < 100:
-        print("✅ Fast Ethernet (100 Mbps) is sufficient")
+        print("Fast Ethernet (100 Mbps) is sufficient")
         switch_type = "Fast Ethernet"
     elif total_mbps < 800:
-        print("✅ Gigabit Ethernet (1000 Mbps) recommended")
+        print("Gigabit Ethernet (1000 Mbps) recommended")
         switch_type = "Gigabit Ethernet"
     else:
-        print("⚠️ Multiple Gigabit links or 10 Gigabit Ethernet needed")
+        print("Multiple Gigabit links or 10 Gigabit Ethernet needed")
         switch_type = "10 Gigabit Ethernet"
     
     # Network recommendations
@@ -594,7 +594,7 @@ class GigENetworkManager:
             if ip not in self.assigned_ips:
                 self.assigned_ips.add(ip)
                 self.cameras[camera_name] = ip
-                print(f"📍 Assigned {ip} to {camera_name}")
+                print(f"Assigned {ip} to {camera_name}")
                 return ip
         
         raise Exception("No available IP addresses")
@@ -618,7 +618,7 @@ class GigENetworkManager:
     
     def list_cameras(self):
         """List all configured cameras"""
-        print("📋 Configured cameras:")
+        print("Configured cameras:")
         for name, ip in self.cameras.items():
             print(f"  {name}: {ip}")
 

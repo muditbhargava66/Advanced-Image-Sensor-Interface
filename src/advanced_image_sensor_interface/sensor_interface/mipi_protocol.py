@@ -337,9 +337,12 @@ if __name__ == "__main__":
 
     # Round-trip test
     decoded_short = ShortPacket.from_bytes(short_bytes)
-    assert decoded_short.virtual_channel == short_pkt.virtual_channel
-    assert decoded_short.data_type == short_pkt.data_type
-    assert decoded_short.data == short_pkt.data
+    if decoded_short.virtual_channel != short_pkt.virtual_channel:
+        raise RuntimeError("Short packet virtual channel mismatch")
+    if decoded_short.data_type != short_pkt.data_type:
+        raise RuntimeError("Short packet data type mismatch")
+    if decoded_short.data != short_pkt.data:
+        raise RuntimeError("Short packet data mismatch")
 
     # Test long packet
     payload = b"Hello, MIPI CSI-2 World!" * 10
@@ -350,18 +353,24 @@ if __name__ == "__main__":
 
     # Round-trip test
     decoded_long = LongPacket.from_bytes(long_bytes)
-    assert decoded_long.virtual_channel == long_pkt.virtual_channel
-    assert decoded_long.data_type == long_pkt.data_type
-    assert decoded_long.payload == long_pkt.payload
+    if decoded_long.virtual_channel != long_pkt.virtual_channel:
+        raise RuntimeError("Long packet virtual channel mismatch")
+    if decoded_long.data_type != long_pkt.data_type:
+        raise RuntimeError("Long packet data type mismatch")
+    if decoded_long.payload != long_pkt.payload:
+        raise RuntimeError("Long packet payload mismatch")
 
     # Test validator
     validator = MIPIProtocolValidator()
-    assert validator.validate_packet(short_bytes)
-    assert validator.validate_packet(long_bytes)
+    if not validator.validate_packet(short_bytes):
+        raise RuntimeError("Validator rejected a valid short packet")
+    if not validator.validate_packet(long_bytes):
+        raise RuntimeError("Validator rejected a valid long packet")
 
     # Test invalid packet
     invalid_packet = b"\x00\x01\x02"  # Too short
-    assert not validator.validate_packet(invalid_packet)
+    if validator.validate_packet(invalid_packet):
+        raise RuntimeError("Validator accepted a truncated packet")
 
     stats = validator.get_statistics()
     print(f"Validation statistics: {stats}")

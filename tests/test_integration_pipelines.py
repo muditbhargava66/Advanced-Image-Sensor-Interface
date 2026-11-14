@@ -200,9 +200,14 @@ class TestFullPipelineIntegration:
             assert np.all(processed_frame >= 0)
             assert np.all(processed_frame <= (2**bit_depth) - 1)
 
-            # Verify that processing occurred (pipeline is functional)
-            # Allow for significant variance due to dynamic range expansion
-            max_allowed_variance = noisy_variance * 12  # Very lenient for pipeline functionality test
+            # Dynamic range expansion maps the observed input span to the full
+            # declared bit-depth range, so the expected noise gain is
+            # full_scale / input_span. Allow 50% headroom over that theoretical
+            # gain instead of assuming a data-inferred output scale.
+            input_span = float(np.ptp(noisy_pattern))
+            full_scale = float((2**bit_depth) - 1)
+            expansion = full_scale / input_span if input_span > 0 else 1.0
+            max_allowed_variance = noisy_variance * expansion**2 * 1.5
             assert (
                 processed_variance <= max_allowed_variance
             ), f"Processing variance too high: processed_var={processed_variance:.2f}, max_allowed={max_allowed_variance:.2f}"
@@ -485,11 +490,13 @@ class TestStressConditions:
         assert not result.success
 
         # Test with wrong data type
+        # float64 has no unambiguous full-scale range; v4 rejects it explicitly
+        # instead of silently multiplying by 65535.
         wrong_type_frame = np.random.rand(100, 100, 3).astype(np.float64)
         result = components["signal_processor"].process_frame(wrong_type_frame)
-        # Should handle gracefully
         assert isinstance(result, SignalProcessingResult)
-        assert result.success  # Should convert and process
+        assert not result.success
+        assert "dtype" in result.error.lower()
 
         # Test MIPI with invalid data sizes
         invalid_data = b"invalid"

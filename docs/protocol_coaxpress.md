@@ -1,6 +1,6 @@
 # CoaXPress Protocol - Simple Guide
 
-## 🤔 What is CoaXPress? (Explain Like I'm 5)
+## What is CoaXPress? (Explain Like I'm 5)
 
 Imagine you have a really powerful camera that needs to send HUGE pictures very far away, like from a factory floor to a control room. CoaXPress is like a super-strong cable that can do two amazing things at once:
 
@@ -11,7 +11,7 @@ Imagine you have a really powerful camera that needs to send HUGE pictures very 
   1. Send enormous photos super fast (like a fire hose for data)
   2. Give power to the camera through the same cable (like an extension cord)
 
-### 🏭 Why is it Special?
+### Why is it Special?
 
 1. **Industrial Strength**: Built for factories, labs, and tough environments
 2. **Super Long Distance**: Can work over 100 meters (longer than a football field!)
@@ -19,7 +19,7 @@ Imagine you have a really powerful camera that needs to send HUGE pictures very 
 4. **Ultra Fast**: Can send data faster than almost any other camera cable
 5. **Very Reliable**: Won't break even in harsh conditions
 
-## 🔧 How We Use It in Our Code
+## How We Use It in Our Code
 
 ### Basic Setup (Simple Example)
 
@@ -94,13 +94,13 @@ def inspect_products():
         
         if quality_result.is_defective:
             reject_product()
-            print("❌ Defective product rejected")
+            print("Defective product rejected")
         else:
             accept_product()
-            print("✅ Product passed inspection")
+            print("Product passed inspection")
 ```
 
-## 🚀 Speed Grades (How Fast Your Cable Can Go)
+## Speed Grades (How Fast Your Cable Can Go)
 
 Think of speed grades like different types of highways:
 
@@ -158,7 +158,7 @@ def choose_speed_grade(application):
         return "CXP-3"  # Good default
 ```
 
-## ⚡ Power Over Coax (One Cable for Everything)
+## Power Over Coax (One Cable for Everything)
 
 ```python
 # Configure power delivery through the cable
@@ -190,10 +190,10 @@ def monitor_camera_power():
     print(f"Current: {power_status.current}A")
     
     if power_status.current_watts > 20:
-        print("⚠️ High power usage detected")
+        print("High power usage detected")
 ```
 
-## 🏭 Real-World Examples
+## Real-World Examples
 
 ### Example 1: Car Manufacturing Inspection
 ```python
@@ -223,10 +223,10 @@ class CarPartInspector:
             
             if defects:
                 self.reject_part(defects)
-                print(f"❌ Part rejected: {len(defects)} defects found")
+                print(f"Part rejected: {len(defects)} defects found")
             else:
                 self.accept_part()
-                print("✅ Part passed inspection")
+                print("Part passed inspection")
     
     def find_defects(self, image):
         """Find defects in car part image"""
@@ -265,10 +265,10 @@ class MedicalDeviceInspector:
             # Medical devices must be perfect
             if self.meets_medical_standards(measurements, surface_quality):
                 self.approve_device(device)
-                print("✅ Medical device approved")
+                print("Medical device approved")
             else:
                 self.reject_device(device)
-                print("❌ Medical device rejected - safety concern")
+                print("Medical device rejected - safety concern")
 ```
 
 ### Example 3: Scientific Research Camera
@@ -303,13 +303,13 @@ class ScientificCamera:
         # Analyze the scientific data
         results = self.analyze_experiment(images)
         
-        print(f"🔬 Experiment complete: {len(images)} images captured")
-        print(f"📊 Results: {results}")
+        print(f"Experiment complete: {len(images)} images captured")
+        print(f"Results: {results}")
         
         return results
 ```
 
-## 🔧 Multiple Camera Setup
+## Multiple Camera Setup
 
 ```python
 # Set up multiple CoaXPress cameras for complete coverage
@@ -361,7 +361,7 @@ all_images = system.capture_synchronized()
 print(f"Captured {len(all_images)} images simultaneously")
 ```
 
-## 🛠️ Troubleshooting (Fixing Problems)
+## Troubleshooting (Fixing Problems)
 
 ### Problem 1: Camera Not Found
 ```python
@@ -369,16 +369,16 @@ def find_coaxpress_cameras():
     """Find all CoaXPress cameras on the network"""
     from advanced_image_sensor_interface.sensor_interface.protocol.coaxpress.discovery import discover_devices
     
-    print("🔍 Searching for CoaXPress cameras...")
+    print("Searching for CoaXPress cameras...")
     
     cameras = discover_devices(timeout=10.0)
     
     if cameras:
-        print(f"✅ Found {len(cameras)} cameras:")
+        print(f"Found {len(cameras)} cameras:")
         for i, camera in enumerate(cameras):
             print(f"  Camera {i}: {camera.device_id} ({camera.speed_grade})")
     else:
-        print("❌ No cameras found. Check:")
+        print("No cameras found. Check:")
         print("  - Cable connections")
         print("  - Power supply")
         print("  - Camera compatibility")
@@ -410,7 +410,7 @@ def optimize_performance():
     print(f"Dropped frames: {performance.dropped_frames}")
     
     if performance.bandwidth_gbps < config.expected_bandwidth:
-        print("⚠️ Performance issue detected")
+        print("Performance issue detected")
         print("Try:")
         print("  - Check cable quality")
         print("  - Reduce resolution")
@@ -431,16 +431,16 @@ def diagnose_power_problems():
     print(f"  Power: {power_status.power}W")
     
     if power_status.voltage < 20:
-        print("❌ Voltage too low - check power supply")
+        print("Voltage too low - check power supply")
     elif power_status.current > 1.2:
-        print("❌ Current too high - camera may be damaged")
+        print("Current too high - camera may be damaged")
     elif power_status.power > 25:
-        print("❌ Power consumption too high")
+        print("Power consumption too high")
     else:
-        print("✅ Power delivery is normal")
+        print("Power delivery is normal")
 ```
 
-## 📊 Performance Monitoring
+## Performance Monitoring
 
 ```python
 from advanced_image_sensor_interface.performance.monitor import PerformanceMonitor
@@ -469,12 +469,12 @@ class CoaXPressMonitor:
             
             # Check for problems
             if frame_time > 50:  # More than 50ms is slow
-                print(f"⚠️ Slow frame detected: {frame_time}ms")
+                print(f"Slow frame detected: {frame_time}ms")
         
         # Get final report
         report = self.monitor.get_performance_report()
         
-        print(f"📊 Performance Report:")
+        print(f"Performance Report:")
         print(f"  Average frame time: {report.average_frame_time_ms}ms")
         print(f"  Actual FPS: {report.actual_fps}")
         print(f"  Dropped frames: {report.dropped_frames}")
@@ -487,7 +487,7 @@ monitor = CoaXPressMonitor(camera)
 performance_report = monitor.start_monitoring()
 ```
 
-## 🎯 Best Practices
+## Best Practices
 
 ### 1. Choose the Right Speed Grade
 ```python
@@ -557,11 +557,11 @@ def check_cable_quality():
     print(f"  Maximum distance: {cable_test.max_distance_m}m")
     
     if cable_test.signal_quality < 90:
-        print("⚠️ Cable quality is poor - consider replacement")
+        print("Cable quality is poor - consider replacement")
     elif cable_test.error_rate > 0.001:
-        print("⚠️ High error rate - check connections")
+        print("High error rate - check connections")
     else:
-        print("✅ Cable quality is excellent")
+        print("Cable quality is excellent")
 ```
 
 CoaXPress is perfect for industrial applications where you need the highest quality images, longest distances, and most reliable operation!
