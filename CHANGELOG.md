@@ -37,6 +37,7 @@ This release replaces the simulated MIPI encryption path with real AES-GCM authe
 - Depth PLY export failures return a failed `DepthResult` instead of being ignored.
 - `sensor_interface` and `test_patterns` import the package version instead of carrying stale copies.
 - Examples now use the current APIs: `comprehensive_demo.py` reads `HDRProcessingResult.data` and `RAWProcessingResult.data`, `custom_extension.py` and `protocol_implementations.py` build `MIPIConfig` with `data_rate_mbps`/`lanes`, and the custom driver connects before transferring. Stale v2/v3 version labels were corrected.
+- Raise `requires-python` to >=3.11.5 so the fixed `soupsieve` 4.x resolves in the universal lock; Python 3.11.0-3.11.4 are no longer supported.
 
 ### Fixed
 
@@ -64,10 +65,10 @@ This release replaces the simulated MIPI encryption path with real AES-GCM authe
 
 ### Security
 
-- Pin security floors: Pillow 13.0.0, virtualenv 21.14.9, filelock 4.2.1, certifi 2026.10.19, urllib3 2.8.0, tornado 6.6.1, nbconvert 7.17.2, Werkzeug 3.1.9, setuptools 84.1.0, black 26.10.1, soupsieve 3.0.2, msgpack 1.2.3.
-- Raise the transitive `soupsieve` floor to 3.0.2 (locked 4.1) for the docs CSS-selector ReDoS advisories, scoped to Python >=3.11.5 so the universal lock still resolves on 3.11.0-3.11.4; raise `msgpack` to 1.2.3 (pulled by pip-audit's cachecontrol). Remove the unused direct `msgpack` entry from `[full]`. Pillow is retained: it is not imported directly but matplotlib requires it transitively.
+- Pin security floors: Pillow 13.0.0, virtualenv 21.14.9, filelock 4.2.1, certifi 2026.10.19, urllib3 2.8.0, tornado 6.6.1, nbconvert 7.17.2, Werkzeug 3.1.9, setuptools 84.1.0, black 26.10.1, soupsieve 4.0.0, msgpack 1.2.3.
+- Raise the transitive `soupsieve` floor to 4.0.0 (locked 4.1) for the docs CSS-selector ReDoS advisories and require Python >=3.11.5 so the universal lock resolves a single fixed soupsieve. The prior >=3.0.2 floor was marker-gated to Python >=3.11.5 and left vulnerable soupsieve 2.9.2 in the lock for 3.11.0-3.11.4, which Dependabot flagged. Raise `msgpack` to 1.2.3 (pulled by pip-audit's cachecontrol). Remove the unused direct `msgpack` entry from `[full]`. Pillow is retained: it is not imported directly but matplotlib requires it transitively.
 - Raise `tornado` to 6.6.1 for CVE-2026-126347; the prior 6.5.9 floor allowed the vulnerable 6.6 release.
-- Bump the SHA-pinned `astral-sh/setup-uv` action to v10.3.3, superseding Dependabot PR #46; PRs #44 (line-profiler) and #45 (Pillow) were already folded into this branch.
+- Bump the SHA-pinned `astral-sh/setup-uv` action to v10.3.3, superseding Dependabot PR #46; PRs #44 (line-profiler), #45 (Pillow), and #48 (grouped uv lock refresh) are superseded by this branch.
 - GitHub Actions are pinned by commit SHA; dependency audits cover core, security, and full profiles; documentation builds run on pull requests.
 - Credential fields are excluded from `repr`; nonce, key, and tag sizes are validated before use.
 - Bandit reports no findings: demonstration `assert` statements were replaced with explicit checks, and simulation-only `random` calls are narrowly suppressed with `# nosec B311`.
